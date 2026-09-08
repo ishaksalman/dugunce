@@ -100,6 +100,25 @@ Pratikte iki fark:
 - `devam` / `next` yönlendirme parametreleri yalnızca `/` ile başlayan ve
   `//` ile başlamayan yolları kabul eder (açık yönlendirme engeli).
 
+## Mekan düzenleme (wizard)
+
+- Adımlar `VENUE_STEPS` (`lib/schemas/venue.ts`) içinde; sıra zorunlu değil,
+  kullanıcı istediği adıma atlar. Her adım tek başına kaydedilir.
+- **`stepCompletion()` yayın eşiği DEĞİL.** O yalnızca "bu adımda işin var mı"
+  göstergesi. Yayın eşiği `venue_completion_of()` ile SQL'de (0002) ve
+  `guard_venue_update` içinde (0003). İkisini karıştırma; eşik değişirse
+  SQL tarafı değişir.
+- **Slug yalnızca TASLAKKEN adla birlikte değişir.** Yayındaki mekanın
+  adresini değiştirmek gelen bağlantıları ve SEO'yu kırar.
+- Fotoğraf tarayıcıdan DOĞRUDAN Storage'a gider; server action yalnızca
+  `venue_images` kaydını açar. Sunucudan geçirmek her dosyayı iki kez ağdan
+  taşır ve server action gövde limitine takılır.
+- Yükleme yolu MUTLAKA `{venueId}/…` ile başlar — Storage politikası (0007)
+  yetkiyi ilk klasöre bakarak veriyor.
+- Çoklu seçim (özellik/etkinlik) React state'te tutulup eyleme doğrudan
+  geçirilir. FormData boş seçimde alanı hiç göndermiyor, "hepsini kaldır"
+  kaybolurdu.
+
 ## DavetPro entegrasyonu
 
 Kontrat: `docs/DAVETPRO-ENTEGRASYON.md`. İki depo arasındaki sözleşme orada;
