@@ -21,7 +21,7 @@ devre dışı bırakır; yetkilendirme tamamen uygulama katmanına yığılır. 
 (NextAuth) DavetPro ile federation yazmayı gerektirirdi. Karmaşık facet
 filtrelemesi ORM yerine tek Postgres RPC + `text[]` + GIN index ile çözülüyor.
 
-**DavetPro konumu:** `~/Desktop/davetio` (package adı `davetpro`).
+**DavetPro konumu:** `~/Desktop/davet/davetio` (package adı `davetpro`).
 
 ---
 
