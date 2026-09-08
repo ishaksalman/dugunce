@@ -3,8 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import {
   normalizeInquiry, normalizeOwnerVenue, normalizeReview, normalizeVenueDetail,
-  toVenueCard, type InquiryStatus, type OwnerInquiry, type OwnerStats,
-  type OwnerVenue, type VenueDetail, type VenueReview, type VenueSearchRow,
+  normalizeVenueForEdit, toVenueCard, type InquiryStatus, type OwnerInquiry,
+  type OwnerStats, type OwnerVenue, type VenueDetail, type VenueForEdit,
+  type VenueReview, type VenueSearchRow,
 } from "@/types/db";
 import type {
   CreateInquiryInput, CreateInquiryResult, DataSource, OwnerInquiryQuery,
@@ -159,6 +160,15 @@ export const supabaseSource: DataSource = {
       })
       .eq("id", id);
     if (error) throw new Error(`updateInquiry: ${error.message}`);
+  },
+
+  async getVenueForEdit(venueId: string): Promise<VenueForEdit | null> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("get_venue_for_edit", {
+      p_venue_id: venueId,
+    });
+    if (error) throw new Error(`get_venue_for_edit: ${error.message}`);
+    return data ? normalizeVenueForEdit(data as unknown as VenueForEdit) : null;
   },
 
   async listFeatures() {

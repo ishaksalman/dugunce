@@ -41,3 +41,9 @@ export const getOwnerInquiries = cache(
   },
 );
 
+
+/** Düzenleme ekranı verisi. Sahibi olmadığı mekan için null. */
+export const getVenueForEdit = cache(async (venueId: string) => {
+  const db = await getDataSource();
+  return db.getVenueForEdit(venueId);
+});

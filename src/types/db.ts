@@ -307,3 +307,61 @@ export function normalizeInquiry(row: OwnerInquiry): OwnerInquiry {
     event_date: row.event_date === null ? null : String(row.event_date).slice(0, 10),
   };
 }
+
+// --- Mekan düzenleme (wizard) ------------------------------------------------
+
+export interface VenueEditImage {
+  id: string;
+  url: string;
+  storage_path: string;
+  alt: string | null;
+  is_cover: boolean;
+  sort_order: number;
+}
+
+/** `get_venue_for_edit()` çıktısı. Vitrin görünümünden farkı: taslakları da
+ *  kapsar ve seçili özellik/etkinlik ID'lerini verir. */
+export interface VenueForEdit {
+  id: string;
+  slug: string;
+  name: string;
+  status: VenueStatus;
+  needs_review: boolean;
+  completion_score: number;
+  rejection_reason: string | null;
+  published_at: string | null;
+  city_id: string;
+  district_id: string;
+  venue_type_id: string | null;
+  address: string | null;
+  latitude: string | number | null;
+  longitude: string | number | null;
+  short_description: string | null;
+  description: string | null;
+  min_capacity: number | null;
+  max_capacity: number | null;
+  starting_price: string | number | null;
+  price_type: PriceType;
+  price_note: string | null;
+  has_indoor: boolean;
+  has_outdoor: boolean;
+  contact_phone: string | null;
+  contact_email: string | null;
+  website_url: string | null;
+  instagram_url: string | null;
+  davetpro_business_id: string | null;
+  davetpro_linked_at: string | null;
+  city: { name: string; slug: string };
+  district: { name: string; slug: string };
+  images: VenueEditImage[];
+  feature_ids: string[];
+  event_type_ids: string[];
+}
+
+export function normalizeVenueForEdit(row: VenueForEdit): VenueForEdit {
+  return {
+    ...row,
+    published_at: toIsoOrNull(row.published_at),
+    davetpro_linked_at: toIsoOrNull(row.davetpro_linked_at),
+  };
+}

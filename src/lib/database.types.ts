@@ -52,6 +52,41 @@ export interface Database {
         Update: Simplify<{ full_name?: string; phone?: string | null; avatar_url?: string | null }>;
         Relationships: [];
       };
+      venues: {
+        Row: Simplify<{ id: string; owner_id: string; slug: string; name: string }>;
+        Insert: Simplify<{
+          owner_id: string;
+          slug: string;
+          name: string;
+          city_id: string;
+          district_id: string;
+        }>;
+        Update: Simplify<Record<string, unknown>>;
+        Relationships: [];
+      };
+      venue_images: {
+        Row: Simplify<{
+          id: string;
+          venue_id: string;
+          storage_path: string;
+          url: string;
+          alt_text: string | null;
+          sort_order: number;
+          is_cover: boolean;
+        }>;
+        Insert: Simplify<{
+          venue_id: string;
+          storage_path: string;
+          url: string;
+          width?: number | null;
+          height?: number | null;
+          alt_text?: string | null;
+          sort_order?: number;
+          is_cover?: boolean;
+        }>;
+        Update: Simplify<{ is_cover?: boolean; alt_text?: string | null; sort_order?: number }>;
+        Relationships: [];
+      };
       inquiries: {
         Row: Simplify<{ id: string; status: InquiryStatus; owner_note: string | null }>;
         Insert: never;
@@ -105,6 +140,26 @@ export interface Database {
       get_my_venues: {
         Args: Record<string, never>;
         Returns: Record<string, unknown>[];
+      };
+      get_venue_for_edit: {
+        Args: { p_venue_id: string };
+        Returns: Record<string, unknown> | null;
+      };
+      set_venue_features: {
+        Args: { p_venue_id: string; p_feature_ids: string[] };
+        Returns: undefined;
+      };
+      set_venue_event_types: {
+        Args: { p_venue_id: string; p_event_type_ids: string[] };
+        Returns: undefined;
+      };
+      reorder_venue_images: {
+        Args: { p_venue_id: string; p_image_ids: string[] };
+        Returns: undefined;
+      };
+      suggest_venue_slug: {
+        Args: { p_name: string; p_venue_id?: string | null };
+        Returns: string;
       };
       link_venue_to_davetpro: {
         Args: {

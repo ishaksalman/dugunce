@@ -1,6 +1,6 @@
 import type {
   City, District, EventType, Feature, InquiryStatus, OwnerInquiry, OwnerStats,
-  OwnerVenue, VenueCardData, VenueDetail, VenueReview, VenueType,
+  OwnerVenue, VenueCardData, VenueDetail, VenueForEdit, VenueReview, VenueType,
 } from "@/types/db";
 
 export interface SearchInput {
@@ -62,6 +62,10 @@ export interface DataSource {
     id: string,
     patch: { status?: InquiryStatus; ownerNote?: string | null },
   ): Promise<void>;
+
+  // --- Mekan düzenleme ------------------------------------------------------
+  /** Sahibi olmadığı mekan için null döner. Taslakları da kapsar. */
+  getVenueForEdit(venueId: string): Promise<VenueForEdit | null>;
 }
 
 export interface OwnerInquiryQuery {

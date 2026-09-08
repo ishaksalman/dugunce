@@ -831,7 +831,86 @@ await step("bağlantı kaldırılınca bekleyen işler iptal ediliyor", async ()
 });
 
 // =============================================================================
-console.log("\n\x1b[1m13) Rol yükseltme ve görüntülenme\x1b[0m");
+console.log("\n\x1b[1m13) Mekan düzenleme\x1b[0m");
+// =============================================================================
+await asUser(U.ownerA);
+await step("get_venue_for_edit sahibin taslağını da döndürüyor", async () => {
+  await asServer();
+  const taslak = (await db.query(
+    "select id from public.venues where slug = 'hilesi-var'")).rows[0];
+  await asUser(U.ownerA);
+  const r = await db.query("select public.get_venue_for_edit($1) as d", [taslak.id]);
+  if (!r.rows[0].d) throw new Error("taslak dönmedi");
+  if (r.rows[0].d.status !== "DRAFT") throw new Error(`durum ${r.rows[0].d.status}`);
+});
+
+await step("düzenleme verisi id listelerini içeriyor", async () => {
+  const r = await db.query("select public.get_venue_for_edit($1) as d", [venueA]);
+  const d = r.rows[0].d;
+  if (!Array.isArray(d.feature_ids) || d.feature_ids.length !== 3) {
+    throw new Error(`feature_ids: ${JSON.stringify(d.feature_ids)}`);
+  }
+  if (!Array.isArray(d.event_type_ids) || d.event_type_ids.length !== 2) {
+    throw new Error(`event_type_ids: ${JSON.stringify(d.event_type_ids)}`);
+  }
+  if (d.images.length !== 5) throw new Error(`görsel ${d.images.length}`);
+});
+
+await asUser(U.ownerB);
+await step("başka sahip düzenleme verisini ALAMIYOR", async () => {
+  const r = await db.query("select public.get_venue_for_edit($1) as d", [venueA]);
+  if (r.rows[0].d !== null) throw new Error("başkasının düzenleme verisi sızdı");
+});
+
+await asUser(U.ownerA);
+await step("set_venue_features istenen kümeyi uyguluyor", async () => {
+  await db.query("select public.set_venue_features($1, $2::uuid[])",
+    [venueA, [ids.f_otopark, ids.f_klima]]);
+  const r = await db.query("select feature_slugs from public.venues where id=$1", [venueA]);
+  const slugs = r.rows[0].feature_slugs.slice().sort().join(",");
+  if (slugs !== "klima,otopark") throw new Error(`slugs: ${slugs}`);
+});
+
+await step("boş küme tüm özellikleri kaldırıyor", async () => {
+  await db.query("select public.set_venue_features($1, $2::uuid[])", [venueA, []]);
+  const r = await db.query("select feature_slugs from public.venues where id=$1", [venueA]);
+  if (r.rows[0].feature_slugs.length !== 0) throw new Error("özellikler kalmış");
+  // Testin devamı için geri yükle
+  await db.query("select public.set_venue_features($1, $2::uuid[])",
+    [venueA, [ids.f_otopark, ids.f_klima, ids.f_catering]]);
+});
+
+await asUser(U.ownerB);
+// set_venue_features SECURITY INVOKER: RLS politikası devrede, yabancı
+// mekana yazma denemesi politika ihlaliyle durur.
+await expectFail(
+  "başka sahip özellik atayamıyor",
+  () => db.query("select public.set_venue_features($1, $2::uuid[])",
+    [venueA, [ids.f_otopark]]),
+  "row-level security");
+
+await asUser(U.ownerA);
+await step("suggest_venue_slug çakışmada sonek ekliyor", async () => {
+  const r1 = await db.query("select public.suggest_venue_slug('Bahçe Davet', null) as s");
+  if (r1.rows[0].s !== "bahce-davet-2") throw new Error(`slug: ${r1.rows[0].s}`);
+  const r2 = await db.query("select public.suggest_venue_slug('Bahçe Davet', $1) as s", [venueA]);
+  if (r2.rows[0].s !== "bahce-davet") throw new Error(`kendi slug'ı: ${r2.rows[0].s}`);
+  const r3 = await db.query("select public.suggest_venue_slug('!!!', null) as s");
+  if (r3.rows[0].s !== "mekan") throw new Error(`boş ad: ${r3.rows[0].s}`);
+});
+
+await step("reorder_venue_images sırayı güncelliyor", async () => {
+  const imgs = await db.query(
+    "select id from public.venue_images where venue_id=$1 order by sort_order", [venueA]);
+  const tersi = imgs.rows.map((r) => r.id).reverse();
+  await db.query("select public.reorder_venue_images($1, $2::uuid[])", [venueA, tersi]);
+  const sonra = await db.query(
+    "select id from public.venue_images where venue_id=$1 order by sort_order", [venueA]);
+  if (sonra.rows[0].id !== tersi[0]) throw new Error("sıra değişmedi");
+});
+
+// =============================================================================
+console.log("\n\x1b[1m14) Rol yükseltme ve görüntülenme\x1b[0m");
 // =============================================================================
 await asUser(U.customer);
 await expectFail(
