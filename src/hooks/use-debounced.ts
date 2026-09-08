@@ -12,11 +12,20 @@ export function useDebounced<A extends unknown[]>(
 ) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(fn);
-  latest.current = fn;
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  // Ref'e render SIRASINDA yazmak eşzamanlı mod ile uyumsuz; effect'te
+  // güncelliyoruz. Gecikmeli çağrı zaten bir sonraki tick'te çalışıyor,
+  // o zamana kadar ref taze olur.
+  useEffect(() => {
+    latest.current = fn;
+  });
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   return useCallback(
     (...args: A) => {

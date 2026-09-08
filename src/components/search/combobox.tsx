@@ -66,6 +66,7 @@ export function Combobox({
             id={id}
             role="combobox"
             aria-expanded={open}
+            aria-controls={`${id ?? "combobox"}-liste`}
             className={cn(
               "flex h-12 w-full items-center justify-between gap-2 rounded-lg border bg-background px-3 text-left text-sm",
               "transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
@@ -91,7 +92,11 @@ export function Combobox({
           className="h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
       </div>
-      <ul role="listbox" className="max-h-72 overflow-y-auto p-1">
+      <ul
+        id={`${id ?? "combobox"}-liste`}
+        role="listbox"
+        className="max-h-72 overflow-y-auto p-1"
+      >
         {allLabel ? (
           <Row
             selected={!value}

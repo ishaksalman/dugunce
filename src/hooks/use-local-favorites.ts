@@ -1,59 +1,69 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 const KEY = "davetmekani:favoriler";
 const EVENT = "davetmekani:favoriler-degisti";
 
 /**
- * Üye olmayan kullanıcının favorileri. Giriş yapıldığında bu liste
- * `syncLocalFavorites()` ile hesaba aktarılacak (P5) — o yüzden format
- * bilerek basit: mekan id'lerinden oluşan bir dizi.
+ * Üye olmayan kullanıcının favorileri.
+ *
+ * `useSyncExternalStore` kullanılıyor: localStorage bir dış depo ve
+ * useEffect + useState ile okumak hem hydration'da yanıp sönmeye hem
+ * zincirleme render'a yol açıyor.
  */
-function read(): string[] {
-  if (typeof window === "undefined") return [];
+
+const BOS: string[] = [];
+// getSnapshot her render'da AYNI referansı döndürmeli; yoksa React sonsuz
+// döngüye girer. Bu yüzden ayrıştırılmış değeri ham metne göre önbelleğe
+// alıyoruz.
+let sonHam: string | null = null;
+let sonListe: string[] = BOS;
+
+function oku(): string[] {
+  if (typeof window === "undefined") return BOS;
+  let ham: string | null = null;
   try {
-    const raw = window.localStorage.getItem(KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+    ham = window.localStorage.getItem(KEY);
   } catch {
-    return [];
+    return BOS;
   }
+  if (ham === sonHam) return sonListe;
+  sonHam = ham;
+  try {
+    const parsed: unknown = ham ? JSON.parse(ham) : [];
+    sonListe = Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === "string")
+      : BOS;
+  } catch {
+    sonListe = BOS;
+  }
+  return sonListe;
 }
 
-function write(ids: string[]) {
-  window.localStorage.setItem(KEY, JSON.stringify(ids));
-  // Aynı sekmedeki diğer kart bileşenlerinin de haberi olsun; `storage`
-  // olayı yalnızca DİĞER sekmelerde tetikleniyor.
-  window.dispatchEvent(new CustomEvent(EVENT));
+function abone(callback: () => void) {
+  window.addEventListener(EVENT, callback);
+  // `storage` olayı yalnızca DİĞER sekmelerde tetikleniyor; aynı sekme için
+  // kendi olayımızı yayıyoruz.
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
 }
 
 export function useLocalFavorites() {
-  const [ids, setIds] = useState<string[]>([]);
-  // Sunucuda localStorage yok; ilk render'da boş liste dönüp hydration
-  // sonrası dolduruyoruz. `ready` bayrağı, kalp ikonunun bir an boş görünüp
-  // sonra dolmasını (yanıp sönme) engellemek için.
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setIds(read());
-    setReady(true);
-    const sync = () => setIds(read());
-    window.addEventListener(EVENT, sync);
-    window.addEventListener("storage", sync);
-    return () => {
-      window.removeEventListener(EVENT, sync);
-      window.removeEventListener("storage", sync);
-    };
-  }, []);
+  const ids = useSyncExternalStore(abone, oku, () => BOS);
+  // Sunucuda liste her zaman boş; hydration bittiğinde gerçek değer gelir.
+  const ready = ids !== BOS || typeof window !== "undefined";
 
   const toggle = useCallback((id: string) => {
-    const current = read();
+    const current = oku();
     const next = current.includes(id)
       ? current.filter((x) => x !== id)
       : [...current, id];
-    write(next);
-    setIds(next);
+    window.localStorage.setItem(KEY, JSON.stringify(next));
+    window.dispatchEvent(new CustomEvent(EVENT));
     return next.includes(id);
   }, []);
 

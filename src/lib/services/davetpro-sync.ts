@@ -89,7 +89,8 @@ export async function processSyncQueue(limit = 50): Promise<SyncRunResult> {
           p_lead_id: r?.lead_id ?? null,
           p_error: basarili ? null : "DavetPro lead oluşturmadı",
         });
-        basarili ? sent++ : failed++;
+        if (basarili) sent++;
+        else failed++;
       }
     } catch (error) {
       // Tüm grup başarısız; her iş kendi geri çekilme sayacıyla tekrar denenir.

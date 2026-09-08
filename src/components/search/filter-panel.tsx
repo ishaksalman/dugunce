@@ -38,27 +38,36 @@ export function FilterPanel({
   onChange: (next: Partial<VenueFilters>) => void;
   options: FilterOptions;
 }) {
-  const [districts, setDistricts] = useState<{ slug: string; name: string }[]>([]);
-  const [districtsLoading, setDistrictsLoading] = useState(false);
+  /**
+   * İlçeler şehre göre önbellekleniyor. Yükleme durumu AYRI BİR STATE DEĞİL,
+   * önbellekteki şehirle seçili şehrin farkından türetiliyor — effect içinde
+   * eşzamanlı `setState` çağırmak zincirleme render tetikliyor.
+   */
+  const [districtCache, setDistrictCache] = useState<{
+    city: string;
+    items: { slug: string; name: string }[];
+  } | null>(null);
 
-  // İlçe listesi yalnızca şehir seçiliyken ve talep üzerine yükleniyor.
+  const districts =
+    districtCache && districtCache.city === filters.sehir ? districtCache.items : [];
+  const districtsLoading =
+    Boolean(filters.sehir) && districtCache?.city !== filters.sehir;
+
   useEffect(() => {
-    if (!filters.sehir) {
-      setDistricts([]);
-      return;
-    }
+    const city = filters.sehir;
+    if (!city) return;
     const controller = new AbortController();
-    setDistrictsLoading(true);
-    fetch(`/api/taxonomy/districts?sehir=${encodeURIComponent(filters.sehir)}`, {
+
+    fetch(`/api/taxonomy/districts?sehir=${encodeURIComponent(city)}`, {
       signal: controller.signal,
     })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((data: { districts: { slug: string; name: string }[] }) =>
-        setDistricts(data.districts))
+        setDistrictCache({ city, items: data.districts }))
       .catch((e) => {
-        if (e.name !== "AbortError") setDistricts([]);
-      })
-      .finally(() => setDistrictsLoading(false));
+        if (e.name !== "AbortError") setDistrictCache({ city, items: [] });
+      });
+
     return () => controller.abort();
   }, [filters.sehir]);
 
@@ -268,11 +277,15 @@ function NumberInput({
   placeholder: string;
   onChange: (value: number | undefined) => void;
 }) {
-  // Kontrolsüz: debounce sırasında dışarıdan gelen değer imleci zıplatmasın.
+  // Debounce sırasında dışarıdan gelen değer imleci zıplatmasın diye yerel
+  // taslak tutuyoruz. Prop değişince taslağı RENDER SIRASINDA sıfırlıyoruz;
+  // effect ile yapmak fazladan bir render turu ve titreme demek.
   const [draft, setDraft] = useState(value?.toString() ?? "");
-  useEffect(() => {
+  const [oncekiDeger, setOncekiDeger] = useState(value);
+  if (value !== oncekiDeger) {
+    setOncekiDeger(value);
     setDraft(value?.toString() ?? "");
-  }, [value]);
+  }
 
   return (
     <label className="block">
