@@ -38,7 +38,12 @@ export const config = {
     /*
      * Statik varlıklar ve görsel optimizasyonu hariç her şey. Bunlarda
      * oturum tazelemek gereksiz ve her istekte Supabase'e gitmek pahalı.
+     *
+     * `api/integrations` ve `api/cron` DIŞARIDA: bunlar oturumla değil HMAC
+     * imzası / cron anahtarı ile kimlik doğruluyor. Matcher'a girerlerse her
+     * webhook ve her kuyruk tetiklemesi boşuna bir Supabase auth çağrısı
+     * yapar. (DavetPro tarafında aynı dışlama src/proxy.ts içinde.)
      */
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico)$).*)",
+    "/((?!api/integrations|api/cron|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico)$).*)",
   ],
 };

@@ -100,12 +100,37 @@ Pratikte iki fark:
 - `devam` / `next` yönlendirme parametreleri yalnızca `/` ile başlayan ve
   `//` ile başlamayan yolları kabul eder (açık yönlendirme engeli).
 
+## DavetPro entegrasyonu
+
+Kontrat: `docs/DAVETPRO-ENTEGRASYON.md`. İki depo arasındaki sözleşme orada;
+bir tarafı değiştirirken önce orayı güncelle.
+
+- **Aktarım kullanıcı akışını asla bloklamaz.** Talep her koşulda buraya
+  kaydedilir; DavetPro'ya gönderim `davetpro_sync_jobs` kuyruğundan yürür.
+- **Canlı gönderim ve geçmiş aktarımı AYNI kod yolunu kullanır**
+  (`pushLeads` → `/api/integrations/davetmekani/leads`). İki ayrı yol
+  yazılırsa biri bozulur ve fark edilmez.
+- Idempotency anahtarı `inquiries.id` → DavetPro `leads.external_id`.
+  Tekrar gönderim çift kayıt üretmez ve DavetPro tarafında yapılan çalışmayı
+  (not, takip tarihi) ezmez.
+- Mekan bağlandığında o mekanın **tüm geçmiş talepleri** kuyruğa girer.
+- İmza: `HMAC-SHA256(secret, "${timestamp}.${ham gövde}")`, sabit zamanlı
+  karşılaştırma, 5 dk replay penceresi. `signature.ts` iki depoda da var —
+  birini değiştirirken diğerini unutma.
+- **Entegrasyon uç noktaları middleware matcher'ından DIŞARIDA.** Oturumla
+  değil imza/cron anahtarıyla kimlik doğruluyorlar; matcher'a girerlerse
+  ya HTML yönlendirmesi alırlar ya da her istekte boşuna Supabase auth
+  çağrısı yapılır.
+
 ## Bileşen tuzakları
 
 - **`"use client"` modülünden sunucu bileşenine düz değer import etme.**
   RSC sınırında gerçek değer değil referans gelir; `Array.includes` gibi
   çağrılar çalışma zamanında patlar. Paylaşılan sabitler tarafsız bir
   modülde durur (ör. `lib/inquiry.ts`).
+- **Next 16'da middleware'in yeni adı `proxy.ts`.** `middleware.ts` hâlâ
+  çalışıyor (DavetMekanı onu kullanıyor), DavetPro `src/proxy.ts` kullanıyor.
+  İkisi de `src/` içinde olmak zorunda — kökte durursa sessizce hiç çalışmaz.
 - **Base UI `SelectValue` ham değeri basar.** Türkçe etiket için
   `<SelectValue>{(v) => ETIKET[v]}</SelectValue>` yaz; yoksa kullanıcı
   `fiyat-artan` ya da `REJECTED` görür.
