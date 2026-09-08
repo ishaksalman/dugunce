@@ -9,7 +9,7 @@
  * çıktıyla değiştirilebilir; isimler o çıktıyla uyumlu seçildi.
  */
 import type {
-  City, District, EventType, Feature, VenueDetail, VenueReview,
+  City, District, EventType, Feature, UserRole, VenueDetail, VenueReview,
   VenueSearchRow, VenueType,
 } from "@/types/db";
 import type { CreateInquiryResult } from "@/lib/db/source";
@@ -37,6 +37,21 @@ export interface Database {
       event_types: ReadOnly<EventType & { is_active: boolean }>;
       venue_types: ReadOnly<VenueType & { is_active: boolean }>;
       features: ReadOnly<Feature & { is_active: boolean }>;
+      profiles: {
+        Row: Simplify<{
+          id: string;
+          full_name: string;
+          phone: string | null;
+          role: UserRole;
+          avatar_url: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        }>;
+        Insert: never;
+        Update: Simplify<{ full_name?: string; phone?: string | null; avatar_url?: string | null }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -72,6 +87,18 @@ export interface Database {
       record_venue_view: {
         Args: { p_venue_id: string };
         Returns: undefined;
+      };
+      become_venue_owner: {
+        Args: Record<string, never>;
+        Returns: "customer" | "venue_owner" | "admin";
+      };
+      get_owner_stats: {
+        Args: { p_venue_id: string };
+        Returns: Record<string, unknown> | null;
+      };
+      get_my_venues: {
+        Args: Record<string, never>;
+        Returns: Record<string, unknown>[];
       };
       create_inquiry: {
         Args: {

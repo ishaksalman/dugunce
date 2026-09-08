@@ -2,8 +2,9 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import {
-  normalizeReview, normalizeVenueDetail, toVenueCard,
-  type VenueDetail, type VenueReview, type VenueSearchRow,
+  normalizeOwnerVenue, normalizeReview, normalizeVenueDetail, toVenueCard,
+  type OwnerStats, type OwnerVenue, type VenueDetail, type VenueReview,
+  type VenueSearchRow,
 } from "@/types/db";
 import type {
   CreateInquiryInput, CreateInquiryResult, DataSource, SearchInput, SearchResult,
@@ -106,6 +107,22 @@ export const supabaseSource: DataSource = {
     const { data, error } = await supabase.rpc("create_inquiry", inquiryRpcArgs(input));
     if (error) throw new Error(`create_inquiry: ${error.message}`);
     return data as CreateInquiryResult;
+  },
+
+  // Panel sorguları oturuma bağlı: çerez farkındalıklı istemci ŞART,
+  // `createPublicClient()` anonim bağlanır ve auth.uid() null olur.
+  async getMyVenues(): Promise<OwnerVenue[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("get_my_venues");
+    if (error) throw new Error(`get_my_venues: ${error.message}`);
+    return ((data ?? []) as unknown as OwnerVenue[]).map(normalizeOwnerVenue);
+  },
+
+  async getOwnerStats(venueId: string): Promise<OwnerStats | null> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("get_owner_stats", { p_venue_id: venueId });
+    if (error) throw new Error(`get_owner_stats: ${error.message}`);
+    return (data as unknown as OwnerStats | null) ?? null;
   },
 
   async listFeatures() {

@@ -578,7 +578,92 @@ await expectFail(
   "permission denied");
 
 // =============================================================================
-console.log("\n\x1b[1m10) Rol yükseltme ve görüntülenme\x1b[0m");
+console.log("\n\x1b[1m10) Mekan sahibi paneli\x1b[0m");
+// =============================================================================
+await asUser(U.customer);
+await step("müşteri become_venue_owner ile yükseliyor", async () => {
+  const r = await db.query("select public.become_venue_owner() as rol");
+  if (r.rows[0].rol !== "venue_owner") throw new Error(`rol: ${r.rows[0].rol}`);
+});
+
+await asUser(U.admin);
+await step("admin become_venue_owner ile DÜŞÜRÜLMÜYOR", async () => {
+  const r = await db.query("select public.become_venue_owner() as rol");
+  if (r.rows[0].rol !== "admin") throw new Error(`admin rolü değişti: ${r.rows[0].rol}`);
+});
+
+await asUser(U.ownerA);
+await step("get_my_venues yalnızca kendi mekanlarını döndürüyor", async () => {
+  const r = await db.query("select id, name, status from public.get_my_venues()");
+  const yabanci = r.rows.find((x) => x.name === "İkinci Mekan" ? false : false);
+  if (r.rows.length === 0) throw new Error("hiç mekan dönmedi");
+  const ids = new Set(r.rows.map((x) => x.id));
+  await asServer();
+  const kontrol = await db.query(
+    "select count(*)::int as n from public.venues where id = any($1) and owner_id <> $2",
+    [[...ids], U.ownerA]);
+  await asUser(U.ownerA);
+  if (kontrol.rows[0].n !== 0) throw new Error("başkasının mekanı listede");
+  if (yabanci) throw new Error("beklenmeyen kayıt");
+});
+
+await asUser(U.ownerB);
+await step("başka sahip A'nın mekanlarını get_my_venues'da görmüyor", async () => {
+  const r = await db.query("select id from public.get_my_venues()");
+  if (r.rows.some((x) => x.id === venueA)) throw new Error("A'nın mekanı sızdı");
+});
+
+await asUser(U.ownerA);
+await step("get_owner_stats dönüşüm oranını hesaplıyor", async () => {
+  const r = await db.query("select public.get_owner_stats($1) as s", [venueA]);
+  const s = r.rows[0].s;
+  if (s === null) throw new Error("null döndü");
+  if (typeof s.conversion_rate !== "number" && typeof s.conversion_rate !== "string") {
+    throw new Error(`conversion_rate: ${JSON.stringify(s.conversion_rate)}`);
+  }
+  if (s.completion_score !== 100) throw new Error(`completion: ${s.completion_score}`);
+  if (Number(s.inquiry_count) < 1) throw new Error(`inquiry_count: ${s.inquiry_count}`);
+  for (const alan of ["view_count", "favorite_count", "new_inquiries", "image_count"]) {
+    if (s[alan] === undefined) throw new Error(`${alan} eksik`);
+  }
+  if (!Array.isArray(s.daily_views)) throw new Error("daily_views dizi değil");
+});
+
+await asUser(U.ownerB);
+await step("başka sahip get_owner_stats'tan veri alamıyor", async () => {
+  const r = await db.query("select public.get_owner_stats($1) as s", [venueA]);
+  if (r.rows[0].s !== null) throw new Error("başkasının istatistiği sızdı");
+});
+
+await step("owns_storage_path kendi klasörüne izin veriyor", async () => {
+  await asUser(U.ownerA);
+  const r = await db.query("select public.owns_storage_path($1) as ok", [`${venueA}/1.jpg`]);
+  if (r.rows[0].ok !== true) throw new Error("kendi klasörü reddedildi");
+});
+
+await asUser(U.ownerB);
+await step("owns_storage_path başkasının klasörünü reddediyor", async () => {
+  const r = await db.query("select public.owns_storage_path($1) as ok", [`${venueA}/1.jpg`]);
+  if (r.rows[0].ok !== false) throw new Error("başkasının klasörüne izin verildi");
+});
+
+await step("owns_storage_path uuid olmayan yolu reddediyor", async () => {
+  const r = await db.query("select public.owns_storage_path($1) as ok", ["../../etc/passwd"]);
+  if (r.rows[0].ok !== false) throw new Error("geçersiz yol kabul edildi");
+});
+
+await step("venue-images kovası herkese açık ve mime kısıtlı", async () => {
+  await asServer();
+  const r = await db.query(
+    "select public, file_size_limit, allowed_mime_types from storage.buckets where id='venue-images'");
+  const b = r.rows[0];
+  if (!b.public) throw new Error("kova public değil");
+  if (Number(b.file_size_limit) !== 8388608) throw new Error(`boyut: ${b.file_size_limit}`);
+  if (!b.allowed_mime_types.includes("image/webp")) throw new Error("webp yok");
+});
+
+// =============================================================================
+console.log("\n\x1b[1m11) Rol yükseltme ve görüntülenme\x1b[0m");
 // =============================================================================
 await asUser(U.customer);
 await expectFail(

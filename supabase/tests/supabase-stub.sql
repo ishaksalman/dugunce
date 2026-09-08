@@ -37,3 +37,41 @@ $$;
 
 grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
+
+-- --- storage şeması ---------------------------------------------------------
+-- Gerçek depolama davranışı taklit edilmiyor; amaç 0007'deki kova tanımının
+-- ve politika ifadelerinin söz dizimiyle fonksiyon referanslarını doğrulamak.
+
+create schema if not exists storage;
+
+create table if not exists storage.buckets (
+  id                 text primary key,
+  name               text not null,
+  public             boolean not null default false,
+  file_size_limit    bigint,
+  allowed_mime_types text[]
+);
+
+create table if not exists storage.objects (
+  id         uuid primary key default gen_random_uuid(),
+  bucket_id  text references storage.buckets (id),
+  name       text not null,
+  owner      uuid,
+  created_at timestamptz not null default now()
+);
+
+alter table storage.objects enable row level security;
+
+-- "a/b/c.jpg" → {a,b}
+create or replace function storage.foldername(p_name text)
+returns text[]
+language sql
+immutable
+as $fn$
+  select (string_to_array(p_name, '/'))[
+    1 : greatest(array_length(string_to_array(p_name, '/'), 1) - 1, 0)];
+$fn$;
+
+grant usage on schema storage to anon, authenticated, service_role;
+grant select on storage.buckets to anon, authenticated;
+grant select, insert, update, delete on storage.objects to authenticated;

@@ -7,6 +7,8 @@
  * olacak şekilde seçildi.
  */
 
+export type UserRole = "customer" | "venue_owner" | "admin";
+
 export type VenueStatus =
   | "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED" | "SUSPENDED";
 
@@ -229,4 +231,47 @@ export interface VenueReview {
   author_name: string;
   created_at: string;
   total_count: string | number;
+}
+
+// --- Mekan sahibi paneli -----------------------------------------------------
+
+/** `get_my_venues()` satırı. */
+export interface OwnerVenue {
+  id: string;
+  slug: string;
+  name: string;
+  status: VenueStatus;
+  needs_review: boolean;
+  completion_score: number;
+  city_name: string;
+  city_slug: string;
+  district_name: string;
+  district_slug: string;
+  cover_url: string | null;
+  view_count: number;
+  inquiry_count: number;
+  new_inquiries: string | number;
+  rejection_reason: string | null;
+  updated_at: string;
+}
+
+/** `get_owner_stats()` çıktısı. */
+export interface OwnerStats {
+  view_count: number;
+  favorite_count: number;
+  inquiry_count: number;
+  rating_avg: string | number;
+  rating_count: number;
+  completion_score: number;
+  status: VenueStatus;
+  needs_review: boolean;
+  conversion_rate: string | number;
+  new_inquiries: string | number;
+  pending_reviews: string | number;
+  image_count: string | number;
+  daily_views: { day: string; count: number }[];
+}
+
+export function normalizeOwnerVenue(row: OwnerVenue): OwnerVenue {
+  return { ...row, updated_at: toIso(row.updated_at) };
 }

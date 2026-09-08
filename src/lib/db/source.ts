@@ -1,6 +1,6 @@
 import type {
-  City, District, EventType, Feature, VenueCardData, VenueDetail,
-  VenueReview, VenueType,
+  City, District, EventType, Feature, OwnerStats, OwnerVenue, VenueCardData,
+  VenueDetail, VenueReview, VenueType,
 } from "@/types/db";
 
 export interface SearchInput {
@@ -51,6 +51,12 @@ export interface DataSource {
   /** Görüntülenme sayacı. Hata durumunda sayfayı düşürmez. */
   recordVenueView(venueId: string): Promise<void>;
   createInquiry(input: CreateInquiryInput): Promise<CreateInquiryResult>;
+
+  // --- Mekan sahibi paneli --------------------------------------------------
+  /** Oturumdaki kullanıcının mekanları. RLS + fonksiyon sahibi filtreliyor. */
+  getMyVenues(): Promise<OwnerVenue[]>;
+  /** Sahibi olmadığı mekan için null döner. */
+  getOwnerStats(venueId: string): Promise<OwnerStats | null>;
 }
 
 export interface CreateInquiryInput {
