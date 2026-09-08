@@ -171,6 +171,16 @@ export const supabaseSource: DataSource = {
     return data ? normalizeVenueForEdit(data as unknown as VenueForEdit) : null;
   },
 
+  async getVenuesByIds(ids: string[]) {
+    if (ids.length === 0) return [];
+    const supabase = createPublicClient();
+    const rows = unwrap(
+      await supabase.rpc("get_venues_by_ids", { p_ids: ids }),
+      "get_venues_by_ids",
+    ) as VenueSearchRow[];
+    return rows.map(toVenueCard);
+  },
+
   async listFeatures() {
     const supabase = createPublicClient();
     return unwrap(

@@ -35,7 +35,7 @@ export function Header() {
             <Heart />
           </ButtonLink>
           <ButtonLink
-            href="/mekan-ekle"
+            href="/kayit?tur=mekan-sahibi"
             variant="outline"
             size="lg"
             className="hidden sm:inline-flex"

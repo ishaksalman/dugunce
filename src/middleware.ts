@@ -8,7 +8,13 @@ import { updateSession } from "@/lib/supabase/middleware";
  * KONTROLÜ DEĞİLDİR. Yetkiyi RLS ve sunucu eylemlerindeki guard'lar belirler;
  * middleware atlansa bile veriye erişilemez.
  */
-const KORUMALI = ["/panel", "/yonetim", "/favorilerim", "/taleplerim"];
+/**
+ * Yalnızca işletme ve yönetim alanları oturum istiyor.
+ *
+ * `/favorilerim` BİLEREK burada değil: favoriler tarayıcıda (localStorage)
+ * tutuluyor ve üyeliksiz çalışıyor. Müşteri üyeliği MVP kapsamı dışında.
+ */
+const KORUMALI = ["/panel", "/yonetim"];
 const SADECE_MISAFIR = ["/giris", "/kayit"];
 
 export async function middleware(request: NextRequest) {

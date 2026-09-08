@@ -71,3 +71,10 @@ export async function getSimilarVenues(
   // Mekanın kendisi listede çıkabilir; ayıklayıp istenen sayıya indiriyoruz.
   return items.filter((v) => v.id !== venue.id).slice(0, limit);
 }
+
+/** Favori listesindeki mekanlar. Sıra istemciden gelen listeye göre. */
+export async function getVenuesByIds(ids: string[]) {
+  if (ids.length === 0) return [];
+  const db = await getDataSource();
+  return db.getVenuesByIds(ids.slice(0, 200));
+}

@@ -38,7 +38,7 @@ export async function Footer() {
         </FooterColumn>
 
         <FooterColumn title="Kurumsal">
-          <FooterLink href="/mekan-ekle">Mekanını Ekle</FooterLink>
+          <FooterLink href="/kayit?tur=mekan-sahibi">Mekanını Ekle</FooterLink>
           <FooterLink href="/hakkimizda">Hakkımızda</FooterLink>
           <FooterLink href="/iletisim">İletişim</FooterLink>
           <FooterLink href="/gizlilik">Gizlilik Politikası</FooterLink>

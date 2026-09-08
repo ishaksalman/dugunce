@@ -167,7 +167,7 @@ export default async function HomePage() {
               </p>
             </div>
             <ButtonLink
-              href="/mekan-ekle"
+              href="/kayit?tur=mekan-sahibi"
               size="lg"
               variant="secondary"
               className="h-12 shrink-0 gap-2 px-6"

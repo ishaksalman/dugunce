@@ -84,6 +84,22 @@ Pratikte iki fark:
   yerde tekrarlamayın — `ButtonLink` (`components/shared/button-link.tsx`)
   kullanın.
 
+## Müşteri üyeliği YOK (bilinçli)
+
+MVP'de yalnızca mekan sahibi ve admin hesabı var. Gerekçe: asıl huni
+(keşif → detay → teklif talebi) baştan sona anonim çalışıyor ve her hesap
+taşınması gereken bir yükümlülük (KVKK, parola sıfırlama, destek).
+
+- **Kayıt yalnızca mekan sahibi için.** `/kayit` her zaman `venue_owner`
+  oluşturur; `?tur=` parametresi artık davranışı değiştirmiyor.
+- **Favoriler üyeliksiz**, `localStorage`'da. `/favorilerim` oturum
+  gerektirmez ve middleware'in KORUMALI listesinde DEĞİLDİR.
+- `customer` rolü, `favorites` ve `reviews` tabloları şemada duruyor —
+  hiçbir maliyeti yok ve kapıyı açık tutuyor. Hesaba bağlı favori istenirse
+  localStorage listesi oraya taşınır.
+- **Yorum yazma arayüzü yok.** İleride açık kayıt yerine, teklif talebi
+  göndermiş kişiye tek kullanımlık bağlantı ile — daha iyi spam koruması.
+
 ## Panel ve yetkilendirme
 
 - `requireRole()` middleware'in yerine geçmez: middleware yalnızca oturum

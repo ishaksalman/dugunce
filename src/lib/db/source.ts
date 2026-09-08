@@ -66,6 +66,9 @@ export interface DataSource {
   // --- Mekan düzenleme ------------------------------------------------------
   /** Sahibi olmadığı mekan için null döner. Taslakları da kapsar. */
   getVenueForEdit(venueId: string): Promise<VenueForEdit | null>;
+
+  /** Favoriler için: verilen id'lerin kart verisi, gelen sırayla. */
+  getVenuesByIds(ids: string[]): Promise<VenueCardData[]>;
 }
 
 export interface OwnerInquiryQuery {

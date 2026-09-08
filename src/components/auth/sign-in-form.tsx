@@ -15,7 +15,7 @@ export function SignInForm() {
     <>
       <AuthHeading
         title="Giriş yap"
-        description="Favorilerine, teklif taleplerine ve mekan paneline eriş."
+        description="Mekan panelinize erişin."
       />
 
       {hata === "hesap-pasif" ? (
@@ -47,9 +47,12 @@ export function SignInForm() {
               </Link>
             </p>
             <p className="text-muted-foreground">
-              Hesabın yok mu?{" "}
-              <Link href="/kayit" className="font-medium text-primary hover:underline">
-                Kayıt ol
+              Mekanınızı listelemek mi istiyorsunuz?{" "}
+              <Link
+                href="/kayit?tur=mekan-sahibi"
+                className="font-medium text-primary hover:underline"
+              >
+                Ücretsiz kayıt olun
               </Link>
             </p>
           </div>

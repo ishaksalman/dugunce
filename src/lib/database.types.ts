@@ -141,6 +141,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: Record<string, unknown>[];
       };
+      get_venues_by_ids: {
+        Args: { p_ids: string[] };
+        Returns: VenueSearchRow[];
+      };
       get_venue_for_edit: {
         Args: { p_venue_id: string };
         Returns: Record<string, unknown> | null;

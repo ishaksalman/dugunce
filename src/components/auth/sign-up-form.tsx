@@ -10,8 +10,13 @@ import { signUp } from "@/lib/actions/auth";
 export function SignUpForm() {
   const router = useRouter();
   const params = useSearchParams();
-  // /mekan-ekle akışından gelenler doğrudan mekan sahibi olarak kaydolur.
-  const asOwner = params.get("tur") === "mekan-sahibi";
+  /**
+   * Kayıt YALNIZCA mekan sahipleri için. Müşteri üyeliği MVP kapsamında
+   * değil: keşif, teklif talebi ve favoriler üyeliksiz çalışıyor.
+   * `customer` rolü şemada duruyor, ileride açılabilir.
+   */
+  const asOwner = true;
+  void params;
   const [sent, setSent] = useState(false);
 
   if (sent) {
@@ -33,12 +38,8 @@ export function SignUpForm() {
   return (
     <>
       <AuthHeading
-        title={asOwner ? "Mekan sahibi olarak kayıt ol" : "Kayıt ol"}
-        description={
-          asOwner
-            ? "Mekanını ücretsiz listele, teklif taleplerini doğrudan al."
-            : "Favorilerini kaydet, teklif taleplerini takip et."
-        }
+        title="Mekan sahibi olarak kayıt ol"
+        description="Mekanını ücretsiz listele, teklif taleplerini doğrudan al."
       />
       <AuthForm
         action={signUp}
@@ -49,7 +50,7 @@ export function SignUpForm() {
             setSent(true);
             return;
           }
-          router.replace(asOwner ? "/panel/mekanim" : "/panel");
+          router.replace("/panel/mekanlarim/yeni");
           router.refresh();
         }}
         footer={
