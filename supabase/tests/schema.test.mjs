@@ -702,7 +702,136 @@ await expectFail(
   "permission denied");
 
 // =============================================================================
-console.log("\n\x1b[1m12) Rol yükseltme ve görüntülenme\x1b[0m");
+console.log("\n\x1b[1m12) DavetPro aktarım kuyruğu\x1b[0m");
+// =============================================================================
+const DP_BUSINESS = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+const DP_VENUE = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+
+await asUser(U.ownerB);
+await expectFail(
+  "başkasının mekanı DavetPro'ya bağlanamıyor",
+  () => db.query("select public.link_venue_to_davetpro($1,$2,$3)",
+    [venueA, DP_BUSINESS, DP_VENUE]),
+  "yetkiniz yok");
+
+await asUser(U.ownerA);
+await step("bağlanınca GEÇMİŞ talepler kuyruğa giriyor", async () => {
+  await asServer();
+  const once = await db.query(
+    "select count(*)::int as n from public.inquiries where venue_id = $1", [venueA]);
+  await asUser(U.ownerA);
+  if (once.rows[0].n === 0) throw new Error("geçmiş talep yok, test anlamsız");
+
+  const r = await db.query("select public.link_venue_to_davetpro($1,$2,$3) as r",
+    [venueA, DP_BUSINESS, DP_VENUE]);
+  if (r.rows[0].r.queued_inquiries !== once.rows[0].n) {
+    throw new Error(`${once.rows[0].n} bekleniyordu, ${r.rows[0].r.queued_inquiries} kuyruğa girdi`);
+  }
+});
+
+await step("tekrar bağlamak işleri ÇOĞALTMIYOR", async () => {
+  await asServer();
+  const once = await db.query("select count(*)::int as n from public.davetpro_sync_jobs");
+  await asUser(U.ownerA);
+  await db.query("select public.link_venue_to_davetpro($1,$2,$3)", [venueA, DP_BUSINESS, DP_VENUE]);
+  await asServer();
+  const sonra = await db.query("select count(*)::int as n from public.davetpro_sync_jobs");
+  await asUser(U.ownerA);
+  if (sonra.rows[0].n !== once.rows[0].n) {
+    throw new Error(`iş sayısı ${once.rows[0].n} → ${sonra.rows[0].n}`);
+  }
+});
+
+await asAnon();
+await step("bağlı mekana gelen YENİ talep otomatik kuyruğa giriyor", async () => {
+  await db.query(
+    `select public.create_inquiry(p_venue_id => $1, p_full_name => 'Yeni Talep',
+                                  p_phone => '05009998877', p_ip_hash => 'kuyruk-test')`,
+    [venueA]);
+  await asServer();
+  const r = await db.query(
+    `select count(*)::int as n from public.davetpro_sync_jobs j
+       join public.inquiries i on i.id = j.inquiry_id
+      where i.phone = '05009998877'`);
+  await asAnon();
+  if (r.rows[0].n !== 1) throw new Error(`${r.rows[0].n} iş bulundu`);
+});
+
+await asServer();
+await step("claim_davetpro_sync_jobs talep verisini birleştiriyor", async () => {
+  const r = await db.query("select * from public.claim_davetpro_sync_jobs(10)");
+  if (r.rows.length === 0) throw new Error("hiç iş dönmedi");
+  const ilk = r.rows[0];
+  for (const alan of ["job_id", "inquiry_id", "business_id", "full_name", "phone"]) {
+    if (!ilk[alan]) throw new Error(`${alan} boş`);
+  }
+  if (ilk.business_id !== DP_BUSINESS) throw new Error("business_id yanlış");
+});
+
+await step("başarısız iş geri çekiliyor ve tekrar deneniyor", async () => {
+  const job = (await db.query(
+    "select id from public.davetpro_sync_jobs where status = 'pending' limit 1")).rows[0];
+  await db.query("select public.complete_davetpro_sync_job($1, false, null, $2)",
+    [job.id, "bağlantı hatası"]);
+  const r = await db.query(
+    "select status, attempts, next_attempt_at from public.davetpro_sync_jobs where id = $1",
+    [job.id]);
+  const row = r.rows[0];
+  if (row.status !== "pending") throw new Error(`durum ${row.status}`);
+  if (row.attempts !== 1) throw new Error(`deneme ${row.attempts}`);
+  if (new Date(row.next_attempt_at) <= new Date()) throw new Error("geri çekilme uygulanmadı");
+});
+
+await step("beş denemeden sonra iş bırakılıyor", async () => {
+  const job = (await db.query(
+    "select id from public.davetpro_sync_jobs where status = 'pending' limit 1")).rows[0];
+  for (let i = 0; i < 5; i++) {
+    await db.query("select public.complete_davetpro_sync_job($1, false, null, 'hata')", [job.id]);
+  }
+  const r = await db.query(
+    "select status from public.davetpro_sync_jobs where id = $1", [job.id]);
+  if (r.rows[0].status !== "abandoned") throw new Error(`durum ${r.rows[0].status}`);
+});
+
+await step("başarılı iş 'sent' oluyor", async () => {
+  const job = (await db.query(
+    "select id from public.davetpro_sync_jobs where status <> 'sent' limit 1")).rows[0];
+  await db.query("select public.complete_davetpro_sync_job($1, true, $2, null)",
+    [job.id, DP_VENUE]);
+  const r = await db.query(
+    "select status, sent_at, davetpro_lead_id from public.davetpro_sync_jobs where id = $1",
+    [job.id]);
+  if (r.rows[0].status !== "sent") throw new Error(`durum ${r.rows[0].status}`);
+  if (!r.rows[0].sent_at) throw new Error("sent_at boş");
+});
+
+await asAnon();
+await expectFail(
+  "anonim kullanıcı kuyruğu okuyamıyor",
+  () => db.query("select * from public.davetpro_sync_jobs limit 1"),
+  "permission denied");
+
+await expectFail(
+  "anonim kullanıcı iş talep edemiyor",
+  () => db.query("select * from public.claim_davetpro_sync_jobs(1)"),
+  "permission denied");
+
+await asUser(U.ownerA);
+await step("bağlantı kaldırılınca bekleyen işler iptal ediliyor", async () => {
+  await db.query("select public.unlink_venue_from_davetpro($1)", [venueA]);
+  await asServer();
+  const r = await db.query(
+    `select count(*)::int as n from public.davetpro_sync_jobs
+      where venue_id = $1 and status = 'pending'`, [venueA]);
+  const v = await db.query(
+    "select davetpro_business_id from public.venues where id = $1", [venueA]);
+  await asUser(U.ownerA);
+  if (r.rows[0].n !== 0) throw new Error(`${r.rows[0].n} iş hâlâ bekliyor`);
+  if (v.rows[0].davetpro_business_id !== null) throw new Error("bağlantı temizlenmedi");
+});
+
+// =============================================================================
+console.log("\n\x1b[1m13) Rol yükseltme ve görüntülenme\x1b[0m");
 // =============================================================================
 await asUser(U.customer);
 await expectFail(

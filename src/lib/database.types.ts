@@ -106,6 +106,31 @@ export interface Database {
         Args: Record<string, never>;
         Returns: Record<string, unknown>[];
       };
+      link_venue_to_davetpro: {
+        Args: {
+          p_venue_id: string;
+          p_business_id: string;
+          p_davetpro_venue_id?: string | null;
+        };
+        Returns: { ok: boolean; venue_id: string; queued_inquiries: number };
+      };
+      unlink_venue_from_davetpro: {
+        Args: { p_venue_id: string };
+        Returns: { ok: boolean };
+      };
+      claim_davetpro_sync_jobs: {
+        Args: { p_limit?: number };
+        Returns: Record<string, unknown>[];
+      };
+      complete_davetpro_sync_job: {
+        Args: {
+          p_job_id: string;
+          p_ok: boolean;
+          p_lead_id?: string | null;
+          p_error?: string | null;
+        };
+        Returns: undefined;
+      };
       get_owner_inquiries: {
         Args: {
           p_status?: InquiryStatus | null;
