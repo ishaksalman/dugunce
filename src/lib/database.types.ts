@@ -9,8 +9,8 @@
  * çıktıyla değiştirilebilir; isimler o çıktıyla uyumlu seçildi.
  */
 import type {
-  City, District, EventType, Feature, UserRole, VenueDetail, VenueReview,
-  VenueSearchRow, VenueType,
+  City, District, EventType, Feature, InquiryStatus, OwnerInquiry, UserRole,
+  VenueDetail, VenueReview, VenueSearchRow, VenueType,
 } from "@/types/db";
 import type { CreateInquiryResult } from "@/lib/db/source";
 
@@ -50,6 +50,12 @@ export interface Database {
         }>;
         Insert: never;
         Update: Simplify<{ full_name?: string; phone?: string | null; avatar_url?: string | null }>;
+        Relationships: [];
+      };
+      inquiries: {
+        Row: Simplify<{ id: string; status: InquiryStatus; owner_note: string | null }>;
+        Insert: never;
+        Update: Simplify<{ status?: InquiryStatus; owner_note?: string | null }>;
         Relationships: [];
       };
     };
@@ -99,6 +105,16 @@ export interface Database {
       get_my_venues: {
         Args: Record<string, never>;
         Returns: Record<string, unknown>[];
+      };
+      get_owner_inquiries: {
+        Args: {
+          p_status?: InquiryStatus | null;
+          p_venue_id?: string | null;
+          p_query?: string | null;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: OwnerInquiry[];
       };
       create_inquiry: {
         Args: {

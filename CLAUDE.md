@@ -84,6 +84,32 @@ Pratikte iki fark:
   yerde tekrarlamayın — `ButtonLink` (`components/shared/button-link.tsx`)
   kullanın.
 
+## Panel ve yetkilendirme
+
+- `requireRole()` middleware'in yerine geçmez: middleware yalnızca oturum
+  arar, rol kontrolü sayfa/layout içindedir. Her ikisi de nazik hata içindir;
+  asıl kapı RLS.
+- **Sahiplik koşulunu RPC'ye AÇIKÇA yaz.** `venues` politikası yayındaki
+  mekanı herkese okutuyor; `get_owner_stats` / `get_owner_inquiries` gibi
+  fonksiyonlarda `owner_id = auth.uid()` olmadan rakip verisi sızıyor.
+  (Bu hata bir kez yapıldı, test yakaladı.)
+- Panel sorguları çerez farkındalıklı `createClient()` kullanır —
+  `createPublicClient()` anonim bağlanır ve `auth.uid()` null olur.
+- Kullanıcı numaralandırmasına karşı: giriş hatası "e-posta yok" ile "parola
+  yanlış" ayrımı yapmaz, parola sıfırlama her durumda aynı mesajı döner.
+- `devam` / `next` yönlendirme parametreleri yalnızca `/` ile başlayan ve
+  `//` ile başlamayan yolları kabul eder (açık yönlendirme engeli).
+
+## Bileşen tuzakları
+
+- **`"use client"` modülünden sunucu bileşenine düz değer import etme.**
+  RSC sınırında gerçek değer değil referans gelir; `Array.includes` gibi
+  çağrılar çalışma zamanında patlar. Paylaşılan sabitler tarafsız bir
+  modülde durur (ör. `lib/inquiry.ts`).
+- **Base UI `SelectValue` ham değeri basar.** Türkçe etiket için
+  `<SelectValue>{(v) => ETIKET[v]}</SelectValue>` yaz; yoksa kullanıcı
+  `fiyat-artan` ya da `REJECTED` görür.
+
 ## Renk ve tipografi
 
 - Marka renkleri `src/app/globals.css` içinde tek yerde: `--brand-*`

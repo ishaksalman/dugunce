@@ -1,6 +1,6 @@
 import type {
-  City, District, EventType, Feature, OwnerStats, OwnerVenue, VenueCardData,
-  VenueDetail, VenueReview, VenueType,
+  City, District, EventType, Feature, InquiryStatus, OwnerInquiry, OwnerStats,
+  OwnerVenue, VenueCardData, VenueDetail, VenueReview, VenueType,
 } from "@/types/db";
 
 export interface SearchInput {
@@ -57,6 +57,25 @@ export interface DataSource {
   getMyVenues(): Promise<OwnerVenue[]>;
   /** Sahibi olmadığı mekan için null döner. */
   getOwnerStats(venueId: string): Promise<OwnerStats | null>;
+  getOwnerInquiries(input: OwnerInquiryQuery): Promise<OwnerInquiryResult>;
+  updateInquiry(
+    id: string,
+    patch: { status?: InquiryStatus; ownerNote?: string | null },
+  ): Promise<void>;
+}
+
+export interface OwnerInquiryQuery {
+  status?: InquiryStatus;
+  venueId?: string;
+  query?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface OwnerInquiryResult {
+  items: OwnerInquiry[];
+  total: number;
+  newCount: number;
 }
 
 export interface CreateInquiryInput {

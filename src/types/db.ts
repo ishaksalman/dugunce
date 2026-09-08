@@ -275,3 +275,35 @@ export interface OwnerStats {
 export function normalizeOwnerVenue(row: OwnerVenue): OwnerVenue {
   return { ...row, updated_at: toIso(row.updated_at) };
 }
+
+export type InquiryStatus =
+  | "NEW" | "CONTACTED" | "QUOTED" | "ACCEPTED" | "REJECTED" | "CLOSED";
+
+/** `get_owner_inquiries()` satırı. */
+export interface OwnerInquiry {
+  id: string;
+  venue_id: string;
+  venue_name: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  event_type_name: string | null;
+  event_date: string | null;
+  guest_count: number | null;
+  message: string | null;
+  status: InquiryStatus;
+  owner_note: string | null;
+  contacted_at: string | null;
+  created_at: string;
+  total_count: string | number;
+  new_count: string | number;
+}
+
+export function normalizeInquiry(row: OwnerInquiry): OwnerInquiry {
+  return {
+    ...row,
+    created_at: toIso(row.created_at),
+    contacted_at: toIsoOrNull(row.contacted_at),
+    event_date: row.event_date === null ? null : String(row.event_date).slice(0, 10),
+  };
+}

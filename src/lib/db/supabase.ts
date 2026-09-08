@@ -2,12 +2,13 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import {
-  normalizeOwnerVenue, normalizeReview, normalizeVenueDetail, toVenueCard,
-  type OwnerStats, type OwnerVenue, type VenueDetail, type VenueReview,
-  type VenueSearchRow,
+  normalizeInquiry, normalizeOwnerVenue, normalizeReview, normalizeVenueDetail,
+  toVenueCard, type InquiryStatus, type OwnerInquiry, type OwnerStats,
+  type OwnerVenue, type VenueDetail, type VenueReview, type VenueSearchRow,
 } from "@/types/db";
 import type {
-  CreateInquiryInput, CreateInquiryResult, DataSource, SearchInput, SearchResult,
+  CreateInquiryInput, CreateInquiryResult, DataSource, OwnerInquiryQuery,
+  OwnerInquiryResult, SearchInput, SearchResult,
 } from "./source";
 import { inquiryRpcArgs, toRpcArgs } from "./source";
 
@@ -123,6 +124,41 @@ export const supabaseSource: DataSource = {
     const { data, error } = await supabase.rpc("get_owner_stats", { p_venue_id: venueId });
     if (error) throw new Error(`get_owner_stats: ${error.message}`);
     return (data as unknown as OwnerStats | null) ?? null;
+  },
+
+  async getOwnerInquiries(input: OwnerInquiryQuery): Promise<OwnerInquiryResult> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("get_owner_inquiries", {
+      p_status: input.status ?? null,
+      p_venue_id: input.venueId ?? null,
+      p_query: input.query ?? null,
+      p_limit: input.limit ?? 25,
+      p_offset: input.offset ?? 0,
+    });
+    if (error) throw new Error(`get_owner_inquiries: ${error.message}`);
+    const items = ((data ?? []) as unknown as OwnerInquiry[]).map(normalizeInquiry);
+    return {
+      items,
+      total: items.length ? Number(items[0].total_count) : 0,
+      newCount: items.length ? Number(items[0].new_count) : 0,
+    };
+  },
+
+  async updateInquiry(
+    id: string,
+    patch: { status?: InquiryStatus; ownerNote?: string | null },
+  ): Promise<void> {
+    const supabase = await createClient();
+    // Sahibin hangi alanlara dokunabileceğini guard_inquiry_update trigger'ı
+    // belirliyor (0004); buradan fazlasını göndersek bile geri alınır.
+    const { error } = await supabase
+      .from("inquiries")
+      .update({
+        ...(patch.status ? { status: patch.status } : {}),
+        ...(patch.ownerNote !== undefined ? { owner_note: patch.ownerNote } : {}),
+      })
+      .eq("id", id);
+    if (error) throw new Error(`updateInquiry: ${error.message}`);
   },
 
   async listFeatures() {

@@ -147,7 +147,10 @@ export function SortSelect({ filters }: { filters: VenueFilters }) {
       onValueChange={(v) => commit({ siralama: v as VenueFilters["siralama"] })}
     >
       <SelectTrigger className="h-10 w-full sm:w-56" aria-label="Sıralama">
-        <SelectValue />
+        {/* Base UI ham değeri basar ("onerilen"); etiketi açıkça veriyoruz. */}
+        <SelectValue>
+          {(v) => SORT_OPTIONS.find((o) => o.value === v)?.label ?? String(v)}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {SORT_OPTIONS.map((o) => (

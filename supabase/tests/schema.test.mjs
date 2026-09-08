@@ -663,7 +663,46 @@ await step("venue-images kovası herkese açık ve mime kısıtlı", async () =>
 });
 
 // =============================================================================
-console.log("\n\x1b[1m11) Rol yükseltme ve görüntülenme\x1b[0m");
+console.log("\n\x1b[1m11) Sahibin talep listesi\x1b[0m");
+// =============================================================================
+await asUser(U.ownerA);
+await step("sahip kendi mekanının taleplerini görüyor", async () => {
+  const r = await db.query("select id, venue_name, full_name from public.get_owner_inquiries()");
+  if (r.rows.length === 0) throw new Error("hiç talep dönmedi");
+});
+
+await step("durum filtresi çalışıyor", async () => {
+  const hepsi = await db.query("select id from public.get_owner_inquiries()");
+  const yeni = await db.query(
+    "select id from public.get_owner_inquiries(p_status => 'NEW')");
+  if (yeni.rows.length >= hepsi.rows.length) {
+    throw new Error(`filtre daraltmadı: ${yeni.rows.length}/${hepsi.rows.length}`);
+  }
+});
+
+await step("isme göre arama Türkçe duyarsız", async () => {
+  const r = await db.query(
+    "select full_name from public.get_owner_inquiries(p_query => 'AYSE')");
+  if (!r.rows.some((x) => x.full_name.startsWith("Ayşe"))) {
+    throw new Error(`bulunamadı: ${JSON.stringify(r.rows.map((x) => x.full_name))}`);
+  }
+});
+
+await asUser(U.ownerB);
+await step("başka sahip A'nın taleplerini GÖREMİYOR", async () => {
+  const r = await db.query("select id, venue_name from public.get_owner_inquiries()");
+  const sizinti = r.rows.filter((x) => x.venue_name === "Bahçe Davet");
+  if (sizinti.length > 0) throw new Error(`${sizinti.length} talep sızdı`);
+});
+
+await asAnon();
+await expectFail(
+  "anonim kullanıcı talep listesini çağıramıyor",
+  () => db.query("select * from public.get_owner_inquiries()"),
+  "permission denied");
+
+// =============================================================================
+console.log("\n\x1b[1m12) Rol yükseltme ve görüntülenme\x1b[0m");
 // =============================================================================
 await asUser(U.customer);
 await expectFail(
