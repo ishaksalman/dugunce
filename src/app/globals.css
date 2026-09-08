@@ -1,26 +1,258 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* =============================================================================
+   DavetMekani — Renk sistemi
+   Marka renkleri tek yerde: --brand-* (derin petrol) ve --sage-* (soft yeşil).
+   Ana rengi değiştirmek = aşağıdaki iki skalayı değiştirmek. Component'lerde
+   ham renk yazılmaz; yalnızca semantik token'lar (primary, surface, muted...)
+   kullanılır.
+   Kaynak: #1F363C → --brand-900, #CDE6C8 → --sage-200
+   ============================================================================= */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* --- Marka: derin petrol (hue 216, bilinçli olarak düşük kroma) ---------- */
+  --brand-50:  oklch(0.978 0.006 216);
+  --brand-100: oklch(0.951 0.012 216);
+  --brand-200: oklch(0.905 0.021 216);
+  --brand-300: oklch(0.835 0.031 216);
+  --brand-400: oklch(0.735 0.043 216);
+  --brand-500: oklch(0.630 0.051 216);
+  --brand-600: oklch(0.530 0.050 216);
+  --brand-700: oklch(0.437 0.044 216);
+  --brand-800: oklch(0.372 0.037 216);
+  --brand-900: oklch(0.317 0.031 216.1);  /* #1F363C */
+  --brand-950: oklch(0.238 0.024 216);
+
+  /* --- Aksan: soft sage (hue 140) ----------------------------------------- */
+  --sage-50:  oklch(0.975 0.012 140);
+  --sage-100: oklch(0.945 0.026 140);
+  --sage-200: oklch(0.898 0.048 140.4);   /* #CDE6C8 */
+  --sage-300: oklch(0.845 0.070 140);
+  --sage-400: oklch(0.775 0.093 140);
+  --sage-500: oklch(0.700 0.108 140);
+  --sage-600: oklch(0.610 0.105 140);
+  --sage-700: oklch(0.510 0.088 140);
+  --sage-800: oklch(0.425 0.070 140);
+  --sage-900: oklch(0.360 0.055 140);
+
+  /* --- Nötrler: petrole doğru hafif soğuk kaydırılmış ---------------------- */
+  --neutral-50:  oklch(0.985 0.002 216);
+  --neutral-100: oklch(0.968 0.003 216);
+  --neutral-200: oklch(0.925 0.005 216);
+  --neutral-300: oklch(0.868 0.006 216);
+  --neutral-400: oklch(0.715 0.008 216);
+  --neutral-500: oklch(0.588 0.009 216);
+  --neutral-600: oklch(0.480 0.010 216);
+  --neutral-700: oklch(0.392 0.010 216);
+  --neutral-800: oklch(0.288 0.009 216);
+  --neutral-900: oklch(0.212 0.008 216);
+  --neutral-950: oklch(0.155 0.007 216);
+
+  /* --- Semantik (açık tema) ----------------------------------------------- */
+  /* Zeminde bir tutam sage var; saf beyaz yerine sıcak-nötr bir kağıt hissi. */
+  --background: oklch(0.993 0.002 140);
+  --foreground: var(--brand-950);
+
+  --card: oklch(1 0 0);
+  --card-foreground: var(--brand-950);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--brand-950);
+
+  --primary: var(--brand-900);
+  --primary-foreground: oklch(0.985 0.004 140);
+
+  --secondary: var(--sage-100);
+  --secondary-foreground: var(--brand-900);
+
+  --accent: var(--sage-200);
+  --accent-foreground: var(--brand-900);
+
+  --muted: var(--neutral-100);
+  --muted-foreground: var(--neutral-500);
+
+  --border: var(--neutral-200);
+  --input: var(--neutral-200);
+  --ring: var(--brand-600);
+
+  --destructive: oklch(0.577 0.180 27);
+  --destructive-foreground: oklch(0.985 0 0);
+  --success: oklch(0.600 0.110 150);
+  --success-foreground: oklch(0.985 0 0);
+  --warning: oklch(0.760 0.130 75);
+  --warning-foreground: var(--brand-950);
+
+  /* Grafikler — marka skalası içinden, keyfi renk yok. */
+  --chart-1: var(--brand-700);
+  --chart-2: var(--sage-500);
+  --chart-3: var(--brand-400);
+  --chart-4: var(--sage-700);
+  --chart-5: var(--neutral-400);
+
+  --radius: 0.75rem;
+
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: var(--brand-950);
+  --sidebar-primary: var(--brand-900);
+  --sidebar-primary-foreground: oklch(0.985 0.004 140);
+  --sidebar-accent: var(--sage-100);
+  --sidebar-accent-foreground: var(--brand-900);
+  --sidebar-border: var(--neutral-200);
+  --sidebar-ring: var(--brand-600);
+}
+
+.dark {
+  /* Koyu tema saf siyah değil; petrole boyanmış. */
+  --background: oklch(0.185 0.014 216);
+  --foreground: oklch(0.950 0.005 216);
+
+  --card: oklch(0.232 0.017 216);
+  --card-foreground: oklch(0.950 0.005 216);
+  --popover: oklch(0.232 0.017 216);
+  --popover-foreground: oklch(0.950 0.005 216);
+
+  /* Koyu zeminde petrol CTA okunmuyor → sage öne geçiyor. */
+  --primary: var(--sage-300);
+  --primary-foreground: var(--brand-950);
+
+  --secondary: oklch(0.285 0.020 216);
+  --secondary-foreground: oklch(0.950 0.005 216);
+
+  --accent: oklch(0.315 0.028 190);
+  --accent-foreground: var(--sage-100);
+
+  --muted: oklch(0.278 0.016 216);
+  --muted-foreground: oklch(0.700 0.012 216);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: var(--sage-400);
+
+  --destructive: oklch(0.704 0.170 22);
+  --destructive-foreground: oklch(0.985 0 0);
+  --success: oklch(0.700 0.110 150);
+  --success-foreground: var(--brand-950);
+  --warning: oklch(0.810 0.120 75);
+  --warning-foreground: var(--brand-950);
+
+  --chart-1: var(--sage-300);
+  --chart-2: var(--brand-400);
+  --chart-3: var(--sage-500);
+  --chart-4: var(--brand-300);
+  --chart-5: oklch(0.700 0.012 216);
+
+  --sidebar: oklch(0.212 0.016 216);
+  --sidebar-foreground: oklch(0.950 0.005 216);
+  --sidebar-primary: var(--sage-300);
+  --sidebar-primary-foreground: var(--brand-950);
+  --sidebar-accent: oklch(0.285 0.020 216);
+  --sidebar-accent-foreground: oklch(0.950 0.005 216);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: var(--sage-400);
 }
 
 @theme inline {
+  /* Marka skalaları utility olarak da açık: bg-brand-900, text-sage-600 ... */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+
+  --color-sage-50: var(--sage-50);
+  --color-sage-100: var(--sage-100);
+  --color-sage-200: var(--sage-200);
+  --color-sage-300: var(--sage-300);
+  --color-sage-400: var(--sage-400);
+  --color-sage-500: var(--sage-500);
+  --color-sage-600: var(--sage-600);
+  --color-sage-700: var(--sage-700);
+  --color-sage-800: var(--sage-800);
+  --color-sage-900: var(--sage-900);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Tipografi: Fraunces yalnızca başlıklarda, Inter her yerde. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Başlıklar serif; optik boyut büyük puntoda incelsin, tracking sıkışsın. */
+  h1, h2, h3, .font-heading {
+    @apply font-heading;
+    font-variation-settings: "opsz" 32, "SOFT" 0, "WONK" 0;
+    letter-spacing: -0.015em;
+  }
+  /* Fiyat, kapasite gibi sayısal alanlarda hizalama kaysın istemiyoruz. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility container-page {
+  @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8;
 }
