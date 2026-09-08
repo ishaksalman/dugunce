@@ -2,32 +2,27 @@ import "server-only";
 import type { DataSource } from "./source";
 import { supabaseConfigured } from "@/lib/supabase/server";
 
-let warned = false;
-
 /**
- * Supabase yapılandırılmışsa onu, değilse geliştirme veritabanını döndürür.
- * Üretimde Supabase zorunlu — yanlışlıkla PGlite ile canlıya çıkmayı
- * engellemek için build/çalışma zamanında hata veriyoruz.
+ * Uygulamanın veritabanına tek giriş noktası.
+ *
+ * Tek bir uygulama var: Supabase. (Geliştirme için ikinci bir PGlite
+ * uygulaması vardı; Supabase bağlandıktan sonra kaldırıldı — iki uygulamayı
+ * senkron tutmanın bedeli, sürücülerin zaman damgalarını farklı döndürmesi
+ * gibi sessiz ayrışmalarla ödeniyordu.)
+ *
+ * Şema testleri hâlâ PGlite üzerinde gerçek PostgreSQL çalıştırıyor
+ * (`npm run test:db`) — orada migration'ların kendisi sınanıyor, uygulama
+ * kodu değil.
  */
 export async function getDataSource(): Promise<DataSource> {
-  if (supabaseConfigured) {
-    const { supabaseSource } = await import("./supabase");
-    return supabaseSource;
-  }
-  if (process.env.NODE_ENV === "production") {
+  if (!supabaseConfigured) {
     throw new Error(
       "NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY tanımlı değil. " +
-      "Üretimde geliştirme veritabanı kullanılamaz.",
+      ".env.local dosyasını doldurun.",
     );
   }
-  if (!warned) {
-    warned = true;
-    console.warn(
-      "[db] Supabase yapılandırılmadı — yerel PGlite geliştirme veritabanı kullanılıyor.",
-    );
-  }
-  const { pgliteSource } = await import("./pglite");
-  return pgliteSource;
+  const { supabaseSource } = await import("./supabase");
+  return supabaseSource;
 }
 
 export type { DataSource, SearchInput, SearchResult } from "./source";

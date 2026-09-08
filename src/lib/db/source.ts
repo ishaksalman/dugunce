@@ -30,9 +30,9 @@ export interface SearchResult {
 /**
  * Uygulamanın veritabanıyla tek temas noktası.
  *
- * İki uygulaması var: `supabase.ts` (üretim) ve `pglite.ts` (yalnızca
- * geliştirme, Supabase kimlik bilgileri yokken). Servis katmanı hangisinin
- * çalıştığını bilmez.
+ * Servis katmanı (`lib/services/*`) yalnızca bu arayüzü görür; Supabase
+ * istemcisini doğrudan çağırmaz. Yeni bir sorgu eklerken önce buraya
+ * imzasını yaz, sonra `supabase.ts` içinde uygula.
  */
 export interface DataSource {
   searchVenues(input: SearchInput): Promise<SearchResult>;

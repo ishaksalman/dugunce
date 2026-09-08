@@ -51,12 +51,12 @@ Supabase projesidir. İki sistem yalnızca HTTP üzerinden konuşur.
 
 ## Veri erişimi
 
-- Tek temas noktası `src/lib/db/source.ts` → `DataSource` arayüzü. İki
-  uygulaması var: `supabase.ts` (üretim) ve `pglite.ts` (Supabase kimlik
-  bilgileri yokken, YALNIZCA geliştirme). Servis katmanı hangisinin
-  çalıştığını bilmez.
-- **PGlite yolunda RLS DEVREDE DEĞİLDİR** — bağlantı tablo sahibi olarak
-  açılır. Yetkilendirme davranışını oradan doğrulamayın; yeri `npm run test:db`.
+- Tek temas noktası `src/lib/db/source.ts` → `DataSource` arayüzü, tek
+  uygulaması `supabase.ts`. Servis katmanı doğrudan Supabase istemcisi
+  çağırmaz.
+- Şema testleri (`npm run test:db`) PGlite üzerinde gerçek PostgreSQL
+  çalıştırır ve migration'ların KENDİSİNİ sınar. Uygulama kodu oraya
+  girmez — orası yetkilendirmenin doğrulandığı yer.
 - Sorgu hatası yutulmaz. `?? []` ile devam etmek kullanıcıya "mekan yok"
   demektir; hata varsa `ErrorState` göster.
 - **Herkese açık okumalar `createPublicClient()` (çerezsiz) kullanır.**
@@ -73,8 +73,6 @@ Supabase projesidir. İki sistem yalnızca HTTP üzerinden konuşur.
   yerelleştirilmiş metne dönüşüp hydration uyuşmazlığı üretiyor. Yeni bir
   tarih alanı eklerken `normalizeReview` / `normalizeVenueDetail`
   (`types/db.ts`) içine de ekle.
-- Yerel veritabanı uygulanmış migration'ları `_dev_migrations` tablosunda
-  tutuyor; yeni migration eklemek için `.pglite`'i silmeye gerek yok.
 
 ## Bileşen kütüphanesi
 
