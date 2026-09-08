@@ -9,8 +9,9 @@
     "lint": "eslint",
     "test:db": "node supabase/tests/schema.test.mjs",
     "seed:check": "node supabase/seed/run-pglite.mjs",
-    "seed": "node supabase/seed/run-supabase.mjs",
-    "test": "npm run test:db && npm run seed:check"
+    "seed": "node --env-file-if-exists=.env.local supabase/seed/run-supabase.mjs",
+    "test": "npm run test:db && npm run seed:check",
+    "migrate": "node --env-file-if-exists=.env.local supabase/migrate.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
