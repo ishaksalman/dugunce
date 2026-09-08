@@ -49,6 +49,30 @@ Supabase projesidir. İki sistem yalnızca HTTP üzerinden konuşur.
 4. `npm run seed:check` — seed hâlâ uygulanıyor mu.
 5. Yeni davranış için `supabase/tests/schema.test.mjs` içine test ekle.
 
+## Veri erişimi
+
+- Tek temas noktası `src/lib/db/source.ts` → `DataSource` arayüzü. İki
+  uygulaması var: `supabase.ts` (üretim) ve `pglite.ts` (Supabase kimlik
+  bilgileri yokken, YALNIZCA geliştirme). Servis katmanı hangisinin
+  çalıştığını bilmez.
+- **PGlite yolunda RLS DEVREDE DEĞİLDİR** — bağlantı tablo sahibi olarak
+  açılır. Yetkilendirme davranışını oradan doğrulamayın; yeri `npm run test:db`.
+- Sorgu hatası yutulmaz. `?? []` ile devam etmek kullanıcıya "mekan yok"
+  demektir; hata varsa `ErrorState` göster.
+- `DAVETMEKANI_ALLOW_DEV_DB=1` yalnızca üretim build'ini doğrulamak için
+  geçici bir kaçış kapısı. Supabase bağlanınca `src/lib/db/index.ts`
+  içindeki blokla birlikte silinecek.
+
+## Bileşen kütüphanesi
+
+shadcn/ui'ın güncel registry'si **Base UI** (Radix değil) üzerine kurulu.
+Pratikte iki fark:
+
+- `asChild` YOK, yerine `render` prop'u var: `render={<Link href="…" />}`.
+- `render` ile `<a>` verildiğinde `nativeButton={false}` gerekir. Bunu her
+  yerde tekrarlamayın — `ButtonLink` (`components/shared/button-link.tsx`)
+  kullanın.
+
 ## Renk ve tipografi
 
 - Marka renkleri `src/app/globals.css` içinde tek yerde: `--brand-*`
@@ -66,7 +90,13 @@ Supabase projesidir. İki sistem yalnızca HTTP üzerinden konuşur.
 - Metinler Türkçe, tarih `dd.MM.yyyy`, para `₺75.000`.
 - Boş / yükleniyor / hata durumlarını atlamadan yaz.
 - Mobil öncelikli: sticky "Filtrele", sticky "Teklif Al", kaydırmalı galeri.
-- Filtre durumu URL query param'ında tutulur — paylaşılabilir ve geri tuşu çalışır.
+- Filtre durumu URL query param'ında tutulur — paylaşılabilir ve geri tuşu
+  çalışır. Filtre değişince `router.replace` (push değil): her dokunuş
+  geçmişe kayıt eklememeli. Filtre değişimi her zaman `sayfa: 1`'e döner.
+- Masaüstünde filtreler anında uygulanır; mobil drawer'da taslak tutulur ve
+  "Sonuçları göster"e basınca uygulanır.
+- Kartı tıklanabilir yapan `after:inset-0` katmanı, içindeki butonların
+  (favori kalbi) üstünde kalır. Böyle butonlara `z-10` verin.
 
 ## SEO
 

@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // PGlite bir WASM modülü; bundle'a girmemeli (yalnızca geliştirmede kullanılıyor).
+  serverExternalPackages: ["@electric-sql/pglite"],
   images: {
     remotePatterns: [
       // Supabase Storage — gerçek mekan görselleri buradan servis edilir.

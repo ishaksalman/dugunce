@@ -29,7 +29,7 @@ export const DEMO_MEKANLAR = [
     puan: 4.6, puanSayisi: 18,
   },
   {
-    ad: "Nisan Balo Salonu", plaka: 34, ilce: "Bakırköy", tur: "balo-salonu",
+    ad: "Nişan Balo Salonu", plaka: 34, ilce: "Bakırköy", tur: "balo-salonu",
     min: 80, max: 350, fiyat: 90000, fiyatTipi: "paket",
     kapali: true, acik: false, lat: 40.9819, lng: 28.8772,
     kisa: "Şehir merkezinde, kristal avizeli klasik balo salonu.",
