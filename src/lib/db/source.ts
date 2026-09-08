@@ -71,7 +71,20 @@ export type CreateInquiryResult =
   | { ok: true; id: string }
   | { ok: false; reason: "venue_not_found" | "rate_limited_hour" | "rate_limited_venue" };
 
-export function inquiryRpcArgs(input: CreateInquiryInput): Record<string, unknown> {
+export interface InquiryRpcArgs {
+  p_venue_id: string;
+  p_full_name: string;
+  p_phone: string;
+  p_email: string | null;
+  p_event_type_id: string | null;
+  p_event_date: string | null;
+  p_guest_count: number | null;
+  p_message: string | null;
+  p_ip_hash: string | null;
+  p_ua_hash: string | null;
+}
+
+export function inquiryRpcArgs(input: CreateInquiryInput): InquiryRpcArgs {
   return {
     p_venue_id: input.venueId,
     p_full_name: input.fullName,
@@ -87,7 +100,26 @@ export function inquiryRpcArgs(input: CreateInquiryInput): Record<string, unknow
 }
 
 /** RPC parametreleri — iki adaptör de aynı isimleri kullanır. */
-export function toRpcArgs(input: SearchInput): Record<string, unknown> {
+export interface SearchRpcArgs {
+  p_city_slug: string | null;
+  p_district_slug: string | null;
+  p_event_type_slug: string | null;
+  p_venue_type_slug: string | null;
+  p_guest_count: number | null;
+  p_min_capacity: number | null;
+  p_max_capacity: number | null;
+  p_min_price: number | null;
+  p_max_price: number | null;
+  p_has_indoor: boolean | null;
+  p_has_outdoor: boolean | null;
+  p_feature_slugs: string[] | null;
+  p_query: string | null;
+  p_sort: string;
+  p_limit: number;
+  p_offset: number;
+}
+
+export function toRpcArgs(input: SearchInput): SearchRpcArgs {
   return {
     p_city_slug: input.citySlug ?? null,
     p_district_slug: input.districtSlug ?? null,

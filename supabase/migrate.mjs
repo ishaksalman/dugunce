@@ -47,6 +47,14 @@ await client.query(`
     applied_at timestamptz not null default now()
   )`);
 
+// Takip tablosu `public` şemasında olduğu için PostgREST üzerinden dışarı
+// açılıyor. İçeriği hassas değil ama API yüzeyinde işi yok: yetkileri geri
+// alıp RLS'i açıyoruz (politika yok = kimse okuyamaz).
+await client.query(`
+  revoke all on public._migrations from anon, authenticated;
+  alter table public._migrations enable row level security;
+`);
+
 const { rows } = await client.query("select name from public._migrations");
 const applied = new Set(rows.map((r) => r.name));
 const files = fs.readdirSync(MIG_DIR).filter((f) => f.endsWith(".sql")).sort();

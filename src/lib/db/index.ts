@@ -15,19 +15,6 @@ export async function getDataSource(): Promise<DataSource> {
     return supabaseSource;
   }
   if (process.env.NODE_ENV === "production") {
-    // GEÇİCİ KAÇIŞ KAPISI. Supabase projesi bağlanana kadar üretim build'inin
-    // derlenip prerender edilebildiğini doğrulamak için var. Supabase
-    // yapılandırıldığı anda bu değişken ve bu blok silinecek.
-    // Sunucuyu bu bayrakla AYAĞA KALDIRMAYIN: veri diskteki geçici bir
-    // PGlite dizininden gelir, RLS devrede değildir, deploy'lar arasında kaybolur.
-    if (process.env.DAVETMEKANI_ALLOW_DEV_DB === "1") {
-      console.warn(
-        "[db] UYARI: üretim modunda geliştirme veritabanı kullanılıyor " +
-        "(DAVETMEKANI_ALLOW_DEV_DB=1). Yalnızca build doğrulaması içindir.",
-      );
-      const { pgliteSource } = await import("./pglite");
-      return pgliteSource;
-    }
     throw new Error(
       "NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY tanımlı değil. " +
       "Üretimde geliştirme veritabanı kullanılamaz.",

@@ -59,11 +59,15 @@ Supabase projesidir. İki sistem yalnızca HTTP üzerinden konuşur.
   açılır. Yetkilendirme davranışını oradan doğrulamayın; yeri `npm run test:db`.
 - Sorgu hatası yutulmaz. `?? []` ile devam etmek kullanıcıya "mekan yok"
   demektir; hata varsa `ErrorState` göster.
-- `DAVETMEKANI_ALLOW_DEV_DB=1` yalnızca üretim build'ini doğrulamak için
-  geçici bir kaçış kapısı. Supabase bağlanınca `src/lib/db/index.ts`
-  içindeki blokla birlikte silinecek. Bu yolda PGlite **bellek içi** çalışır —
-  Next build prerender'ı paralel worker'larla koştuğu için aynı `dataDir`
-  iki kez açılamıyor.
+- **Herkese açık okumalar `createPublicClient()` (çerezsiz) kullanır.**
+  Çerez okuyan istemci sayfayı dinamik yapıp statik üretimi/ISR'i öldürüyor —
+  ana sayfa ve mekan detayı bizim SEO yüzeyimiz. Oturuma bağlı işler
+  (talep oluşturma, favoriler, panel) `createClient()` kullanır.
+- `src/lib/database.types.ts` elle yazıldı (Supabase CLI kurulu değil) ve
+  yalnızca kullanılan tablo/fonksiyonları kapsıyor. Şema değişince güncelle.
+  DİKKAT: `Row` tipleri `Simplify<>` ile sarılı — `interface`'lerin örtük
+  index signature'ı olmadığı için supabase-js kısıtını geçemiyorlar ve
+  istemci sessizce boş şemaya düşüp tüm RPC argümanlarını `undefined` yapıyor.
 - **Zaman damgalarını sınırda normalize et.** PGlite `Date` nesnesi,
   PostgREST ISO string döndürüyor. `<time dateTime={...}>` içinde ham Date
   yerelleştirilmiş metne dönüşüp hydration uyuşmazlığı üretiyor. Yeni bir

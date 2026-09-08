@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import {
   normalizeReview, normalizeVenueDetail, toVenueCard,
   type VenueDetail, type VenueReview, type VenueSearchRow,
@@ -17,7 +18,7 @@ function unwrap<T>(res: { data: T | null; error: { message: string } | null }, c
 
 export const supabaseSource: DataSource = {
   async searchVenues(input: SearchInput): Promise<SearchResult> {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const rows = unwrap(
       await supabase.rpc("search_venues", toRpcArgs(input)),
       "search_venues",
@@ -29,7 +30,7 @@ export const supabaseSource: DataSource = {
   },
 
   async listCities({ popularOnly = false } = {}) {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     let q = supabase
       .from("cities")
       .select("id, name, slug, plate_code, is_popular, venue_count");
@@ -38,7 +39,7 @@ export const supabaseSource: DataSource = {
   },
 
   async listDistricts(citySlug: string) {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const city = await supabase.from("cities").select("id").eq("slug", citySlug).maybeSingle();
     if (city.error) throw new Error(`cities: ${city.error.message}`);
     if (!city.data) return [];
@@ -53,7 +54,7 @@ export const supabaseSource: DataSource = {
   },
 
   async listEventTypes() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     return unwrap(
       await supabase
         .from("event_types")
@@ -65,7 +66,7 @@ export const supabaseSource: DataSource = {
   },
 
   async listVenueTypes() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     return unwrap(
       await supabase
         .from("venue_types")
@@ -77,14 +78,14 @@ export const supabaseSource: DataSource = {
   },
 
   async getVenueDetail(slug: string): Promise<VenueDetail | null> {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase.rpc("get_venue_detail", { p_slug: slug });
     if (error) throw new Error(`get_venue_detail: ${error.message}`);
     return data ? normalizeVenueDetail(data as VenueDetail) : null;
   },
 
   async getVenueReviews(venueId: string, limit = 10, offset = 0) {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase.rpc("get_venue_reviews", {
       p_venue_id: venueId, p_limit: limit, p_offset: offset,
     });
@@ -94,7 +95,7 @@ export const supabaseSource: DataSource = {
   },
 
   async recordVenueView(venueId: string) {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     // Sayaç sayfanın çalışmasını engellememeli; hata yalnızca loglanır.
     const { error } = await supabase.rpc("record_venue_view", { p_venue_id: venueId });
     if (error) console.error("[record_venue_view]", error.message);
@@ -108,7 +109,7 @@ export const supabaseSource: DataSource = {
   },
 
   async listFeatures() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     return unwrap(
       await supabase
         .from("features")

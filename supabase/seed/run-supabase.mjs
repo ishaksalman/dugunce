@@ -15,7 +15,10 @@ import pg from "pg";
 import { createClient } from "@supabase/supabase-js";
 import { seedTaksonomi, seedDemoMekanlar, seedDemoYorumlar } from "./apply.mjs";
 
-const { DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+const { DATABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+// Uygulama `NEXT_PUBLIC_SUPABASE_URL` kullanıyor; ikisini de kabul ediyoruz.
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
 const demoIstendi = process.argv.includes("--demo");
 
 if (!DATABASE_URL) {
@@ -35,7 +38,10 @@ console.log(await seedTaksonomi(q));
 
 if (demoIstendi) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error("Demo mekanlar için SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY gerekli.");
+    console.error(
+      "Demo mekanlar için NEXT_PUBLIC_SUPABASE_URL (veya SUPABASE_URL) ve\n" +
+      "SUPABASE_SERVICE_ROLE_KEY gerekli.",
+    );
     await client.end();
     process.exit(1);
   }
@@ -64,6 +70,7 @@ if (demoIstendi) {
 
   console.log("Demo mekanlar yükleniyor…");
   console.log(await seedDemoMekanlar(q, ownerIds));
+
 
   console.log("Demo yorumlar yükleniyor…");
   const reviewerCache = new Map();
