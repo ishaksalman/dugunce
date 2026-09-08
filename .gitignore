@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Şablon dosyası commit edilir — içinde gerçek değer YOKTUR.
+!.env.example
 
 # vercel
 .vercel
