@@ -1,8 +1,13 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { toVenueCard, type VenueSearchRow } from "@/types/db";
-import type { DataSource, SearchInput, SearchResult } from "./source";
-import { toRpcArgs } from "./source";
+import {
+  normalizeReview, normalizeVenueDetail, toVenueCard,
+  type VenueDetail, type VenueReview, type VenueSearchRow,
+} from "@/types/db";
+import type {
+  CreateInquiryInput, CreateInquiryResult, DataSource, SearchInput, SearchResult,
+} from "./source";
+import { inquiryRpcArgs, toRpcArgs } from "./source";
 
 /** Sorgu hatası yutulmaz: boş liste göstermek "mekan yok" demek olur. */
 function unwrap<T>(res: { data: T | null; error: { message: string } | null }, ctx: string): T {
@@ -69,6 +74,37 @@ export const supabaseSource: DataSource = {
         .order("sort_order"),
       "venue_types",
     );
+  },
+
+  async getVenueDetail(slug: string): Promise<VenueDetail | null> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("get_venue_detail", { p_slug: slug });
+    if (error) throw new Error(`get_venue_detail: ${error.message}`);
+    return data ? normalizeVenueDetail(data as VenueDetail) : null;
+  },
+
+  async getVenueReviews(venueId: string, limit = 10, offset = 0) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("get_venue_reviews", {
+      p_venue_id: venueId, p_limit: limit, p_offset: offset,
+    });
+    if (error) throw new Error(`get_venue_reviews: ${error.message}`);
+    const items = ((data ?? []) as VenueReview[]).map(normalizeReview);
+    return { items, total: items.length ? Number(items[0].total_count) : 0 };
+  },
+
+  async recordVenueView(venueId: string) {
+    const supabase = await createClient();
+    // Sayaç sayfanın çalışmasını engellememeli; hata yalnızca loglanır.
+    const { error } = await supabase.rpc("record_venue_view", { p_venue_id: venueId });
+    if (error) console.error("[record_venue_view]", error.message);
+  },
+
+  async createInquiry(input: CreateInquiryInput): Promise<CreateInquiryResult> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("create_inquiry", inquiryRpcArgs(input));
+    if (error) throw new Error(`create_inquiry: ${error.message}`);
+    return data as CreateInquiryResult;
   },
 
   async listFeatures() {

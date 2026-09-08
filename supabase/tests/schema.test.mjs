@@ -436,7 +436,149 @@ await expectFail(
   "Onaylanmış yorum düzenlenemez");
 
 // =============================================================================
-console.log("\n\x1b[1m8) Rol yükseltme ve görüntülenme\x1b[0m");
+console.log("\n\x1b[1m8) Mekan detayı\x1b[0m");
+// =============================================================================
+await asAnon();
+await step("get_venue_detail yayındaki mekanı döndürüyor", async () => {
+  const r = await db.query("select public.get_venue_detail('bahce-davet') as d");
+  const d = r.rows[0].d;
+  if (!d) throw new Error("null döndü");
+  if (d.name !== "Bahçe Davet") throw new Error(`ad: ${d.name}`);
+  if (d.city.slug !== "istanbul") throw new Error(`şehir: ${JSON.stringify(d.city)}`);
+  if (d.district.slug !== "beylikduzu") throw new Error(`ilçe: ${JSON.stringify(d.district)}`);
+  if (d.images.length !== 5) throw new Error(`görsel: ${d.images.length}`);
+  if (d.features.length !== 3) throw new Error(`özellik: ${d.features.length}`);
+  if (d.event_types.length !== 2) throw new Error(`etkinlik: ${d.event_types.length}`);
+});
+
+await step("ilk görsel kapak görseli", async () => {
+  const r = await db.query("select public.get_venue_detail('bahce-davet') as d");
+  if (r.rows[0].d.images[0].url !== "https://cdn.test/0.jpg") {
+    throw new Error(`ilk görsel: ${r.rows[0].d.images[0].url}`);
+  }
+});
+
+await step("yayında olmayan mekan detayda görünmüyor", async () => {
+  const r = await db.query("select public.get_venue_detail('hilesi-var') as d");
+  if (r.rows[0].d !== null) throw new Error("taslak mekan sızdı");
+});
+
+await step("olmayan slug null döndürüyor", async () => {
+  const r = await db.query("select public.get_venue_detail('boyle-bir-mekan-yok') as d");
+  if (r.rows[0].d !== null) throw new Error("null bekleniyordu");
+});
+
+await step("yorumlarda soyadı maskeleniyor", async () => {
+  const r = await db.query(
+    "select author_name, rating from public.get_venue_reviews($1)", [venueA]);
+  if (r.rows.length !== 1) throw new Error(`${r.rows.length} yorum döndü`);
+  if (r.rows[0].author_name !== "customer") {
+    // Demo profil adı tek kelime ("customer"); iki kelimeli adı ayrıca sınıyoruz.
+    throw new Error(`yazar: ${r.rows[0].author_name}`);
+  }
+});
+
+await step("iki kelimeli ad 'Ayşe Y.' biçimine iniyor", async () => {
+  await asServer();
+  await db.query("update public.profiles set full_name = 'Ayşe Yılmaz' where id = $1",
+    [U.customer]);
+  const r = await db.query(
+    "select author_name from public.get_venue_reviews($1)", [venueA]);
+  await asAnon();
+  if (r.rows[0].author_name !== "Ayşe Y.") throw new Error(`yazar: ${r.rows[0].author_name}`);
+});
+
+await step("onaylanmamış yorum listede yok", async () => {
+  await asServer();
+  await db.query("update public.reviews set status = 'PENDING' where id = $1", [reviewId]);
+  const r = await db.query("select id from public.get_venue_reviews($1)", [venueA]);
+  await db.query("update public.reviews set status = 'APPROVED' where id = $1", [reviewId]);
+  await asAnon();
+  if (r.rows.length !== 0) throw new Error(`${r.rows.length} yorum döndü`);
+});
+
+// =============================================================================
+console.log("\n\x1b[1m9) create_inquiry() ve hız sınırı\x1b[0m");
+// =============================================================================
+await asAnon();
+const createInquiry = (ip, venueId = venueA) =>
+  db.query(
+    `select public.create_inquiry(
+       p_venue_id => $1, p_full_name => 'Test Kullanıcı', p_phone => '05001112233',
+       p_ip_hash => $2) as r`,
+    [venueId, ip]);
+
+await step("talep oluşturuluyor", async () => {
+  const r = await createInquiry("ip-a");
+  if (!r.rows[0].r.ok) throw new Error(JSON.stringify(r.rows[0].r));
+});
+
+await step("aynı IP aynı mekana ikinci kez gönderemiyor", async () => {
+  const r = await createInquiry("ip-a");
+  if (r.rows[0].r.reason !== "rate_limited_venue") {
+    throw new Error(JSON.stringify(r.rows[0].r));
+  }
+});
+
+await step("aynı IP farklı mekana gönderebiliyor", async () => {
+  await asServer();
+  const other = await db.query(
+    `insert into public.venues (owner_id, slug, name, city_id, district_id,
+                                status, published_at)
+     values ($1,'ikinci-mekan','İkinci Mekan',$2,$3,'PUBLISHED', now())
+     returning id`, [U.ownerA, ids.city, ids.district]);
+  await asAnon();
+  const r = await createInquiry("ip-a", other.rows[0].id);
+  if (!r.rows[0].r.ok) throw new Error(JSON.stringify(r.rows[0].r));
+});
+
+await step("saatlik sınır 3'te devreye giriyor", async () => {
+  await asServer();
+  const third = await db.query(
+    `insert into public.venues (owner_id, slug, name, city_id, district_id,
+                                status, published_at)
+     values ($1,'ucuncu-mekan','Üçüncü Mekan',$2,$3,'PUBLISHED', now())
+     returning id`, [U.ownerA, ids.city, ids.district]);
+  await asAnon();
+  // ip-a bu noktada 2 talep göndermiş durumda; 3. geçmeli, 4. reddedilmeli.
+  const ok = await createInquiry("ip-a", third.rows[0].id);
+  if (!ok.rows[0].r.ok) throw new Error(`3. talep reddedildi: ${JSON.stringify(ok.rows[0].r)}`);
+
+  await asServer();
+  const fourth = await db.query(
+    `insert into public.venues (owner_id, slug, name, city_id, district_id,
+                                status, published_at)
+     values ($1,'dorduncu-mekan','Dördüncü Mekan',$2,$3,'PUBLISHED', now())
+     returning id`, [U.ownerA, ids.city, ids.district]);
+  await asAnon();
+  const blocked = await createInquiry("ip-a", fourth.rows[0].id);
+  if (blocked.rows[0].r.reason !== "rate_limited_hour") {
+    throw new Error(`saatlik sınır tutmadı: ${JSON.stringify(blocked.rows[0].r)}`);
+  }
+});
+
+await step("farklı IP sınırdan etkilenmiyor", async () => {
+  const r = await createInquiry("ip-b");
+  if (!r.rows[0].r.ok) throw new Error(JSON.stringify(r.rows[0].r));
+});
+
+await step("yayında olmayan mekana talep gönderilemiyor", async () => {
+  await asServer();
+  const draft = await db.query("select id from public.venues where slug='hilesi-var'");
+  await asAnon();
+  const r = await createInquiry("ip-c", draft.rows[0].id);
+  if (r.rows[0].r.reason !== "venue_not_found") {
+    throw new Error(JSON.stringify(r.rows[0].r));
+  }
+});
+
+await expectFail(
+  "anonim kullanıcı hâlâ talepleri okuyamıyor",
+  () => db.query("select full_name, phone from public.inquiries limit 1"),
+  "permission denied");
+
+// =============================================================================
+console.log("\n\x1b[1m10) Rol yükseltme ve görüntülenme\x1b[0m");
 // =============================================================================
 await asUser(U.customer);
 await expectFail(

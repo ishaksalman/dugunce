@@ -16,7 +16,7 @@ export const DEMO_MEKANLAR = [
     aciklama: "Beylikdüzü sahiline yürüme mesafesinde, dört dönümlük peyzajlı bahçesiyle Bahçe Davet, açık hava düğünleri için İstanbul'un sayılı adreslerinden biri. Yüz yıllık çınarların altına kurulan masalar, gün batımında devreye giren gizli aydınlatma sistemi ve 500 kişiye kadar tek oturumda servis verebilen mutfağıyla kalabalık davetleri rahatça karşılıyor. Yağmur ihtimaline karşı 200 kişilik kapalı alternatif alan aynı bahçe içinde yer alıyor.",
     etkinlikler: ["dugun", "nisan", "kina", "soz"],
     ozellikler: ["otopark","vale","bahce","deniz-manzarasi","sahne","ses-sistemi","isiklandirma","gelin-odasi","engelli-erisimi","yemekli","catering","alkol-servisi","dj","organizasyon","dekorasyon"],
-    oneCikan: true, puan: 4.8, puanSayisi: 32,
+    oneCikan: true,
   },
   {
     ad: "Marmara Kır Düğünü", plaka: 34, ilce: "Silivri", tur: "kir-bahcesi",
@@ -26,7 +26,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Silivri'nin zeytinlikleri arasında konumlanan alan, şehrin gürültüsünden tamamen uzak bir kır düğünü deneyimi sunuyor. Yedi yüz kişiye kadar oturmalı düzen kurulabiliyor; misafirler için üç yüz araçlık ücretsiz otopark ve İstanbul merkezden servis imkânı bulunuyor. Mutfak ekibi menüyü tamamen size özel kurguluyor.",
     etkinlikler: ["dugun", "nisan", "kina"],
     ozellikler: ["otopark","bahce","havuz","sahne","ses-sistemi","isiklandirma","gelin-odasi","yemekli","catering","canli-muzik","organizasyon","masa-sandalye"],
-    puan: 4.6, puanSayisi: 18,
   },
   {
     ad: "Nişan Balo Salonu", plaka: 34, ilce: "Bakırköy", tur: "balo-salonu",
@@ -36,7 +35,7 @@ export const DEMO_MEKANLAR = [
     aciklama: "Bakırköy'ün merkezinde, metroya beş dakika yürüme mesafesindeki salon, klasik çizgisini koruyan bir davet mekânı arayanlar için tasarlandı. Altı metre tavan yüksekliği, kristal avizeler ve tamamen yenilenen ses sistemiyle üç yüz elli kişiye kadar oturmalı düzen kuruluyor. Kış aylarında iklimlendirme ve vale hizmeti standart pakete dâhil.",
     etkinlikler: ["dugun", "nisan", "sunnet", "kurumsal-etkinlik", "mezuniyet"],
     ozellikler: ["otopark","vale","klima","sahne","ses-sistemi","isiklandirma","projeksiyon","gelin-odasi","engelli-erisimi","asansor","yemekli","alkol-servisi","dj","organizasyon","fotograf"],
-    oneCikan: true, puan: 4.7, puanSayisi: 45,
+    oneCikan: true,
   },
   {
     ad: "Boğaz Teras", plaka: 34, ilce: "Sarıyer", tur: "teras",
@@ -46,7 +45,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Boğaz'ın kuzey çıkışına hâkim teras, gün batımı saatlerinde İstanbul'un en çok fotoğraflanan davet manzaralarından birini sunuyor. İki yüz yirmi kişiye kadar kokteyl ve oturmalı düzen kurulabiliyor. Alan tamamen size özel kiralanıyor, aynı gün ikinci bir organizasyon yapılmıyor.",
     etkinlikler: ["dugun", "nisan", "soz", "kurumsal-etkinlik"],
     ozellikler: ["vale","deniz-manzarasi","teras-alani","ses-sistemi","isiklandirma","gelin-odasi","yemekli","catering","alkol-servisi","dj","canli-muzik","fotograf","dekorasyon"],
-    puan: 4.9, puanSayisi: 27,
   },
   {
     ad: "Anadolu Konak", plaka: 34, ilce: "Beykoz", tur: "konak-kosk",
@@ -56,7 +54,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Yirminci yüzyıl başından kalma köşk, özgün ahşap detayları korunarak restore edildi. Konağın kendisi yüz kişilik kapalı alan, arkasındaki korunaklı bahçe ise seksen kişilik ek alan sunuyor. Küçük ve samimi davetler için tasarlandı; kalabalık organizasyonlara uygun değil.",
     etkinlikler: ["nisan", "soz", "kina", "dogum-gunu"],
     ozellikler: ["otopark","bahce","klima","isiklandirma","gelin-odasi","yemekli","catering","fotograf","dekorasyon","nikah-masasi"],
-    puan: 4.9, puanSayisi: 12,
   },
   {
     ad: "Çankaya Davet", plaka: 6, ilce: "Çankaya", tur: "balo-salonu",
@@ -66,7 +63,7 @@ export const DEMO_MEKANLAR = [
     aciklama: "Çankaya'nın merkezinde, ulaşımı kolay bir konumda yer alan salon 2023'te tamamen yenilendi. Dört yüz kişilik ana salonun yanında yüz kişilik ikinci bir alan bulunuyor; iki alan birleştirilerek de kullanılabiliyor. Kurumsal etkinlikler için projeksiyon ve sahne düzeni hazır durumda.",
     etkinlikler: ["dugun", "nisan", "sunnet", "kurumsal-etkinlik", "mezuniyet"],
     ozellikler: ["otopark","vale","klima","sahne","ses-sistemi","isiklandirma","projeksiyon","gelin-odasi","engelli-erisimi","asansor","wifi","yemekli","dj","organizasyon"],
-    oneCikan: true, puan: 4.5, puanSayisi: 38,
+    oneCikan: true,
   },
   {
     ad: "Gölbaşı Kır Bahçesi", plaka: 6, ilce: "Gölbaşı", tur: "kir-bahcesi",
@@ -76,7 +73,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Mogan Gölü'ne bakan alan, Ankara'nın açık hava düğünü seçenekleri arasında en geniş kapasiteli olanlardan. Altı yüz kişiye kadar oturmalı düzen ve iki yüz araçlık otopark mevcut. Hafta içi günlerde belirgin şekilde uygun fiyat uygulanıyor.",
     etkinlikler: ["dugun", "kina", "sunnet"],
     ozellikler: ["otopark","bahce","sahne","ses-sistemi","isiklandirma","gelin-odasi","yemekli","catering","canli-muzik","masa-sandalye","organizasyon"],
-    puan: 4.4, puanSayisi: 21,
   },
   {
     ad: "Keçiören Nikah Sarayı", plaka: 6, ilce: "Keçiören", tur: "dugun-salonu",
@@ -86,7 +82,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Keçiören'in en bilinen düğün salonlarından biri. Sade ama bakımlı bir salon arayan, bütçesini davetli sayısına ayırmak isteyen aileler için uygun. Dört yüz elli kişiye kadar oturmalı düzen, salon içi ses ve ışık sistemi pakete dâhil.",
     etkinlikler: ["dugun", "nisan", "sunnet", "kina"],
     ozellikler: ["otopark","klima","sahne","ses-sistemi","isiklandirma","gelin-odasi","engelli-erisimi","yemekli","masa-sandalye","dj"],
-    puan: 4.1, puanSayisi: 56,
   },
   {
     ad: "Alaçatı Bağ Evi", plaka: 35, ilce: "Çeşme", tur: "ciftlik",
@@ -96,7 +91,7 @@ export const DEMO_MEKANLAR = [
     aciklama: "Alaçatı'nın bağ yollarından birinde, taş duvarlarla çevrili avlusu ve yüz yıllık zeytin ağaçlarıyla bir bağ evi. İki yüz elli kişiye kadar davet ağırlıyor. Ege mutfağına hâkim şef ekibi menüyü mevsime göre kurguluyor. Temmuz-Ağustos döneminde takvim erken doluyor.",
     etkinlikler: ["dugun", "nisan", "soz"],
     ozellikler: ["otopark","bahce","havuz","isiklandirma","gelin-odasi","konaklama","yemekli","catering","alkol-servisi","dj","fotograf","dekorasyon","organizasyon"],
-    oneCikan: true, puan: 4.9, puanSayisi: 41,
+    oneCikan: true,
   },
   {
     ad: "Urla Zeytinlik", plaka: 35, ilce: "Urla", tur: "kir-bahcesi",
@@ -106,7 +101,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Urla'nın zeytinlikleri arasında, sahile on dakika mesafede bir açık hava davet alanı. Üç yüz yirmi kişiye kadar kapasite, ağaç aralarına kurulan aydınlatma düzeni ve kendi zeytinyağını üreten mutfağıyla öne çıkıyor. Nikâh alanı bahçenin içinde ayrı bir bölümde kurulu.",
     etkinlikler: ["dugun", "nisan", "kina", "soz"],
     ozellikler: ["otopark","vale","bahce","sahne","ses-sistemi","isiklandirma","gelin-odasi","yemekli","catering","alkol-servisi","canli-muzik","fotograf","dekorasyon","nikah-masasi"],
-    puan: 4.7, puanSayisi: 29,
   },
   {
     ad: "Karşıyaka Balo", plaka: 35, ilce: "Karşıyaka", tur: "balo-salonu",
@@ -116,7 +110,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Karşıyaka sahiline yakın, üst katı körfeze bakan salon. Üç yüz seksen kişiye kadar oturmalı düzen kuruluyor; salonun kendi otoparkı ve vale hizmeti bulunuyor. Kış düğünleri için tercih edilen kapalı mekânlar arasında.",
     etkinlikler: ["dugun", "nisan", "sunnet", "mezuniyet"],
     ozellikler: ["otopark","vale","klima","deniz-manzarasi","sahne","ses-sistemi","isiklandirma","gelin-odasi","asansor","engelli-erisimi","yemekli","alkol-servisi","dj","organizasyon"],
-    puan: 4.5, puanSayisi: 33,
   },
   {
     ad: "Nilüfer Garden", plaka: 16, ilce: "Nilüfer", tur: "kir-bahcesi",
@@ -126,7 +119,7 @@ export const DEMO_MEKANLAR = [
     aciklama: "Nilüfer'de, Uludağ'a bakan bir açık hava davet bahçesi. Dört yüz elli kişilik açık alanın yanında iki yüz kişilik kapalı salon bulunuyor; hava koşullarına göre organizasyon aynı gün içinde taşınabiliyor. Bursa'nın en çok tercih edilen kır düğünü alanlarından.",
     etkinlikler: ["dugun", "nisan", "kina", "sunnet"],
     ozellikler: ["otopark","vale","bahce","klima","sahne","ses-sistemi","isiklandirma","gelin-odasi","engelli-erisimi","yemekli","catering","dj","organizasyon","dekorasyon"],
-    oneCikan: true, puan: 4.6, puanSayisi: 47,
+    oneCikan: true,
   },
   {
     ad: "Mudanya Sahil Davet", plaka: 16, ilce: "Mudanya", tur: "restoran",
@@ -136,7 +129,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Mudanya sahilinde, iskeleye yürüme mesafesinde bir restoran. İki yüz kişilik kapasitesiyle daha samimi davetler için uygun. Deniz ürünleri ağırlıklı menüsü ve gün batımına bakan terasıyla nişan ve söz organizasyonlarında tercih ediliyor.",
     etkinlikler: ["nisan", "soz", "dogum-gunu", "kina"],
     ozellikler: ["otopark","deniz-manzarasi","teras-alani","klima","ses-sistemi","yemekli","alkol-servisi","dj","fotograf","dekorasyon"],
-    puan: 4.7, puanSayisi: 16,
   },
   {
     ad: "İnegöl Davet Salonu", plaka: 16, ilce: "İnegöl", tur: "dugun-salonu",
@@ -146,7 +138,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "İnegöl'ün en yüksek kapasiteli salonu; sekiz yüz kişiye kadar tek oturumda ağırlıyor. Geniş aile düğünleri için tasarlandı. Salon içi ses ve ışık sistemi, sahne ve gelin odası pakete dâhil; yemek hizmeti isteğe bağlı.",
     etkinlikler: ["dugun", "kina", "sunnet"],
     ozellikler: ["otopark","klima","sahne","ses-sistemi","isiklandirma","gelin-odasi","engelli-erisimi","masa-sandalye","yemekli","canli-muzik"],
-    puan: 4.2, puanSayisi: 63,
   },
   {
     ad: "Konyaaltı Beach Davet", plaka: 7, ilce: "Konyaaltı", tur: "plaj-beach-club",
@@ -156,7 +147,7 @@ export const DEMO_MEKANLAR = [
     aciklama: "Konyaaltı sahilinde, doğrudan kumsala açılan bir davet alanı. Üç yüz kişiye kadar kapasite; nikâh alanı denize sıfır kuruluyor. Nisan-Ekim arası açık, kış aylarında organizasyon alınmıyor. Toroslar manzarası ve gün batımı yönü tüm masalardan görünüyor.",
     etkinlikler: ["dugun", "nisan", "soz", "dogum-gunu"],
     ozellikler: ["otopark","vale","deniz-manzarasi","havuz","ses-sistemi","isiklandirma","gelin-odasi","konaklama","yemekli","catering","alkol-servisi","dj","fotograf","dekorasyon","organizasyon"],
-    oneCikan: true, puan: 4.8, puanSayisi: 52,
+    oneCikan: true,
   },
   {
     ad: "Kemer Orman Bahçe", plaka: 7, ilce: "Kemer", tur: "kir-bahcesi",
@@ -166,7 +157,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Kemer'de çam ormanının içine kurulmuş bir açık hava davet alanı. Bir yanda Toroslar, diğer yanda Akdeniz. İki yüz altmış kişiye kadar kapasite. Alan tamamen gölgeli olduğu için yaz aylarında öğleden sonra organizasyonları da mümkün.",
     etkinlikler: ["dugun", "nisan", "soz"],
     ozellikler: ["otopark","bahce","deniz-manzarasi","ses-sistemi","isiklandirma","gelin-odasi","konaklama","yemekli","catering","alkol-servisi","canli-muzik","fotograf","dekorasyon"],
-    puan: 4.7, puanSayisi: 24,
   },
   {
     ad: "Muratpaşa Balo Salonu", plaka: 7, ilce: "Muratpaşa", tur: "otel",
@@ -176,7 +166,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Antalya merkezde beş yıldızlı bir otelin balo salonu. Beş yüz kişiye kadar kapasitenin yanında, şehir dışından gelen misafirler için indirimli konaklama paketi sunuluyor. Havuz başı kokteyl alanı da organizasyona dâhil edilebiliyor.",
     etkinlikler: ["dugun", "nisan", "kurumsal-etkinlik", "mezuniyet"],
     ozellikler: ["otopark","vale","klima","havuz","sahne","ses-sistemi","isiklandirma","projeksiyon","gelin-odasi","asansor","engelli-erisimi","wifi","konaklama","yemekli","alkol-servisi","dj","organizasyon","fotograf"],
-    puan: 4.6, puanSayisi: 71,
   },
   {
     ad: "Odunpazarı Konak Davet", plaka: 26, ilce: "Odunpazarı", tur: "konak-kosk",
@@ -186,7 +175,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Odunpazarı'nın renkli ahşap evlerinden birinde, avlusuyla birlikte kullanılan butik bir davet mekânı. Yüz elli kişilik kapasitesiyle küçük ölçekli düğün, nişan ve söz organizasyonları için uygun. Tarihî doku fotoğraf çekimleri için ayrıca tercih ediliyor.",
     etkinlikler: ["nisan", "soz", "kina", "dogum-gunu"],
     ozellikler: ["bahce","klima","isiklandirma","gelin-odasi","yemekli","catering","fotograf","dekorasyon","nikah-masasi","pasta"],
-    puan: 4.8, puanSayisi: 19,
   },
   {
     ad: "Tepebaşı Garden", plaka: 26, ilce: "Tepebaşı", tur: "kir-bahcesi",
@@ -196,7 +184,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Tepebaşı'nda, Porsuk Çayı'na yakın konumda bir davet bahçesi. Dört yüz kişilik açık alanın yanında yüz elli kişilik kapalı salon bulunuyor. Eskişehir'de hem bütçe hem kapasite dengesi arayanların ilk baktığı yerlerden.",
     etkinlikler: ["dugun", "nisan", "kina", "sunnet", "mezuniyet"],
     ozellikler: ["otopark","bahce","klima","sahne","ses-sistemi","isiklandirma","gelin-odasi","engelli-erisimi","yemekli","catering","dj","masa-sandalye","organizasyon"],
-    puan: 4.4, puanSayisi: 37,
   },
   {
     ad: "Söğüt Bahçe Davet", plaka: 11, ilce: "Söğüt", tur: "kir-bahcesi",
@@ -206,7 +193,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Söğüt merkezine yakın, üç yüz elli kişilik açık hava davet bahçesi. Bilecik ve çevresinden gelen davetliler için geniş otopark imkânı sunuyor. Bölgenin en bakımlı kır düğünü alanlarından biri; ağaçlandırma ve aydınlatma düzeni 2024'te yenilendi.",
     etkinlikler: ["dugun", "kina", "sunnet", "nisan"],
     ozellikler: ["otopark","bahce","sahne","ses-sistemi","isiklandirma","gelin-odasi","yemekli","masa-sandalye","canli-muzik","organizasyon"],
-    puan: 4.5, puanSayisi: 14,
   },
   {
     ad: "Bozüyük Davet Salonu", plaka: 11, ilce: "Bozüyük", tur: "dugun-salonu",
@@ -216,7 +202,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Bozüyük merkezinde, dört yüz kişilik kapalı düğün salonu. Ses sistemi, sahne, gelin odası ve masa-sandalye düzeni pakete dâhil. Bilecik genelinde en uygun bütçeli seçeneklerden biri; hafta içi ayrıca indirim uygulanıyor.",
     etkinlikler: ["dugun", "nisan", "sunnet", "kina"],
     ozellikler: ["otopark","klima","sahne","ses-sistemi","isiklandirma","gelin-odasi","masa-sandalye","yemekli"],
-    puan: 4.0, puanSayisi: 23,
   },
   {
     ad: "Sapanca Göl Evi", plaka: 54, ilce: "Sapanca", tur: "kir-bahcesi",
@@ -226,7 +211,7 @@ export const DEMO_MEKANLAR = [
     aciklama: "Sapanca Gölü'ne sıfır konumda, arkası ormana bakan bir davet evi. İki yüz kırk kişilik kapasitesiyle İstanbul ve Ankara'dan gelen çiftlerin hafta sonu düğünleri için tercih ettiği alanlardan. Misafirler için yakın çevrede konaklama anlaşmaları mevcut.",
     etkinlikler: ["dugun", "nisan", "soz", "kina"],
     ozellikler: ["otopark","vale","bahce","klima","isiklandirma","gelin-odasi","konaklama","yemekli","catering","alkol-servisi","dj","fotograf","dekorasyon","organizasyon"],
-    oneCikan: true, puan: 4.9, puanSayisi: 35,
+    oneCikan: true,
   },
   {
     ad: "Bodrum Kokteyl Bahçe", plaka: 48, ilce: "Bodrum", tur: "kokteyl-bahcesi",
@@ -236,7 +221,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Yalıkavak'ın üst kotlarında, koya hâkim bir kokteyl bahçesi. İki yüz kişiye kadar ayakta ve oturmalı karma düzen kuruluyor. Bodrum'da butik ve tasarım odaklı davet arayanlar için; alan gün boyunca tek organizasyona tahsis ediliyor.",
     etkinlikler: ["dugun", "nisan", "soz", "dogum-gunu"],
     ozellikler: ["vale","deniz-manzarasi","havuz","teras-alani","ses-sistemi","isiklandirma","gelin-odasi","yemekli","catering","alkol-servisi","dj","canli-muzik","fotograf","dekorasyon"],
-    puan: 4.8, puanSayisi: 22,
   },
   {
     ad: "Çorlu Kristal Salon", plaka: 59, ilce: "Çorlu", tur: "balo-salonu",
@@ -246,7 +230,6 @@ export const DEMO_MEKANLAR = [
     aciklama: "Çorlu merkezde, altı yüz kişilik kapalı balo salonu. Trakya bölgesinin en yüksek kapasiteli kapalı mekânlarından biri. İki yüz araçlık otopark, vale hizmeti ve salon içi tam donanımlı ses-ışık sistemi bulunuyor.",
     etkinlikler: ["dugun", "nisan", "sunnet", "kina", "kurumsal-etkinlik"],
     ozellikler: ["otopark","vale","klima","sahne","ses-sistemi","isiklandirma","projeksiyon","gelin-odasi","engelli-erisimi","asansor","yemekli","dj","masa-sandalye","organizasyon"],
-    puan: 4.3, puanSayisi: 44,
   },
 ];
 

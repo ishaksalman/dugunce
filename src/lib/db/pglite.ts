@@ -1,8 +1,13 @@
 import "server-only";
 import fs from "node:fs";
 import path from "node:path";
-import { toVenueCard, type VenueSearchRow } from "@/types/db";
-import type { DataSource, SearchInput, SearchResult } from "./source";
+import {
+  normalizeReview, normalizeVenueDetail, toVenueCard,
+  type VenueDetail, type VenueReview, type VenueSearchRow,
+} from "@/types/db";
+import type {
+  CreateInquiryInput, CreateInquiryResult, DataSource, SearchInput, SearchResult,
+} from "./source";
 
 /**
  * YALNIZCA GELİŞTİRME. Supabase kimlik bilgileri tanımlı değilken devreye
@@ -21,7 +26,16 @@ type PgLiteDb = {
 };
 
 const ROOT = process.cwd();
-const DATA_DIR = path.join(ROOT, ".pglite");
+
+/**
+ * Geliştirmede diske kalıcı (`.pglite`), üretim build doğrulamasında bellek içi.
+ *
+ * Next build prerender'ı birden fazla worker ile paralel çalıştırıyor ve
+ * PGlite aynı dizini iki kez açamıyor. Kaçış kapısı yolunda her worker kendi
+ * geçici veritabanını kuruyor — yavaş ama build'i doğrulamaya yetiyor.
+ */
+const DATA_DIR =
+  process.env.NODE_ENV === "production" ? undefined : path.join(ROOT, ".pglite");
 
 declare global {
   // eslint-disable-next-line no-var
@@ -29,42 +43,69 @@ declare global {
 }
 
 async function bootstrap(): Promise<PgLiteDb> {
-  const fresh = !fs.existsSync(DATA_DIR);
   const { PGlite } = await import("@electric-sql/pglite");
   const { pgcrypto } = await import("@electric-sql/pglite/contrib/pgcrypto");
   const db = (await PGlite.create({
-    dataDir: DATA_DIR,
+    ...(DATA_DIR ? { dataDir: DATA_DIR } : {}),
     extensions: { pgcrypto },
   })) as unknown as PgLiteDb;
 
-  if (fresh) {
-    console.log("[pglite] geliştirme veritabanı kuruluyor…");
-    const supa = path.join(ROOT, "supabase");
-    await db.exec(fs.readFileSync(path.join(supa, "tests", "supabase-stub.sql"), "utf8"));
-    const migDir = path.join(supa, "migrations");
-    for (const f of fs.readdirSync(migDir).sort()) {
-      await db.exec(fs.readFileSync(path.join(migDir, f), "utf8"));
-    }
-    const { seedTaksonomi, seedDemoMekanlar } = await import(
-      /* webpackIgnore: true */ path.join(supa, "seed", "apply.mjs")
-    );
-    const q = (sql: string, params?: unknown[]) => db.query(sql, params);
-    const owners = [
-      "a1111111-1111-1111-1111-111111111111",
-      "a2222222-2222-2222-2222-222222222222",
-      "a3333333-3333-3333-3333-333333333333",
-    ];
-    for (const [i, id] of owners.entries()) {
-      await db.query(
-        "insert into auth.users (id, email, raw_user_meta_data) values ($1,$2,$3)",
-        [id, `demo-sahip-${i + 1}@davetmekani.test`,
-         JSON.stringify({ full_name: `Demo Mekan Sahibi ${i + 1}` })]);
-    }
-    await db.query("update public.profiles set role = 'venue_owner' where id = any($1)", [owners]);
-    await seedTaksonomi(q);
-    await seedDemoMekanlar(q, owners);
-    console.log("[pglite] hazır. Sıfırlamak için: rm -rf .pglite");
+  const supa = path.join(ROOT, "supabase");
+
+  // Stub idempotent; her açılışta çalıştırmak güvenli ve rol/şema eksikliğini
+  // tek yerden kapatıyor.
+  await db.exec(fs.readFileSync(path.join(supa, "tests", "supabase-stub.sql"), "utf8"));
+  await db.exec(
+    `create table if not exists public._dev_migrations (
+       name text primary key,
+       applied_at timestamptz not null default now())`);
+
+  // Uygulanmış migration'ları takip ediyoruz: yeni bir migration eklendiğinde
+  // veritabanını silmek gerekmesin, gerçek bir koşucu gibi yalnızca eksikler
+  // uygulansın.
+  const { rows: appliedRows } = await db.query<{ name: string }>(
+    "select name from public._dev_migrations");
+  const applied = new Set(appliedRows.map((r) => r.name));
+  const fresh = applied.size === 0;
+
+  const migDir = path.join(supa, "migrations");
+  const pending = fs.readdirSync(migDir).sort().filter((f) => !applied.has(f));
+  for (const f of pending) {
+    console.log(`[pglite] migration uygulanıyor: ${f}`);
+    await db.exec(fs.readFileSync(path.join(migDir, f), "utf8"));
+    await db.query("insert into public._dev_migrations (name) values ($1)", [f]);
   }
+
+  if (!fresh) return db;
+
+  console.log("[pglite] geliştirme veritabanı kuruluyor…");
+  const { seedTaksonomi, seedDemoMekanlar, seedDemoYorumlar } = await import(
+    /* webpackIgnore: true */ path.join(supa, "seed", "apply.mjs")
+  );
+  const q = (sql: string, params?: unknown[]) => db.query(sql, params);
+  const owners = [
+    "a1111111-1111-1111-1111-111111111111",
+    "a2222222-2222-2222-2222-222222222222",
+    "a3333333-3333-3333-3333-333333333333",
+  ];
+  for (const [i, id] of owners.entries()) {
+    await db.query(
+      "insert into auth.users (id, email, raw_user_meta_data) values ($1,$2,$3)",
+      [id, `demo-sahip-${i + 1}@davetmekani.test`,
+       JSON.stringify({ full_name: `Demo Mekan Sahibi ${i + 1}` })]);
+  }
+  await db.query("update public.profiles set role = 'venue_owner' where id = any($1)", [owners]);
+  await seedTaksonomi(q);
+  await seedDemoMekanlar(q, owners);
+  await seedDemoYorumlar(q, async (i: number, adSoyad: string) => {
+    const id = `b${String(i + 1).padStart(7, "0")}-0000-4000-8000-000000000000`;
+    await db.query(
+      "insert into auth.users (id, email, raw_user_meta_data) values ($1,$2,$3) on conflict do nothing",
+      [id, `demo-yorumcu-${i + 1}@davetmekani.test`,
+       JSON.stringify({ full_name: adSoyad })]);
+    return id;
+  });
+  console.log("[pglite] hazır. Sıfırlamak için: rm -rf .pglite");
   return db;
 }
 
@@ -137,6 +178,46 @@ export const pgliteSource: DataSource = {
       `select id, name, slug, sort_order from public.venue_types
         where is_active order by sort_order`);
     return rows;
+  },
+
+  async getVenueDetail(slug: string): Promise<VenueDetail | null> {
+    const db = await getDb();
+    const { rows } = await db.query<{ d: VenueDetail | null }>(
+      "select public.get_venue_detail($1) as d", [slug]);
+    const detail = rows[0]?.d;
+    return detail ? normalizeVenueDetail(detail) : null;
+  },
+
+  async getVenueReviews(venueId: string, limit = 10, offset = 0) {
+    const db = await getDb();
+    const { rows } = await db.query<VenueReview>(
+      "select * from public.get_venue_reviews($1, $2, $3)", [venueId, limit, offset]);
+    const items = rows.map(normalizeReview);
+    return { items, total: items.length ? Number(items[0].total_count) : 0 };
+  },
+
+  async recordVenueView(venueId: string) {
+    const db = await getDb();
+    try {
+      await db.query("select public.record_venue_view($1)", [venueId]);
+    } catch (error) {
+      console.error("[record_venue_view]", error);
+    }
+  },
+
+  async createInquiry(input: CreateInquiryInput): Promise<CreateInquiryResult> {
+    const db = await getDb();
+    const { rows } = await db.query<{ r: CreateInquiryResult }>(
+      `select public.create_inquiry(
+         p_venue_id => $1, p_full_name => $2, p_phone => $3, p_email => $4,
+         p_event_type_id => $5, p_event_date => $6, p_guest_count => $7,
+         p_message => $8, p_ip_hash => $9, p_ua_hash => $10) as r`,
+      [
+        input.venueId, input.fullName, input.phone, input.email ?? null,
+        input.eventTypeId ?? null, input.eventDate ?? null, input.guestCount ?? null,
+        input.message ?? null, input.ipHash, input.uaHash,
+      ]);
+    return rows[0].r;
   },
 
   async listFeatures() {

@@ -9,6 +9,7 @@ import { ILLER } from "./iller.mjs";
 import { ILCELER, VARSAYILAN_ILCE } from "./ilceler.mjs";
 import { ETKINLIK_TURLERI, MEKAN_TURLERI, OZELLIKLER } from "./taksonomi.mjs";
 import { DEMO_MEKANLAR, demoGorseller } from "./demo-mekanlar.mjs";
+import { DEMO_YORUMLAR } from "./demo-yorumlar.mjs";
 
 /** Türkçe slug — SQL'deki slugify_tr ile aynı davranmalı. */
 export function slugify(input) {
@@ -91,6 +92,12 @@ export async function seedTaksonomi(q) {
 
 /**
  * Demo mekanları ekler ve doğrudan PUBLISHED yapar.
+ *
+ * DİKKAT: `rating_avg` / `rating_count` BURADA YAZILMAZ. Puan yalnızca
+ * onaylanmış yorumlardan trigger ile türetilir (0004). Uydurma puan yazmak,
+ * detay sayfasında "4,8 (32)" gösterip altında tek yorum olmaması demekti.
+ * Yorumu olmayan mekanlar puansız görünür — kartın ve detayın bu durumu da
+ * doğru göstermesi gerekiyor.
  * `ownerIds`: önceden oluşturulmuş demo mekan sahibi profil id'leri.
  */
 export async function seedDemoMekanlar(q, ownerIds) {
@@ -124,10 +131,10 @@ export async function seedDemoMekanlar(q, ownerIds) {
          starting_price, price_type, price_note,
          has_indoor, has_outdoor, latitude, longitude,
          contact_phone, contact_email,
-         status, published_at, is_featured, rating_avg, rating_count
+         status, published_at, is_featured
        ) values (
          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
-         'PUBLISHED', now(), $20, $21, $22
+         'PUBLISHED', now(), $20
        ) returning id`,
       [
         ownerIds[i % ownerIds.length], slug, m.ad, cityId, district.id,
@@ -136,7 +143,7 @@ export async function seedDemoMekanlar(q, ownerIds) {
         "Fiyat; davetli sayısı, menü seçimi ve sezona göre değişir. Kesin fiyat için teklif alın.",
         m.kapali, m.acik, m.lat, m.lng,
         "0850 000 00 00", "iletisim@davetmekani.test",
-        m.oneCikan ?? false, m.puan ?? 0, m.puanSayisi ?? 0,
+        m.oneCikan ?? false,
       ]);
     const venueId = rows[0].id;
 
@@ -162,4 +169,33 @@ export async function seedDemoMekanlar(q, ownerIds) {
     eklenen++;
   }
   return { eklenen, toplam: DEMO_MEKANLAR.length };
+}
+
+/**
+ * Demo yorumları ekler. Her yorum ayrı bir demo müşteri hesabına yazılır
+ * (bir kullanıcı bir mekana yalnızca bir yorum yazabiliyor).
+ *
+ * `createReviewer(index, adSoyad)` çağrısı bir profil id'si döndürmeli;
+ * PGlite ve Supabase koşucuları bunu farklı şekilde sağlıyor.
+ */
+export async function seedDemoYorumlar(q, createReviewer) {
+  let eklenen = 0;
+  for (const [i, y] of DEMO_YORUMLAR.entries()) {
+    const venue = await q("select id from public.venues where slug = $1", [y.mekan]);
+    if (!venue.rows.length) throw new Error(`Yorum için mekan yok: ${y.mekan}`);
+    const venueId = venue.rows[0].id;
+
+    const userId = await createReviewer(i, y.yazar);
+    const mevcut = await q(
+      "select 1 from public.reviews where venue_id = $1 and user_id = $2",
+      [venueId, userId]);
+    if (mevcut.rows.length) continue;
+
+    await q(
+      `insert into public.reviews (venue_id, user_id, rating, title, body, status, created_at)
+       values ($1,$2,$3,$4,$5,'APPROVED', now() - ($6 || ' days')::interval)`,
+      [venueId, userId, y.puan, y.baslik, y.metin, String(7 + i * 11)]);
+    eklenen++;
+  }
+  return { eklenen, toplam: DEMO_YORUMLAR.length };
 }

@@ -61,7 +61,16 @@ Supabase projesidir. İki sistem yalnızca HTTP üzerinden konuşur.
   demektir; hata varsa `ErrorState` göster.
 - `DAVETMEKANI_ALLOW_DEV_DB=1` yalnızca üretim build'ini doğrulamak için
   geçici bir kaçış kapısı. Supabase bağlanınca `src/lib/db/index.ts`
-  içindeki blokla birlikte silinecek.
+  içindeki blokla birlikte silinecek. Bu yolda PGlite **bellek içi** çalışır —
+  Next build prerender'ı paralel worker'larla koştuğu için aynı `dataDir`
+  iki kez açılamıyor.
+- **Zaman damgalarını sınırda normalize et.** PGlite `Date` nesnesi,
+  PostgREST ISO string döndürüyor. `<time dateTime={...}>` içinde ham Date
+  yerelleştirilmiş metne dönüşüp hydration uyuşmazlığı üretiyor. Yeni bir
+  tarih alanı eklerken `normalizeReview` / `normalizeVenueDetail`
+  (`types/db.ts`) içine de ekle.
+- Yerel veritabanı uygulanmış migration'ları `_dev_migrations` tablosunda
+  tutuyor; yeni migration eklemek için `.pglite`'i silmeye gerek yok.
 
 ## Bileşen kütüphanesi
 
@@ -97,6 +106,20 @@ Pratikte iki fark:
   "Sonuçları göster"e basınca uygulanır.
 - Kartı tıklanabilir yapan `after:inset-0` katmanı, içindeki butonların
   (favori kalbi) üstünde kalır. Böyle butonlara `z-10` verin.
+- **Sayfa ISR ile önbelleğe alınıyorsa sayaç sunucudan artırılamaz.**
+  Görüntülenme `ViewTracker` → `POST /api/venues/[id]/view` beacon'ı ile
+  sayılıyor; sunucu bileşenine taşınırsa yalnızca önbellek ıskaları sayılır.
+- `.next/types` (üretim build çıktısı) bayatlarsa yeni rotalar `AppRoutes`
+  tipinde görünmez ve `tsc` yanlış hata verir. Çözüm: `rm -rf .next/types`.
+
+## Teklif talepleri
+
+- Talep doğrudan INSERT ile açılmaz; `create_inquiry()` RPC'si üzerinden.
+  Hız sınırı için mevcut talepleri saymak gerekiyor ve anonim kullanıcıya
+  `inquiries` üzerinde SELECT yetkisi verilmiyor.
+- Sınırlar: saatte 3 talep / IP, günde 1 talep / mekan / IP.
+- Formda bal küpü alanı (`website`) var; doluysa istek başarılı gibi
+  cevaplanır ama kaydedilmez.
 
 ## SEO
 

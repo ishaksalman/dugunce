@@ -6,7 +6,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 import fs from "node:fs";
 import path from "node:path";
-import { seedTaksonomi, seedDemoMekanlar } from "./apply.mjs";
+import { seedTaksonomi, seedDemoMekanlar, seedDemoYorumlar } from "./apply.mjs";
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const db = await PGlite.create({ extensions: { pgcrypto } });
@@ -36,6 +36,14 @@ console.log(await seedTaksonomi(q));
 console.log("\n\x1b[1mDemo mekanlar\x1b[0m");
 console.log(await seedDemoMekanlar(q, OWNERS));
 
+console.log("\n\x1b[1mDemo yorumlar\x1b[0m");
+console.log(await seedDemoYorumlar(q, async (i, adSoyad) => {
+  const id = `b${String(i + 1).padStart(7, "0")}-0000-4000-8000-000000000000`;
+  await q("insert into auth.users (id, email, raw_user_meta_data) values ($1,$2,$3) on conflict do nothing",
+    [id, `demo-yorumcu-${i + 1}@davetmekani.test`, JSON.stringify({ full_name: adSoyad })]);
+  return id;
+}));
+
 console.log("\n\x1b[1mDoğrulama\x1b[0m");
 const say = async (label, sql) => {
   const r = await q(sql);
@@ -55,6 +63,16 @@ await say("örnek arama: istanbul + düğün",
 await say("örnek arama: 300 kişi + otopark + açık alan",
   `select count(*)::int as n from public.search_venues(
      p_guest_count => 300, p_feature_slugs => array['otopark'], p_has_outdoor => true)`);
+await say("onaylı yorum", "select count(*)::int as n from public.reviews where status='APPROVED'");
+await say("puanı olan mekan",
+  "select count(*)::int as n from public.venues where rating_count > 0");
+await say("detay: bahce-davet",
+  `select jsonb_build_object(
+     'ad', d->>'name', 'gorsel', jsonb_array_length(d->'images'),
+     'ozellik', jsonb_array_length(d->'features'),
+     'etkinlik', jsonb_array_length(d->'event_types'),
+     'puan', d->>'rating_avg', 'yorum', d->>'rating_count') as detay
+   from (select public.get_venue_detail('bahce-davet') as d) x`);
 await say("örnek arama: fiyat 40.000–80.000, ucuzdan pahalıya",
   `select json_agg(x) as sonuc from (
      select name, starting_price from public.search_venues(

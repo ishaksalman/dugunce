@@ -125,3 +125,108 @@ export function toVenueCard(row: VenueSearchRow): VenueCardData {
     featureSlugs: row.feature_slugs ?? [],
   };
 }
+
+// --- Detay sayfası -----------------------------------------------------------
+// `get_venue_detail()` RPC'sinin döndürdüğü jsonb'nin karşılığı.
+
+export interface VenueDetailImage {
+  id: string;
+  url: string;
+  alt: string | null;
+  width: number | null;
+  height: number | null;
+  blur: string | null;
+}
+
+export interface VenueDetailFeature {
+  kind: FeatureKind;
+  group: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  note: string | null;
+}
+
+export interface VenueDetailEventType {
+  name: string;
+  slug: string;
+  seo_noun: string;
+}
+
+export interface VenueDetail {
+  id: string;
+  slug: string;
+  name: string;
+  address: string | null;
+  latitude: string | number | null;
+  longitude: string | number | null;
+  short_description: string | null;
+  description: string | null;
+  min_capacity: number | null;
+  max_capacity: number | null;
+  starting_price: string | number | null;
+  price_type: PriceType;
+  price_note: string | null;
+  has_indoor: boolean;
+  has_outdoor: boolean;
+  contact_phone: string | null;
+  contact_email: string | null;
+  website_url: string | null;
+  instagram_url: string | null;
+  rating_avg: string | number;
+  rating_count: number;
+  favorite_count: number;
+  is_featured: boolean;
+  published_at: string | null;
+  updated_at: string | null;
+  city: { name: string; slug: string };
+  district: { name: string; slug: string };
+  venue_type: { name: string; slug: string } | null;
+  images: VenueDetailImage[];
+  features: VenueDetailFeature[];
+  event_types: VenueDetailEventType[];
+}
+
+/**
+ * Sürücüler zaman damgalarını farklı döndürüyor: PostgREST (Supabase) ISO
+ * string, PGlite ise JS `Date`. Tip "string" derken runtime'da Date gelmesi
+ * `<time dateTime={...}>` içinde yerelleştirilmiş metin üretiyor ve hydration
+ * uyuşmazlığına yol açıyor. Sınırda tek biçime indiriyoruz.
+ */
+export function toIso(value: unknown): string {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  return new Date(String(value)).toISOString();
+}
+
+export function toIsoOrNull(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  return toIso(value);
+}
+
+export function normalizeReview(row: VenueReview): VenueReview {
+  return {
+    ...row,
+    created_at: toIso(row.created_at),
+    event_date: row.event_date === null ? null : String(row.event_date).slice(0, 10),
+  };
+}
+
+export function normalizeVenueDetail(row: VenueDetail): VenueDetail {
+  return {
+    ...row,
+    published_at: toIsoOrNull(row.published_at),
+    updated_at: toIsoOrNull(row.updated_at),
+  };
+}
+
+export interface VenueReview {
+  id: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  event_date: string | null;
+  author_name: string;
+  created_at: string;
+  total_count: string | number;
+}

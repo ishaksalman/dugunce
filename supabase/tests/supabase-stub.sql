@@ -1,13 +1,26 @@
--- Supabase ortamının test için taklidi.
--- Gerçek Supabase'de bu şema/roller hazır gelir; PGlite'ta biz kuruyoruz.
+-- Supabase ortamının test/geliştirme için taklidi.
+-- Gerçek Supabase'de bu şema ve roller hazır gelir; PGlite'ta biz kuruyoruz.
+--
+-- Bu dosya IDEMPOTENT olmak zorunda: kalıcı geliştirme veritabanı her açılışta
+-- yeniden çalıştırıyor (bkz. src/lib/db/pglite.ts).
 
-create role anon nologin;
-create role authenticated nologin;
-create role service_role nologin bypassrls;
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then
+    create role anon nologin;
+  end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then
+    create role authenticated nologin;
+  end if;
+  if not exists (select 1 from pg_roles where rolname = 'service_role') then
+    create role service_role nologin bypassrls;
+  end if;
+end
+$$;
 
 create schema if not exists auth;
 
-create table auth.users (
+create table if not exists auth.users (
   id                 uuid primary key,
   email              text unique,
   -- Supabase'de signUp options.data buraya yazılır.

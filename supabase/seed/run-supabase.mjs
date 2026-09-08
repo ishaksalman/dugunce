@@ -13,7 +13,7 @@
  */
 import pg from "pg";
 import { createClient } from "@supabase/supabase-js";
-import { seedTaksonomi, seedDemoMekanlar } from "./apply.mjs";
+import { seedTaksonomi, seedDemoMekanlar, seedDemoYorumlar } from "./apply.mjs";
 
 const { DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
 const demoIstendi = process.argv.includes("--demo");
@@ -64,6 +64,27 @@ if (demoIstendi) {
 
   console.log("Demo mekanlar yükleniyor…");
   console.log(await seedDemoMekanlar(q, ownerIds));
+
+  console.log("Demo yorumlar yükleniyor…");
+  const reviewerCache = new Map();
+  console.log(await seedDemoYorumlar(q, async (i, adSoyad) => {
+    const email = `demo-yorumcu-${i + 1}@davetmekani.test`;
+    if (reviewerCache.has(email)) return reviewerCache.get(email);
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password: crypto.randomUUID(),
+      email_confirm: true,
+      user_metadata: { full_name: adSoyad },
+    });
+    if (error && !error.message.includes("already been registered")) throw error;
+    let id = data?.user?.id;
+    if (!id) {
+      const { rows } = await q("select id from auth.users where email = $1", [email]);
+      id = rows[0].id;
+    }
+    reviewerCache.set(email, id);
+    return id;
+  }));
 } else {
   console.log("Demo mekanlar atlandı (--demo bayrağı verilmedi).");
 }
