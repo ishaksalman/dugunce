@@ -22,7 +22,9 @@ create schema if not exists auth;
 
 create table if not exists auth.users (
   id                 uuid primary key,
-  email              text unique,
+  -- Gerçek Supabase'de varchar(255). `text` yazmak, RETURNS TABLE'da text
+  -- vaat eden fonksiyonların testte geçip üretimde patlamasına yol açıyor.
+  email              varchar(255) unique,
   -- Supabase'de signUp options.data buraya yazılır.
   raw_user_meta_data jsonb not null default '{}'::jsonb,
   created_at         timestamptz not null default now()

@@ -9,8 +9,9 @@
  * çıktıyla değiştirilebilir; isimler o çıktıyla uyumlu seçildi.
  */
 import type {
-  City, District, EventType, Feature, InquiryStatus, OwnerInquiry, UserRole,
-  VenueDetail, VenueReview, VenueSearchRow, VenueType,
+  AdminReview, AdminUser, AdminVenue, City, District, EventType, Feature,
+  InquiryStatus, OwnerInquiry, ReviewStatus, UserRole, VenueDetail, VenueReview,
+  VenueSearchRow, VenueStatus, VenueType,
 } from "@/types/db";
 import type { CreateInquiryResult } from "@/lib/db/source";
 
@@ -140,6 +141,50 @@ export interface Database {
       get_my_venues: {
         Args: Record<string, never>;
         Returns: Record<string, unknown>[];
+      };
+      admin_stats: { Args: Record<string, never>; Returns: Record<string, number> };
+      admin_list_venues: {
+        Args: {
+          p_status?: VenueStatus | null;
+          p_query?: string | null;
+          p_needs_review?: boolean | null;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: AdminVenue[];
+      };
+      admin_set_venue_status: {
+        Args: { p_venue_id: string; p_status: VenueStatus; p_reason?: string | null };
+        Returns: { ok: boolean };
+      };
+      admin_set_venue_featured: {
+        Args: { p_venue_id: string; p_featured: boolean; p_until?: string | null };
+        Returns: { ok: boolean };
+      };
+      admin_list_users: {
+        Args: {
+          p_role?: UserRole | null;
+          p_query?: string | null;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: AdminUser[];
+      };
+      admin_set_user_role: {
+        Args: { p_user_id: string; p_role: UserRole };
+        Returns: { ok: boolean };
+      };
+      admin_set_user_active: {
+        Args: { p_user_id: string; p_active: boolean; p_reason?: string | null };
+        Returns: { ok: boolean };
+      };
+      admin_list_reviews: {
+        Args: { p_status?: ReviewStatus | null; p_limit?: number; p_offset?: number };
+        Returns: AdminReview[];
+      };
+      admin_moderate_review: {
+        Args: { p_review_id: string; p_status: ReviewStatus; p_note?: string | null };
+        Returns: { ok: boolean };
       };
       get_venues_by_ids: {
         Args: { p_ids: string[] };

@@ -910,7 +910,137 @@ await step("reorder_venue_images sırayı güncelliyor", async () => {
 });
 
 // =============================================================================
-console.log("\n\x1b[1m14) Rol yükseltme ve görüntülenme\x1b[0m");
+console.log("\n\x1b[1m14) Yönetim paneli\x1b[0m");
+// =============================================================================
+await asUser(U.ownerA);
+for (const [ad, sorgu] of [
+  ["admin_stats", "select public.admin_stats()"],
+  ["admin_list_venues", "select * from public.admin_list_venues()"],
+  ["admin_list_users", "select * from public.admin_list_users()"],
+  ["admin_list_reviews", "select * from public.admin_list_reviews()"],
+]) {
+  await expectFail(
+    `mekan sahibi ${ad} çağıramıyor`,
+    () => db.query(sorgu),
+    "yönetici yetkisi");
+}
+
+await asAnon();
+await expectFail(
+  "anonim admin_stats çağıramıyor",
+  () => db.query("select public.admin_stats()"),
+  "");
+
+await asUser(U.admin);
+await step("admin_stats sayıları döndürüyor", async () => {
+  const r = await db.query("select public.admin_stats() as s");
+  const s2 = r.rows[0].s;
+  for (const alan of ["pending_venues", "published", "total_users", "inquiries_total"]) {
+    if (s2[alan] === undefined) throw new Error(`${alan} eksik`);
+  }
+  if (Number(s2.published) < 1) throw new Error(`published: ${s2.published}`);
+});
+
+await step("admin_list_venues sahip bilgisiyle geliyor", async () => {
+  const r = await db.query("select * from public.admin_list_venues()");
+  if (r.rows.length === 0) throw new Error("mekan dönmedi");
+  if (!r.rows[0].owner_name) throw new Error("sahip adı yok");
+});
+
+await step("inceleme bekleyenler listede önce geliyor", async () => {
+  await asServer();
+  const taslak = (await db.query(
+    "select id from public.venues where status = 'DRAFT' limit 1")).rows[0];
+  await db.query(
+    "update public.venues set status = 'PENDING_REVIEW' where id = $1", [taslak.id]);
+  await asUser(U.admin);
+  const r = await db.query("select id, status from public.admin_list_venues()");
+  if (r.rows[0].status !== "PENDING_REVIEW") {
+    throw new Error(`ilk sırada ${r.rows[0].status}`);
+  }
+});
+
+await expectFail(
+  "gerekçesiz reddetme engelleniyor",
+  () => db.query(
+    "select public.admin_set_venue_status($1, 'REJECTED', null)", [venueA]),
+  "Gerekçe zorunlu");
+
+await step("reddetme gerekçeyi kaydediyor ve iz bırakıyor", async () => {
+  await db.query(
+    "select public.admin_set_venue_status($1, 'REJECTED', $2)",
+    [venueA, "Fotoğraflar mekanı temsil etmiyor."]);
+  const v = await db.query(
+    "select status, rejection_reason, published_at from public.venues where id=$1", [venueA]);
+  if (v.rows[0].status !== "REJECTED") throw new Error(`durum ${v.rows[0].status}`);
+  if (!v.rows[0].rejection_reason) throw new Error("gerekçe yazılmadı");
+  if (v.rows[0].published_at !== null) throw new Error("published_at temizlenmedi");
+  const iz = await db.query(
+    "select action, note from public.admin_actions where entity_id=$1 order by created_at desc limit 1",
+    [venueA]);
+  if (iz.rows[0].action !== "status:REJECTED") throw new Error(`iz: ${iz.rows[0].action}`);
+});
+
+await step("onaylama gerekçeyi temizliyor", async () => {
+  await db.query("select public.admin_set_venue_status($1, 'PUBLISHED', null)", [venueA]);
+  const v = await db.query(
+    "select status, rejection_reason, published_at, needs_review from public.venues where id=$1",
+    [venueA]);
+  if (v.rows[0].status !== "PUBLISHED") throw new Error(`durum ${v.rows[0].status}`);
+  if (v.rows[0].rejection_reason !== null) throw new Error("gerekçe kaldı");
+  if (!v.rows[0].published_at) throw new Error("published_at yazılmadı");
+  if (v.rows[0].needs_review !== false) throw new Error("needs_review sıfırlanmadı");
+});
+
+await step("öne çıkarma çalışıyor", async () => {
+  await db.query("select public.admin_set_venue_featured($1, true, now() + interval '30 days')",
+    [venueA]);
+  const v = await db.query(
+    "select is_featured, featured_until from public.venues where id=$1", [venueA]);
+  if (!v.rows[0].is_featured || !v.rows[0].featured_until) throw new Error("öne çıkarılmadı");
+  await db.query("select public.admin_set_venue_featured($1, false, null)", [venueA]);
+  const v2 = await db.query(
+    "select is_featured, featured_until from public.venues where id=$1", [venueA]);
+  if (v2.rows[0].is_featured || v2.rows[0].featured_until) throw new Error("kaldırılmadı");
+});
+
+await expectFail(
+  "admin kendi rolünü değiştiremiyor",
+  () => db.query("select public.admin_set_user_role($1, 'customer')", [U.admin]),
+  "Kendi rolünüzü");
+
+await expectFail(
+  "admin kendi hesabını kapatamıyor",
+  () => db.query("select public.admin_set_user_active($1, false, null)", [U.admin]),
+  "Kendi hesabınızı");
+
+await step("kullanıcı rolü değiştirilebiliyor ve iz kalıyor", async () => {
+  await db.query("select public.admin_set_user_role($1, 'venue_owner')", [U.customer]);
+  const p = await db.query("select role from public.profiles where id=$1", [U.customer]);
+  if (p.rows[0].role !== "venue_owner") throw new Error(`rol ${p.rows[0].role}`);
+  const iz = await db.query(
+    "select action from public.admin_actions where entity_id=$1 order by created_at desc limit 1",
+    [U.customer]);
+  if (iz.rows[0].action !== "role:venue_owner") throw new Error(`iz: ${iz.rows[0].action}`);
+  await db.query("select public.admin_set_user_role($1, 'customer')", [U.customer]);
+});
+
+await step("yorum moderasyonu puanı güncelliyor", async () => {
+  await db.query("select public.admin_moderate_review($1, 'REJECTED', $2)",
+    [reviewId, "Doğrulanamadı."]);
+  const v = await db.query("select rating_count from public.venues where id=$1", [venueA]);
+  if (Number(v.rows[0].rating_count) !== 0) {
+    throw new Error(`reddedilen yorum sayılıyor: ${v.rows[0].rating_count}`);
+  }
+  await db.query("select public.admin_moderate_review($1, 'APPROVED', null)", [reviewId]);
+  const v2 = await db.query("select rating_count from public.venues where id=$1", [venueA]);
+  if (Number(v2.rows[0].rating_count) !== 1) {
+    throw new Error(`onaylanan yorum sayılmıyor: ${v2.rows[0].rating_count}`);
+  }
+});
+
+// =============================================================================
+console.log("\n\x1b[1m15) Rol yükseltme ve görüntülenme\x1b[0m");
 // =============================================================================
 await asUser(U.customer);
 await expectFail(

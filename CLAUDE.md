@@ -84,6 +84,29 @@ Pratikte iki fark:
   yerde tekrarlamayın — `ButtonLink` (`components/shared/button-link.tsx`)
   kullanın.
 
+## Yönetim paneli
+
+- Admin işlemleri doğrudan UPDATE ile YAPILMAZ. `admin_*` fonksiyonları
+  değişikliği ve `admin_actions` kaydını tek işlemde yazıyor; denetim izi
+  uygulama katmanına bırakılırsa atlanabilir.
+- Hepsi baştan `assert_admin()` çağırır — yetkisiz çağıran hata alır,
+  sessizce boş sonuç değil.
+- **Reddetme ve askıya alma gerekçesiz yapılamaz** (veritabanı zorluyor);
+  mekan sahibi ne düzelteceğini bilmeli.
+- Admin kendi rolünü ve hesap durumunu değiştiremez — son admin sistemden
+  kilitlenmesin.
+- İnceleme bekleyen mekan vitrinde görünmüyor; onaylayacak kişi mekanı
+  `/yonetim/mekanlar/[id]` ekranından görüyor (`get_venue_for_edit` admin'e
+  de açık).
+
+## Test ortamı
+
+`supabase/tests/supabase-stub.sql` GERÇEK Supabase tipleriyle hizalı olmak
+zorunda. `auth.users.email` stub'da `text` iken gerçekte `varchar(255)`;
+`returns table (... email text ...)` diyen fonksiyonlar testte geçip
+üretimde "structure of query does not match function result type" ile
+patladı. Yeni bir `auth` kolonu kullanırken tipini gerçeğiyle karşılaştır.
+
 ## Müşteri üyeliği YOK (bilinçli)
 
 MVP'de yalnızca mekan sahibi ve admin hesabı var. Gerekçe: asıl huni

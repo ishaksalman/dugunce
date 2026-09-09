@@ -365,3 +365,91 @@ export function normalizeVenueForEdit(row: VenueForEdit): VenueForEdit {
     davetpro_linked_at: toIsoOrNull(row.davetpro_linked_at),
   };
 }
+
+// --- Yönetim paneli ----------------------------------------------------------
+
+export type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface AdminStats {
+  pending_venues: number;
+  needs_review: number;
+  published: number;
+  draft: number;
+  rejected: number;
+  suspended: number;
+  pending_reviews: number;
+  total_users: number;
+  venue_owners: number;
+  inquiries_7d: number;
+  inquiries_total: number;
+}
+
+export interface AdminVenue {
+  id: string;
+  slug: string;
+  name: string;
+  status: VenueStatus;
+  needs_review: boolean;
+  completion_score: number;
+  city_name: string;
+  city_slug: string;
+  district_name: string;
+  district_slug: string;
+  owner_name: string;
+  owner_email: string | null;
+  cover_url: string | null;
+  view_count: number;
+  inquiry_count: number;
+  is_featured: boolean;
+  featured_until: string | null;
+  rejection_reason: string | null;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  total_count: string | number;
+}
+
+export interface AdminUser {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  role: UserRole;
+  is_active: boolean;
+  venue_count: string | number;
+  created_at: string;
+  total_count: string | number;
+}
+
+export interface AdminReview {
+  id: string;
+  venue_id: string;
+  venue_name: string;
+  venue_slug: string;
+  author_name: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  status: ReviewStatus;
+  admin_note: string | null;
+  created_at: string;
+  total_count: string | number;
+}
+
+export function normalizeAdminVenue(row: AdminVenue): AdminVenue {
+  return {
+    ...row,
+    featured_until: toIsoOrNull(row.featured_until),
+    published_at: toIsoOrNull(row.published_at),
+    created_at: toIso(row.created_at),
+    updated_at: toIso(row.updated_at),
+  };
+}
+
+export function normalizeAdminUser(row: AdminUser): AdminUser {
+  return { ...row, created_at: toIso(row.created_at) };
+}
+
+export function normalizeAdminReview(row: AdminReview): AdminReview {
+  return { ...row, created_at: toIso(row.created_at) };
+}

@@ -1,6 +1,8 @@
 import type {
-  City, District, EventType, Feature, InquiryStatus, OwnerInquiry, OwnerStats,
-  OwnerVenue, VenueCardData, VenueDetail, VenueForEdit, VenueReview, VenueType,
+  AdminReview, AdminStats, AdminUser, AdminVenue, City, District, EventType,
+  Feature, InquiryStatus, OwnerInquiry, OwnerStats, OwnerVenue, ReviewStatus,
+  UserRole, VenueCardData, VenueDetail, VenueForEdit, VenueReview, VenueStatus,
+  VenueType,
 } from "@/types/db";
 
 export interface SearchInput {
@@ -69,7 +71,44 @@ export interface DataSource {
 
   /** Favoriler için: verilen id'lerin kart verisi, gelen sırayla. */
   getVenuesByIds(ids: string[]): Promise<VenueCardData[]>;
+
+  // --- Yönetim --------------------------------------------------------------
+  // Hepsi veritabanında `assert_admin()` ile korunuyor; yetkisiz çağrı hata
+  // fırlatır, sessizce boş sonuç dönmez.
+  adminStats(): Promise<AdminStats>;
+  adminListVenues(input: AdminVenueQuery): Promise<AdminVenueResult>;
+  adminSetVenueStatus(venueId: string, status: VenueStatus, reason?: string): Promise<void>;
+  adminSetVenueFeatured(venueId: string, featured: boolean, until?: string): Promise<void>;
+  adminListUsers(input: AdminUserQuery): Promise<AdminUserResult>;
+  adminSetUserRole(userId: string, role: UserRole): Promise<void>;
+  adminSetUserActive(userId: string, active: boolean, reason?: string): Promise<void>;
+  adminListReviews(input: AdminReviewQuery): Promise<AdminReviewResult>;
+  adminModerateReview(reviewId: string, status: ReviewStatus, note?: string): Promise<void>;
 }
+
+export interface AdminVenueQuery {
+  status?: VenueStatus;
+  query?: string;
+  needsReview?: boolean;
+  limit?: number;
+  offset?: number;
+}
+export interface AdminVenueResult { items: AdminVenue[]; total: number }
+
+export interface AdminUserQuery {
+  role?: UserRole;
+  query?: string;
+  limit?: number;
+  offset?: number;
+}
+export interface AdminUserResult { items: AdminUser[]; total: number }
+
+export interface AdminReviewQuery {
+  status?: ReviewStatus;
+  limit?: number;
+  offset?: number;
+}
+export interface AdminReviewResult { items: AdminReview[]; total: number }
 
 export interface OwnerInquiryQuery {
   status?: InquiryStatus;

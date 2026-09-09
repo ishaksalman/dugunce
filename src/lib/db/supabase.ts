@@ -2,14 +2,17 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import {
-  normalizeInquiry, normalizeOwnerVenue, normalizeReview, normalizeVenueDetail,
-  normalizeVenueForEdit, toVenueCard, type InquiryStatus, type OwnerInquiry,
-  type OwnerStats, type OwnerVenue, type VenueDetail, type VenueForEdit,
-  type VenueReview, type VenueSearchRow,
+  normalizeAdminReview, normalizeAdminUser, normalizeAdminVenue, normalizeInquiry,
+  normalizeOwnerVenue, normalizeReview, normalizeVenueDetail, normalizeVenueForEdit,
+  toVenueCard, type AdminReview, type AdminStats, type AdminUser, type AdminVenue,
+  type InquiryStatus, type OwnerInquiry, type OwnerStats, type OwnerVenue,
+  type ReviewStatus, type UserRole, type VenueDetail, type VenueForEdit,
+  type VenueReview, type VenueSearchRow, type VenueStatus,
 } from "@/types/db";
 import type {
-  CreateInquiryInput, CreateInquiryResult, DataSource, OwnerInquiryQuery,
-  OwnerInquiryResult, SearchInput, SearchResult,
+  AdminReviewQuery, AdminReviewResult, AdminUserQuery, AdminUserResult,
+  AdminVenueQuery, AdminVenueResult, CreateInquiryInput, CreateInquiryResult,
+  DataSource, OwnerInquiryQuery, OwnerInquiryResult, SearchInput, SearchResult,
 } from "./source";
 import { inquiryRpcArgs, toRpcArgs } from "./source";
 
@@ -179,6 +182,94 @@ export const supabaseSource: DataSource = {
       "get_venues_by_ids",
     ) as VenueSearchRow[];
     return rows.map(toVenueCard);
+  },
+
+  // --- Yönetim -------------------------------------------------------------
+  // Çerez farkındalıklı istemci ŞART: assert_admin() auth.uid()'e bakıyor.
+  async adminStats(): Promise<AdminStats> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_stats");
+    if (error) throw new Error(`admin_stats: ${error.message}`);
+    return data as unknown as AdminStats;
+  },
+
+  async adminListVenues(input: AdminVenueQuery): Promise<AdminVenueResult> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_list_venues", {
+      p_status: input.status ?? null,
+      p_query: input.query ?? null,
+      p_needs_review: input.needsReview ?? null,
+      p_limit: input.limit ?? 25,
+      p_offset: input.offset ?? 0,
+    });
+    if (error) throw new Error(`admin_list_venues: ${error.message}`);
+    const items = ((data ?? []) as unknown as AdminVenue[]).map(normalizeAdminVenue);
+    return { items, total: items.length ? Number(items[0].total_count) : 0 };
+  },
+
+  async adminSetVenueStatus(venueId: string, status: VenueStatus, reason?: string) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_set_venue_status", {
+      p_venue_id: venueId, p_status: status, p_reason: reason ?? null,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminSetVenueFeatured(venueId: string, featured: boolean, until?: string) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_set_venue_featured", {
+      p_venue_id: venueId, p_featured: featured, p_until: until ?? null,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminListUsers(input: AdminUserQuery): Promise<AdminUserResult> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_list_users", {
+      p_role: input.role ?? null,
+      p_query: input.query ?? null,
+      p_limit: input.limit ?? 25,
+      p_offset: input.offset ?? 0,
+    });
+    if (error) throw new Error(`admin_list_users: ${error.message}`);
+    const items = ((data ?? []) as unknown as AdminUser[]).map(normalizeAdminUser);
+    return { items, total: items.length ? Number(items[0].total_count) : 0 };
+  },
+
+  async adminSetUserRole(userId: string, role: UserRole) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_set_user_role", {
+      p_user_id: userId, p_role: role,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminSetUserActive(userId: string, active: boolean, reason?: string) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_set_user_active", {
+      p_user_id: userId, p_active: active, p_reason: reason ?? null,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminListReviews(input: AdminReviewQuery): Promise<AdminReviewResult> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_list_reviews", {
+      p_status: input.status ?? null,
+      p_limit: input.limit ?? 25,
+      p_offset: input.offset ?? 0,
+    });
+    if (error) throw new Error(`admin_list_reviews: ${error.message}`);
+    const items = ((data ?? []) as unknown as AdminReview[]).map(normalizeAdminReview);
+    return { items, total: items.length ? Number(items[0].total_count) : 0 };
+  },
+
+  async adminModerateReview(reviewId: string, status: ReviewStatus, note?: string) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_moderate_review", {
+      p_review_id: reviewId, p_status: status, p_note: note ?? null,
+    });
+    if (error) throw new Error(error.message);
   },
 
   async listFeatures() {
