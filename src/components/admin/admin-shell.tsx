@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  Building2, LayoutDashboard, LogOut, Menu, MessageSquare, Users, X,
+  Building2, Globe, LayoutDashboard, LogOut, Menu, MessageSquare, Users, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/actions/auth";
@@ -16,6 +16,7 @@ const ICONS = {
   mekan: Building2,
   kullanici: Users,
   yorum: MessageSquare,
+  seo: Globe,
 } as const;
 
 export interface AdminNavItem {

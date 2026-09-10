@@ -17,6 +17,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
       badge: Number(stats.pending_venues) + Number(stats.needs_review),
     },
     { href: "/yonetim/kullanicilar", label: "Kullanıcılar", icon: "kullanici" },
+    { href: "/yonetim/seo", label: "SEO Sayfaları", icon: "seo" },
     {
       href: "/yonetim/yorumlar",
       label: "Yorumlar",

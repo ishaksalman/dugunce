@@ -238,5 +238,20 @@ bir tarafı değiştirirken önce orayı güncelle.
   (`/istanbul-dugun-mekanlari`). `/mekanlar?filtre=` her zaman `noindex,follow`.
 - Bir landing sayfası en az 3 yayınlanmış mekan yoksa `is_active=false` olur:
   200 döner ama `noindex` alır ve sitemap'e girmez. Boş sayfa üretme.
+- **Landing sayfası `searchParams` KULLANMAZ.** Kullanırsa Next rotayı
+  dinamik sayar, `generateStaticParams` işlevsiz kalır ve ana SEO yüzeyimiz
+  her istekte sunucuda render edilir. Sayfalama ayrı segmentte:
+  `/{landing}/sayfa/2` — `noindex, follow` alır, kanoniği 1. sayfadır.
+- **`get_seo_page` `SECURITY DEFINER` olmak zorunda.** RLS politikası
+  anonim kullanıcıya yalnızca aktif sayfaları okutuyor; invoker olsaydı eşik
+  altındaki sayfa `null` döner ve rota 404 verirdi (tasarım 200 + noindex).
+- `refresh_seo_pages()` yalnızca YENİ satır ekler ve aktifliği eşiğe göre
+  günceller — elle düzenlenmiş başlık ve metinleri EZMEZ.
+- **`event_types.seo_noun` küçük harfle saklanır.** Cümle içinde doğrudan
+  kullanılıyor ("İstanbul'da düğün için…"), başlıkta `tr_capitalize()` ile
+  büyütülüyor. Ters yön Türkçede `İ→i` sorununu doğuruyor.
 - Türkçe slug için tek fonksiyon: SQL'de `slugify_tr()`, JS'te
   `supabase/seed/apply.mjs → slugify()`. İkisi aynı sonucu vermeli.
+- Sitemap elle yazıldı (`/sitemap.xml` indeks + 3 parça). Next'in
+  `generateSitemaps` yardımcısı indeks üretmiyor, robots.txt ise tek adrese
+  işaret etmeli.

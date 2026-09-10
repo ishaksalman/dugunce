@@ -186,6 +186,48 @@ export interface Database {
         Args: { p_review_id: string; p_status: ReviewStatus; p_note?: string | null };
         Returns: { ok: boolean };
       };
+      list_venue_sitemap: {
+        Args: Record<string, never>;
+        Returns: { path: string; updated_at: string }[];
+      };
+      admin_list_seo_pages: {
+        Args: {
+          p_kind?: string | null;
+          p_active?: boolean | null;
+          p_query?: string | null;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: Record<string, unknown>[];
+      };
+      admin_update_seo_page: {
+        Args: {
+          p_id: string;
+          p_title?: string | null;
+          p_meta_description?: string | null;
+          p_h1?: string | null;
+          p_intro_html?: string | null;
+          p_min_venue_count?: number | null;
+          p_is_active?: boolean | null;
+        };
+        Returns: { ok: boolean };
+      };
+      admin_refresh_seo_pages: {
+        Args: { p_min_venues?: number };
+        Returns: Record<string, unknown>;
+      };
+      get_seo_page: {
+        Args: { p_path: string };
+        Returns: Record<string, unknown> | null;
+      };
+      list_active_seo_pages: {
+        Args: Record<string, never>;
+        Returns: { path: string; updated_at: string; kind: string }[];
+      };
+      refresh_seo_pages: {
+        Args: { p_min_venues?: number };
+        Returns: Record<string, number | boolean>;
+      };
       get_venues_by_ids: {
         Args: { p_ids: string[] };
         Returns: VenueSearchRow[];

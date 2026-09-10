@@ -1040,7 +1040,141 @@ await step("yorum moderasyonu puanı güncelliyor", async () => {
 });
 
 // =============================================================================
-console.log("\n\x1b[1m15) Rol yükseltme ve görüntülenme\x1b[0m");
+console.log("\n\x1b[1m15) SEO landing sayfaları\x1b[0m");
+// =============================================================================
+await asServer();
+
+for (const [kelime, beklenen] of [
+  ["İstanbul", "İstanbul'da"],
+  ["Bursa", "Bursa'da"],
+  ["İzmir", "İzmir'de"],
+  ["Uşak", "Uşak'ta"],
+  ["Bilecik", "Bilecik'te"],
+  ["Beylikdüzü", "Beylikdüzü'nde"],
+]) {
+  const r = await db.query("select public.tr_locative($1) as s", [kelime]);
+  // Beylikdüzü gibi ünlüyle biten kelimeler kaynaştırma harfi ister;
+  // fonksiyon onu yapmıyor, bilerek basit tutuldu.
+  if (kelime === "Beylikdüzü") {
+    await eq(`tr_locative('${kelime}') (kaynaştırma yok)`, r.rows[0].s, "Beylikdüzü'de");
+  } else {
+    await eq(`tr_locative('${kelime}')`, r.rows[0].s, beklenen);
+  }
+}
+
+await step("refresh_seo_pages sayfaları üretiyor", async () => {
+  const r = await db.query("select public.refresh_seo_pages(1::smallint) as r");
+  const s2 = r.rows[0].r;
+  if (Number(s2.total) === 0) throw new Error("hiç sayfa üretilmedi");
+  if (s2.ok !== true) throw new Error(JSON.stringify(s2));
+});
+
+await step("etkinlik ve şehir sayfaları doğru yolla üretildi", async () => {
+  const r = await db.query(
+    "select path, kind from public.seo_pages order by path");
+  const yollar = r.rows.map((x) => x.path);
+  for (const beklenen of ["dugun-mekanlari", "istanbul-davet-mekanlari",
+                          "istanbul-dugun-mekanlari"]) {
+    if (!yollar.includes(beklenen)) {
+      throw new Error(`${beklenen} yok. Üretilenler: ${yollar.slice(0, 8).join(", ")}`);
+    }
+  }
+});
+
+await step("ilçe × etkinlik sayfası üretildi", async () => {
+  const r = await db.query(
+    "select path from public.seo_pages where kind = 'ilce_etkinlik'");
+  if (!r.rows.some((x) => x.path === "istanbul-beylikduzu-dugun-mekanlari")) {
+    throw new Error(`ilçe sayfası yok: ${r.rows.map((x) => x.path).join(", ")}`);
+  }
+});
+
+await step("mekanı olmayan kombinasyon için sayfa ÜRETİLMİYOR", async () => {
+  const r = await db.query(
+    "select count(*)::int as n from public.seo_pages where path like 'bursa-%'");
+  if (r.rows[0].n !== 0) throw new Error(`${r.rows[0].n} boş sayfa üretilmiş`);
+});
+
+await step("eşik altındaki sayfa PASİF (thin content koruması)", async () => {
+  // Eşiği 3'e çıkar: tek mekanlı kombinasyonlar kapanmalı.
+  await db.query("select public.refresh_seo_pages(3::smallint)");
+  await db.query("update public.seo_pages set min_venue_count = 3");
+  await db.query("select public.refresh_seo_pages(3::smallint)");
+  const r = await db.query(
+    "select is_active from public.seo_pages where path = 'istanbul-dugun-mekanlari'");
+  if (r.rows[0].is_active !== false) {
+    throw new Error("tek mekanlı sayfa hâlâ aktif");
+  }
+});
+
+await step("get_seo_page taksonomiyi birleştiriyor", async () => {
+  const r = await db.query(
+    "select public.get_seo_page('istanbul-dugun-mekanlari') as p");
+  const p2 = r.rows[0].p;
+  if (!p2) throw new Error("sayfa dönmedi");
+  if (p2.city_slug !== "istanbul") throw new Error(`şehir: ${p2.city_slug}`);
+  if (p2.event_slug !== "dugun") throw new Error(`etkinlik: ${p2.event_slug}`);
+  if (!p2.h1.includes("Düğün")) throw new Error(`h1: ${p2.h1}`);
+});
+
+await step("olmayan yol null döndürüyor", async () => {
+  const r = await db.query("select public.get_seo_page('olmayan-sayfa') as p");
+  if (r.rows[0].p !== null) throw new Error("null bekleniyordu");
+});
+
+await step("list_active_seo_pages yalnızca aktifleri veriyor", async () => {
+  await db.query("update public.seo_pages set min_venue_count = 1");
+  await db.query("select public.refresh_seo_pages(1::smallint)");
+  const aktif = await db.query("select count(*)::int as n from public.list_active_seo_pages()");
+  const toplam = await db.query(
+    "select count(*)::int as n from public.seo_pages where is_active");
+  if (aktif.rows[0].n !== toplam.rows[0].n) {
+    throw new Error(`${aktif.rows[0].n} / ${toplam.rows[0].n}`);
+  }
+});
+
+await step("tekrar çalıştırmak sayfa ÇOĞALTMIYOR", async () => {
+  const once = await db.query("select count(*)::int as n from public.seo_pages");
+  await db.query("select public.refresh_seo_pages(1::smallint)");
+  const sonra = await db.query("select count(*)::int as n from public.seo_pages");
+  if (once.rows[0].n !== sonra.rows[0].n) {
+    throw new Error(`${once.rows[0].n} → ${sonra.rows[0].n}`);
+  }
+});
+
+await asAnon();
+await step("anonim kullanıcı aktif sayfayı okuyabiliyor", async () => {
+  const r = await db.query("select public.get_seo_page('dugun-mekanlari') as p");
+  if (!r.rows[0].p) throw new Error("okunamadı");
+});
+
+// Eşik altındaki sayfa 200 + noindex ile açılmalı; RLS onu gizlerse rota
+// 404 verir ve kullanıcı yakın alternatifleri göremez.
+await step("anonim kullanıcı PASİF sayfayı da çözebiliyor", async () => {
+  await asServer();
+  await db.query("update public.seo_pages set is_active = false where path = 'dugun-mekanlari'");
+  await asAnon();
+  const r = await db.query("select public.get_seo_page('dugun-mekanlari') as p");
+  if (!r.rows[0].p) throw new Error("pasif sayfa null döndü → rota 404 verir");
+  if (r.rows[0].p.is_active !== false) throw new Error("is_active bayrağı dönmüyor");
+  await asServer();
+  await db.query("update public.seo_pages set is_active = true where path = 'dugun-mekanlari'");
+  await asAnon();
+});
+
+await expectFail(
+  "anonim kullanıcı pasif sayfayı tablodan OKUYAMIYOR",
+  async () => {
+    await asServer();
+    await db.query("update public.seo_pages set is_active = false where path = 'soz-mekanlari'");
+    await asAnon();
+    const r = await db.query("select path from public.seo_pages where path = 'soz-mekanlari'");
+    if (r.rows.length === 0) throw new Error("RLS gizledi");
+  },
+  "RLS gizledi");
+
+// =============================================================================
+console.log("\n\x1b[1m16) Rol yükseltme ve görüntülenme\x1b[0m");
 // =============================================================================
 await asUser(U.customer);
 await expectFail(

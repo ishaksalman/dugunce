@@ -3,17 +3,21 @@
  * Bu veri hiçbir component'in içine gömülmez — arayüz her zaman DB'den okur.
  */
 
-/** `seo_noun` başlık üretiminde kullanılır: "İstanbul {seo_noun} Mekanları". */
+/**
+ * `seoAd` (seo_noun) KÜÇÜK HARFLE saklanır: cümle içinde doğrudan kullanılıyor
+ * ("İstanbul'da düğün için…"), başlıkta SQL'deki `tr_capitalize()` ile
+ * büyütülüyor. Ters yön Türkçede "İ→i" sorununu doğuruyor.
+ */
 export const ETKINLIK_TURLERI = [
-  { ad: "Düğün",              slug: "dugun",              seoAd: "Düğün",              ikon: "heart",     sira: 1 },
-  { ad: "Nişan",              slug: "nisan",              seoAd: "Nişan",              ikon: "gem",       sira: 2 },
-  { ad: "Kına Gecesi",        slug: "kina",               seoAd: "Kına",               ikon: "flame",     sira: 3 },
-  { ad: "Söz",                slug: "soz",                seoAd: "Söz",                ikon: "handshake", sira: 4 },
-  { ad: "Sünnet",             slug: "sunnet",             seoAd: "Sünnet",             ikon: "star",      sira: 5 },
-  { ad: "Doğum Günü",         slug: "dogum-gunu",         seoAd: "Doğum Günü",         ikon: "cake",      sira: 6 },
-  { ad: "Kurumsal Etkinlik",  slug: "kurumsal-etkinlik",  seoAd: "Kurumsal Etkinlik",  ikon: "briefcase", sira: 7 },
-  { ad: "Mezuniyet",          slug: "mezuniyet",          seoAd: "Mezuniyet",          ikon: "graduation-cap", sira: 8 },
-  { ad: "Diğer Davetler",     slug: "davet",              seoAd: "Davet",              ikon: "party-popper",   sira: 9 },
+  { ad: "Düğün",              slug: "dugun",              seoAd: "düğün",              ikon: "heart",     sira: 1 },
+  { ad: "Nişan",              slug: "nisan",              seoAd: "nişan",              ikon: "gem",       sira: 2 },
+  { ad: "Kına Gecesi",        slug: "kina",               seoAd: "kına",               ikon: "flame",     sira: 3 },
+  { ad: "Söz",                slug: "soz",                seoAd: "söz",                ikon: "handshake", sira: 4 },
+  { ad: "Sünnet",             slug: "sunnet",             seoAd: "sünnet",             ikon: "star",      sira: 5 },
+  { ad: "Doğum Günü",         slug: "dogum-gunu",         seoAd: "doğum günü",         ikon: "cake",      sira: 6 },
+  { ad: "Kurumsal Etkinlik",  slug: "kurumsal-etkinlik",  seoAd: "kurumsal etkinlik",  ikon: "briefcase", sira: 7 },
+  { ad: "Mezuniyet",          slug: "mezuniyet",          seoAd: "mezuniyet",          ikon: "graduation-cap", sira: 8 },
+  { ad: "Diğer Davetler",     slug: "davet",              seoAd: "davet",              ikon: "party-popper",   sira: 9 },
 ];
 
 export const MEKAN_TURLERI = [

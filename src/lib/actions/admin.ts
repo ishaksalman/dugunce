@@ -149,3 +149,54 @@ export async function moderateReview(input: unknown): Promise<ActionResult> {
     return unexpectedError("moderateReview", error);
   }
 }
+
+const seoPatchSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().trim().min(10).max(160).optional(),
+  metaDescription: z.string().trim().max(320).optional(),
+  h1: z.string().trim().min(3).max(160).optional(),
+  introHtml: z.string().trim().max(8000).optional(),
+  minVenueCount: z.coerce.number().int().min(1).max(50).optional(),
+  isActive: z.coerce.boolean().optional(),
+});
+
+export async function updateSeoPage(input: unknown): Promise<ActionResult> {
+  const parsed = seoPatchSchema.safeParse(input);
+  if (!parsed.success) {
+    return actionError(parsed.error.issues[0]?.message ?? "Geçersiz istek.");
+  }
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    const { id, ...patch } = parsed.data;
+    await db.adminUpdateSeoPage(id, patch);
+    revalidatePath("/yonetim/seo");
+    // Landing sayfası ISR ile önbellekte; metin değişince tazelensin.
+    revalidatePath("/[landing]", "page");
+    return actionOk();
+  } catch (error) {
+    if (error instanceof Error) return actionError(turkishError(error.message));
+    return unexpectedError("updateSeoPage", error);
+  }
+}
+
+/**
+ * Sayfaları yeniden üretir. Elle düzenlenmiş metinleri EZMEZ — üretim
+ * yalnızca yeni satır ekler ve aktifliği eşiğe göre günceller.
+ */
+export async function refreshSeoPages(minVenues: unknown): Promise<ActionResult<{ ozet: string }>> {
+  const parsed = z.coerce.number().int().min(1).max(50).default(3).safeParse(minVenues);
+  if (!parsed.success) return actionError("Geçersiz eşik.");
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    const sonuc = await db.adminRefreshSeoPages(parsed.data);
+    revalidatePath("/yonetim/seo");
+    return actionOk({
+      ozet: `${sonuc.total} sayfa · ${sonuc.active} aktif · ${sonuc.inactive} eşik altında`,
+    });
+  } catch (error) {
+    if (error instanceof Error) return actionError(turkishError(error.message));
+    return unexpectedError("refreshSeoPages", error);
+  }
+}

@@ -1,6 +1,8 @@
 import type {
-  AdminReview, AdminStats, AdminUser, AdminVenue, City, District, EventType,
+  AdminReview, AdminSeoPage, AdminStats, AdminUser, AdminVenue, City, District,
+  EventType,
   Feature, InquiryStatus, OwnerInquiry, OwnerStats, OwnerVenue, ReviewStatus,
+  SeoPage, SeoSitemapEntry,
   UserRole, VenueCardData, VenueDetail, VenueForEdit, VenueReview, VenueStatus,
   VenueType,
 } from "@/types/db";
@@ -72,6 +74,14 @@ export interface DataSource {
   /** Favoriler için: verilen id'lerin kart verisi, gelen sırayla. */
   getVenuesByIds(ids: string[]): Promise<VenueCardData[]>;
 
+  // --- SEO ------------------------------------------------------------------
+  /** Yol bulunamazsa null. Pasif sayfa da döner (200 + noindex için). */
+  getSeoPage(path: string): Promise<SeoPage | null>;
+  /** Sitemap için yalnızca aktif sayfalar. */
+  listActiveSeoPages(): Promise<SeoSitemapEntry[]>;
+  /** Sitemap için yayındaki mekanların tam yolları. */
+  listVenueSitemap(): Promise<{ path: string; updated_at: string }[]>;
+
   // --- Yönetim --------------------------------------------------------------
   // Hepsi veritabanında `assert_admin()` ile korunuyor; yetkisiz çağrı hata
   // fırlatır, sessizce boş sonuç dönmez.
@@ -84,6 +94,26 @@ export interface DataSource {
   adminSetUserActive(userId: string, active: boolean, reason?: string): Promise<void>;
   adminListReviews(input: AdminReviewQuery): Promise<AdminReviewResult>;
   adminModerateReview(reviewId: string, status: ReviewStatus, note?: string): Promise<void>;
+  adminListSeoPages(input: AdminSeoQuery): Promise<AdminSeoResult>;
+  adminUpdateSeoPage(id: string, patch: AdminSeoPatch): Promise<void>;
+  adminRefreshSeoPages(minVenues: number): Promise<Record<string, unknown>>;
+}
+
+export interface AdminSeoQuery {
+  kind?: string;
+  active?: boolean;
+  query?: string;
+  limit?: number;
+  offset?: number;
+}
+export interface AdminSeoResult { items: AdminSeoPage[]; total: number }
+export interface AdminSeoPatch {
+  title?: string;
+  metaDescription?: string;
+  h1?: string;
+  introHtml?: string | null;
+  minVenueCount?: number;
+  isActive?: boolean;
 }
 
 export interface AdminVenueQuery {

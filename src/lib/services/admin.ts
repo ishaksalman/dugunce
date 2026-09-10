@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { getDataSource } from "@/lib/db";
 import type {
-  AdminReviewQuery, AdminUserQuery, AdminVenueQuery,
+  AdminReviewQuery, AdminSeoQuery, AdminUserQuery, AdminVenueQuery,
 } from "@/lib/db/source";
 
 /**
@@ -32,4 +32,9 @@ export const listAdminUsers = cache(async (input: AdminUserQuery) => {
 export const listAdminReviews = cache(async (input: AdminReviewQuery) => {
   const db = await getDataSource();
   return db.adminListReviews({ ...input, limit: ADMIN_PAGE_SIZE });
+});
+
+export const listAdminSeoPages = cache(async (input: AdminSeoQuery) => {
+  const db = await getDataSource();
+  return db.adminListSeoPages({ ...input, limit: 50 });
 });

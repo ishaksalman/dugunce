@@ -453,3 +453,67 @@ export function normalizeAdminUser(row: AdminUser): AdminUser {
 export function normalizeAdminReview(row: AdminReview): AdminReview {
   return { ...row, created_at: toIso(row.created_at) };
 }
+
+// --- SEO landing sayfaları ---------------------------------------------------
+
+export type SeoPageKind = "etkinlik" | "sehir" | "sehir_etkinlik" | "ilce_etkinlik";
+
+export interface SeoFaqItem {
+  soru: string;
+  cevap: string;
+}
+
+/** `get_seo_page()` çıktısı — taksonomi birleştirilmiş hâlde. */
+export interface SeoPage {
+  id: string;
+  path: string;
+  kind: SeoPageKind;
+  title: string;
+  meta_description: string | null;
+  h1: string;
+  intro_html: string | null;
+  faq: SeoFaqItem[];
+  is_active: boolean;
+  min_venue_count: number;
+  updated_at: string;
+  city_slug: string | null;
+  city_name: string | null;
+  district_slug: string | null;
+  district_name: string | null;
+  event_slug: string | null;
+  event_name: string | null;
+  event_noun: string | null;
+}
+
+export interface SeoSitemapEntry {
+  path: string;
+  updated_at: string;
+  kind: SeoPageKind;
+}
+
+export function normalizeSeoPage(row: SeoPage): SeoPage {
+  return {
+    ...row,
+    updated_at: toIso(row.updated_at),
+    faq: Array.isArray(row.faq) ? row.faq : [],
+  };
+}
+
+export interface AdminSeoPage {
+  id: string;
+  path: string;
+  kind: SeoPageKind;
+  title: string;
+  meta_description: string | null;
+  h1: string;
+  intro_html: string | null;
+  is_active: boolean;
+  min_venue_count: number;
+  venue_count: string | number;
+  updated_at: string;
+  total_count: string | number;
+}
+
+export function normalizeAdminSeoPage(row: AdminSeoPage): AdminSeoPage {
+  return { ...row, updated_at: toIso(row.updated_at) };
+}

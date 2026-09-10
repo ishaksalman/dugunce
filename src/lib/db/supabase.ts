@@ -2,15 +2,19 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import {
-  normalizeAdminReview, normalizeAdminUser, normalizeAdminVenue, normalizeInquiry,
+  normalizeAdminReview, normalizeAdminSeoPage, normalizeAdminUser, normalizeAdminVenue,
+  normalizeInquiry,
   normalizeOwnerVenue, normalizeReview, normalizeVenueDetail, normalizeVenueForEdit,
-  toVenueCard, type AdminReview, type AdminStats, type AdminUser, type AdminVenue,
+  toVenueCard, type AdminReview, type AdminSeoPage, type AdminStats, type AdminUser,
+  type AdminVenue,
   type InquiryStatus, type OwnerInquiry, type OwnerStats, type OwnerVenue,
-  type ReviewStatus, type UserRole, type VenueDetail, type VenueForEdit,
+  normalizeSeoPage, type ReviewStatus, type SeoPage, type SeoSitemapEntry,
+  type UserRole, type VenueDetail, type VenueForEdit,
   type VenueReview, type VenueSearchRow, type VenueStatus,
 } from "@/types/db";
 import type {
-  AdminReviewQuery, AdminReviewResult, AdminUserQuery, AdminUserResult,
+  AdminReviewQuery, AdminReviewResult, AdminSeoPatch, AdminSeoQuery, AdminSeoResult,
+  AdminUserQuery, AdminUserResult,
   AdminVenueQuery, AdminVenueResult, CreateInquiryInput, CreateInquiryResult,
   DataSource, OwnerInquiryQuery, OwnerInquiryResult, SearchInput, SearchResult,
 } from "./source";
@@ -270,6 +274,70 @@ export const supabaseSource: DataSource = {
       p_review_id: reviewId, p_status: status, p_note: note ?? null,
     });
     if (error) throw new Error(error.message);
+  },
+
+  async adminListSeoPages(input: AdminSeoQuery): Promise<AdminSeoResult> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_list_seo_pages", {
+      p_kind: input.kind ?? null,
+      p_active: input.active ?? null,
+      p_query: input.query ?? null,
+      p_limit: input.limit ?? 50,
+      p_offset: input.offset ?? 0,
+    });
+    if (error) throw new Error(`admin_list_seo_pages: ${error.message}`);
+    const items = ((data ?? []) as unknown as AdminSeoPage[]).map(normalizeAdminSeoPage);
+    return { items, total: items.length ? Number(items[0].total_count) : 0 };
+  },
+
+  async adminUpdateSeoPage(id: string, patch: AdminSeoPatch) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_update_seo_page", {
+      p_id: id,
+      p_title: patch.title ?? null,
+      p_meta_description: patch.metaDescription ?? null,
+      p_h1: patch.h1 ?? null,
+      p_intro_html: patch.introHtml ?? null,
+      p_min_venue_count: patch.minVenueCount ?? null,
+      p_is_active: patch.isActive ?? null,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminRefreshSeoPages(minVenues: number) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_refresh_seo_pages", {
+      p_min_venues: minVenues,
+    });
+    if (error) throw new Error(error.message);
+    return data as Record<string, unknown>;
+  },
+
+  async getSeoPage(path: string): Promise<SeoPage | null> {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase.rpc("get_seo_page", { p_path: path });
+    if (error) throw new Error(`get_seo_page: ${error.message}`);
+    return data ? normalizeSeoPage(data as unknown as SeoPage) : null;
+  },
+
+  async listActiveSeoPages(): Promise<SeoSitemapEntry[]> {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase.rpc("list_active_seo_pages");
+    if (error) throw new Error(`list_active_seo_pages: ${error.message}`);
+    return ((data ?? []) as unknown as SeoSitemapEntry[]).map((e) => ({
+      ...e,
+      updated_at: new Date(e.updated_at).toISOString(),
+    }));
+  },
+
+  async listVenueSitemap() {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase.rpc("list_venue_sitemap");
+    if (error) throw new Error(`list_venue_sitemap: ${error.message}`);
+    return ((data ?? []) as unknown as { path: string; updated_at: string }[]).map((v) => ({
+      path: v.path,
+      updated_at: new Date(v.updated_at).toISOString(),
+    }));
   },
 
   async listFeatures() {
