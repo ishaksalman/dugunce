@@ -1,4 +1,5 @@
-import { ExternalLink, MapPin } from "lucide-react";
+import { ExternalLink, MapPin, Star } from "lucide-react";
+import { isGoogleMapsUrl } from "@/lib/schemas/venue";
 
 /**
  * Konum bloğu.
@@ -15,6 +16,7 @@ export function VenueMap({
   cityName,
   latitude,
   longitude,
+  googleMapsUrl,
 }: {
   name: string;
   address: string | null;
@@ -22,6 +24,7 @@ export function VenueMap({
   cityName: string;
   latitude: number | null;
   longitude: number | null;
+  googleMapsUrl: string | null;
 }) {
   const hasCoords = latitude !== null && longitude !== null;
   const query = encodeURIComponent(`${name}, ${districtName}, ${cityName}`);
@@ -61,15 +64,37 @@ export function VenueMap({
         </div>
       )}
 
-      <a
-        href={externalHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-      >
-        Haritada aç
-        <ExternalLink className="size-3.5" aria-hidden />
-      </a>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <a
+          href={externalHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        >
+          Haritada aç
+          <ExternalLink className="size-3.5" aria-hidden />
+        </a>
+
+        {/*
+          Mekan sahibinin girdiği adres. Kısıt veritabanında da var (0022);
+          burada bir kez daha bakıyoruz, çünkü basılacağı yer herkese açık
+          sayfa. `nofollow`: kullanıcı içeriği.
+          Google PUANINI buraya YAZMIYORUZ — kendi aggregateRating'imize
+          karışır ve lisanslı veriyi kopyalamış oluruz.
+        */}
+        {googleMapsUrl && isGoogleMapsUrl(googleMapsUrl) ? (
+          <a
+            href={googleMapsUrl}
+            target="_blank"
+            rel="nofollow noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          >
+            <Star className="size-3.5" aria-hidden />
+            Google&apos;da yorumları oku
+            <ExternalLink className="size-3.5" aria-hidden />
+          </a>
+        ) : null}
+      </div>
     </div>
   );
 }

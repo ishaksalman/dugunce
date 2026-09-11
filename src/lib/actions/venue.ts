@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateVenuePage } from "@/lib/revalidate";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth/session";
@@ -109,6 +110,7 @@ async function saveStep(
 
   revalidatePath(`/panel/mekanlarim/${parsedId.data}`, "layout");
   revalidatePath("/panel");
+  await revalidateVenuePage(parsedId.data);
   return actionOk();
 }
 
@@ -171,6 +173,7 @@ export async function saveVenueLocation(
       address: parsed.data.address,
       latitude: parsed.data.latitude,
       longitude: parsed.data.longitude,
+      google_maps_url: parsed.data.googleMapsUrl,
     });
   } catch (error) {
     return unexpectedError("saveVenueLocation", error);
@@ -258,6 +261,7 @@ export async function saveVenueServices(
     if (eError) return actionError("Etkinlik türleri kaydedilemedi.");
 
     revalidatePath(`/panel/mekanlarim/${venueId}`, "layout");
+    await revalidateVenuePage(venueId);
     return actionOk();
   } catch (error) {
     return unexpectedError("saveVenueServices", error);

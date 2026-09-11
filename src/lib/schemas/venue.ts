@@ -67,6 +67,39 @@ export const venueBasicsSchema = z.object({
   instagramUrl: optionalUrl,
 });
 
+/**
+ * Google işletme bağlantısı için host beyaz listesi.
+ *
+ * Bu adres herkese açık mekan sayfasında <a href> olarak basılıyor; serbest
+ * bırakılırsa vitrin, mekan sahibinin istediği yere giden bir yönlendirme
+ * yüzeyi olur. Aynı kural veritabanında da kısıt olarak duruyor (0022) —
+ * burası kullanıcıya nazik hata vermek için.
+ */
+const GOOGLE_MAPS_HOSTS = [
+  "maps.app.goo.gl",
+  "goo.gl",
+  "maps.google.com",
+  "www.google.com",
+  "google.com",
+];
+
+export function isGoogleMapsUrl(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  const host = url.hostname.toLowerCase();
+  // google.com.tr, google.de … ülke uzantıları da geçerli.
+  const googleDomain = /^(www\.)?google(\.[a-z]{2,3}){1,2}$/.test(host);
+  if (!GOOGLE_MAPS_HOSTS.includes(host) && !googleDomain) return false;
+  if (host === "goo.gl") return url.pathname.startsWith("/maps/");
+  if (host === "maps.app.goo.gl" || host === "maps.google.com") return true;
+  return url.pathname.startsWith("/maps");
+}
+
 export const venueLocationSchema = z.object({
   cityId: z.string().uuid("Şehir seçin."),
   districtId: z.string().uuid("İlçe seçin."),
@@ -79,6 +112,12 @@ export const venueLocationSchema = z.object({
     .union([z.literal(""), z.coerce.number().min(-180).max(180)])
     .optional()
     .transform((v) => (v === "" || v === undefined ? null : Number(v))),
+  googleMapsUrl: z
+    .union([z.literal(""), z.string().trim().url().max(500).refine(isGoogleMapsUrl, {
+      message: "Yalnızca Google Maps bağlantısı kabul ediliyor.",
+    })])
+    .optional()
+    .transform((v) => (v ? v : null)),
 });
 
 export const venueCapacitySchema = z

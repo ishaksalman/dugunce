@@ -856,6 +856,41 @@ await step("düzenleme verisi id listelerini içeriyor", async () => {
   if (d.images.length !== 5) throw new Error(`görsel ${d.images.length}`);
 });
 
+await step("Google bağlantısı yalnızca Google adresini kabul ediyor", async () => {
+  // Bu adres herkese açık mekan sayfasında <a href> olarak basılıyor;
+  // serbest bırakılsa vitrin, sahibin istediği yere giden yönlendirme olurdu.
+  for (const kotu of [
+    "https://ornek.com/maps",
+    "https://google.com.evil.tr/maps",
+    "http://www.google.com/maps/place/x",
+    "javascript:alert(1)",
+  ]) {
+    let gecti = false;
+    try {
+      await db.query("update public.venues set google_maps_url = $2 where id = $1",
+        [venueA, kotu]);
+      gecti = true;
+    } catch { /* beklenen */ }
+    if (gecti) throw new Error(`kısıt geçildi: ${kotu}`);
+  }
+
+  for (const iyi of [
+    "https://maps.app.goo.gl/AbCdEf123",
+    "https://www.google.com/maps/place/Bahce+Davet",
+    "https://maps.google.com/?cid=123",
+    "https://www.google.com.tr/maps/place/x",
+  ]) {
+    await db.query("update public.venues set google_maps_url = $2 where id = $1",
+      [venueA, iyi]);
+  }
+
+  const r = await db.query("select public.get_venue_for_edit($1) as d", [venueA]);
+  if (!r.rows[0].d.google_maps_url) throw new Error("düzenleme verisinde yok");
+  const v = await db.query("select public.get_venue_detail($1) as d",
+    [(await db.query("select slug from public.venues where id=$1", [venueA])).rows[0].slug]);
+  if (!v.rows[0].d.google_maps_url) throw new Error("vitrin verisinde yok");
+});
+
 await asUser(U.ownerB);
 await step("başka sahip düzenleme verisini ALAMIYOR", async () => {
   const r = await db.query("select public.get_venue_for_edit($1) as d", [venueA]);

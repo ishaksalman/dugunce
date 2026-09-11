@@ -21,11 +21,33 @@ import {
 import { getEventTypes } from "@/lib/services/taxonomy";
 import { breadcrumbJsonLd, venueJsonLd } from "@/lib/seo/jsonld";
 import { formatCapacity, formatRating, formatStartingPrice } from "@/lib/format";
+import { listVenueSitemap } from "@/lib/services/seo";
 import { SITE } from "@/lib/constants";
 
-// Detay sayfaları statik üretilir ve saatte bir tazelenir. Mekan onaylandığında
-// veya güncellendiğinde ayrıca on-demand revalidate edilecek (P5/P6).
+// Detay sayfaları statik üretilir ve saatte bir tazelenir. Bu süre yalnızca
+// ağ: mekan düzenlendiğinde, fotoğrafı değiştiğinde veya admin durumunu
+// değiştirdiğinde `revalidateVenuePage` (lib/revalidate.ts) sayfayı anında
+// yeniliyor. Askıya alınan mekanın bir saat daha vitrinde kalmaması için şart.
 export const revalidate = 3600;
+
+/**
+ * Yayındaki mekanları build sırasında üretir.
+ *
+ * DİKKAT: bu fonksiyon olmadan Next rotayı hiç önbelleğe ALMIYOR —
+ * `revalidate` yazılı olmasına rağmen prerender-manifest'e girmiyor ve
+ * her istek sunucuda render ediliyordu. Mekan detayı landing sayfalarıyla
+ * birlikte iki ana SEO yüzeyimizden biri.
+ *
+ * Listede olmayan (build'den sonra yayınlanan) mekan ilk istekte üretilip
+ * önbelleğe alınır; `dynamicParams` varsayılanı bunu zaten yapıyor.
+ */
+export async function generateStaticParams() {
+  const venues = await listVenueSitemap();
+  return venues.slice(0, 500).map((v) => {
+    const [, , sehir, ilce, slug] = v.path.split("/");
+    return { sehir, ilce, slug };
+  });
+}
 
 type Params = { sehir: string; ilce: string; slug: string };
 
@@ -234,6 +256,7 @@ export default async function VenueDetailPage(
                 cityName={venue.city.name}
                 latitude={venue.latitude === null ? null : Number(venue.latitude)}
                 longitude={venue.longitude === null ? null : Number(venue.longitude)}
+                googleMapsUrl={venue.google_maps_url}
               />
             </Section>
 

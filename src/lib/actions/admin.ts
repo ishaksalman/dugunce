@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateVenuePage } from "@/lib/revalidate";
 import { z } from "zod";
 import { getDataSource } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
@@ -60,6 +61,9 @@ export async function setVenueStatus(input: unknown): Promise<ActionResult> {
     const db = await getDataSource();
     await db.adminSetVenueStatus(parsed.data.venueId, parsed.data.status, parsed.data.reason);
     tazele();
+    // Askıya alınan mekan önbellekten DÜŞMELİ; yayına alınan da hemen
+    // görünmeli. Liste sayfalarını tazelemek detay sayfasını kapsamıyor.
+    await revalidateVenuePage(parsed.data.venueId);
     return actionOk();
   } catch (error) {
     if (error instanceof Error) return actionError(turkishError(error.message));
@@ -84,6 +88,7 @@ export async function setVenueFeatured(input: unknown): Promise<ActionResult> {
       : undefined;
     await db.adminSetVenueFeatured(parsed.data.venueId, parsed.data.featured, until);
     tazele();
+    await revalidateVenuePage(parsed.data.venueId);
     return actionOk();
   } catch (error) {
     if (error instanceof Error) return actionError(turkishError(error.message));

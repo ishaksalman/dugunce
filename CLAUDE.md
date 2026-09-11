@@ -252,6 +252,18 @@ bir tarafı değiştirirken önce orayı güncelle.
   büyütülüyor. Ters yön Türkçede `İ→i` sorununu doğuruyor.
 - Türkçe slug için tek fonksiyon: SQL'de `slugify_tr()`, JS'te
   `supabase/seed/apply.mjs → slugify()`. İkisi aynı sonucu vermeli.
+- **Mekan detayı `generateStaticParams` OLMADAN önbelleğe ALINMIYOR.**
+  `export const revalidate` tek başına yetmiyor; fonksiyon yoksa rota
+  prerender-manifest'e girmiyor ve her istek sunucuda render ediliyor.
+  Landing sayfaları ve mekan detayı iki SEO yüzeyimiz — build çıktısında
+  ikisi de `●` olmalı, `ƒ` görürsen bir şey bozulmuş.
+- **Vitrini değiştiren her eylem `revalidateVenuePage()` çağırır**
+  (`lib/revalidate.ts`). ISR penceresi 1 saat; askıya alınan mekanın o süre
+  boyunca yayında kalmaması buna bağlı.
+- **Mekan sahibinin girdiği dış bağlantılar host beyaz listesinden geçer.**
+  `google_maps_url` hem Zod'da (`isGoogleMapsUrl`) hem veritabanı kısıtında
+  (0022) sınırlı; vitrin herkese açık, serbest bırakılırsa yönlendirme
+  yüzeyine dönüşür. Google PUANI kendi `aggregateRating`'imize KARIŞMAZ.
 - Sitemap elle yazıldı (`/sitemap.xml` indeks + 3 parça). Next'in
   `generateSitemaps` yardımcısı indeks üretmiyor, robots.txt ise tek adrese
   işaret etmeli.

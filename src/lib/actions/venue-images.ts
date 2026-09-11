@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateVenuePage } from "@/lib/revalidate";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth/session";
@@ -70,6 +71,7 @@ export async function attachVenueImage(input: unknown): Promise<ActionResult> {
     }
 
     revalidatePath(`/panel/mekanlarim/${venueId}`, "layout");
+    await revalidateVenuePage(venueId);
     return actionOk();
   } catch (error) {
     return unexpectedError("attachVenueImage", error);
@@ -120,6 +122,7 @@ export async function deleteVenueImage(
     }
 
     revalidatePath(`/panel/mekanlarim/${parsed.data.venueId}`, "layout");
+    await revalidateVenuePage(parsed.data.venueId);
     return actionOk();
   } catch (error) {
     return unexpectedError("deleteVenueImage", error);
@@ -144,6 +147,7 @@ export async function setVenueCoverImage(
       .eq("venue_id", parsed.data.venueId);
     if (error) return actionError("Kapak seçilemedi.");
     revalidatePath(`/panel/mekanlarim/${parsed.data.venueId}`, "layout");
+    await revalidateVenuePage(parsed.data.venueId);
     return actionOk();
   } catch (error) {
     return unexpectedError("setVenueCoverImage", error);
@@ -167,6 +171,7 @@ export async function reorderVenueImages(
     });
     if (error) return actionError("Sıralama kaydedilemedi.");
     revalidatePath(`/panel/mekanlarim/${parsed.data.venueId}`, "layout");
+    await revalidateVenuePage(parsed.data.venueId);
     return actionOk();
   } catch (error) {
     return unexpectedError("reorderVenueImages", error);

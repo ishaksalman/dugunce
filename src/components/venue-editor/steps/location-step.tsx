@@ -120,6 +120,24 @@ export function LocationStep({
               />
             </Field>
           </div>
+
+          <Field
+            id="konum-google"
+            label="Google işletme sayfası"
+            error={errors.googleMapsUrl}
+            hint="Detay sayfasında “Google’da yorumları oku” bağlantısı olarak çıkar. Google Maps’te işletmenizi bulup Paylaş › Bağlantıyı kopyala deyin."
+          >
+            <input
+              id="konum-google"
+              name="googleMapsUrl"
+              type="url"
+              inputMode="url"
+              defaultValue={venue.google_maps_url ?? ""}
+              placeholder="https://maps.app.goo.gl/…"
+              maxLength={500}
+              className={inputClass(errors.googleMapsUrl)}
+            />
+          </Field>
         </>
       )}
     </StepForm>

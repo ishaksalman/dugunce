@@ -175,6 +175,7 @@ export interface VenueDetail {
   contact_email: string | null;
   website_url: string | null;
   instagram_url: string | null;
+  google_maps_url: string | null;
   rating_avg: string | number;
   rating_count: number;
   favorite_count: number;
@@ -349,6 +350,7 @@ export interface VenueForEdit {
   contact_email: string | null;
   website_url: string | null;
   instagram_url: string | null;
+  google_maps_url: string | null;
   davetpro_business_id: string | null;
   davetpro_linked_at: string | null;
   city: { name: string; slug: string };
