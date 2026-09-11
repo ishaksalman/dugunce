@@ -256,3 +256,36 @@
 @utility container-page {
   @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8;
 }
+
+/* --- İçerik sayfaları (hakkımızda, gizlilik, kullanım koşulları) ---------- */
+/* Tailwind typography eklentisi yerine ihtiyacımız kadarı: bu sayfalarda
+   yalnızca başlık, paragraf, liste ve bağlantı var. */
+@layer components {
+  .icerik h1 {
+    @apply font-heading text-3xl sm:text-4xl;
+  }
+  .icerik h2 {
+    @apply mt-10 font-heading text-xl sm:text-2xl;
+  }
+  .icerik h3 {
+    @apply mt-6 text-base font-medium;
+  }
+  .icerik p {
+    @apply mt-4 leading-relaxed text-muted-foreground;
+  }
+  .icerik ul {
+    @apply mt-4 space-y-2 pl-5;
+  }
+  .icerik li {
+    @apply list-disc leading-relaxed text-muted-foreground;
+  }
+  .icerik a {
+    @apply text-primary underline-offset-4 hover:underline;
+  }
+  .icerik strong {
+    @apply font-medium text-foreground;
+  }
+  .icerik .ust-bilgi {
+    @apply mt-3 text-sm text-muted-foreground;
+  }
+}

@@ -10,6 +10,9 @@ export const SITE = {
     "Düğün, nişan, kına ve tüm özel günlerin için Türkiye'nin en güzel davet mekanlarını keşfet. Kapasite, fiyat ve hizmetleri karşılaştır, doğrudan teklif al.",
 } as const;
 
+/** Destek ve KVKK başvuru adresi. Tek yerde tutuluyor. */
+export const DESTEK_EPOSTA = "iletisim@davetmekani.com";
+
 /** Listeleme sayfası varsayılanları. */
 export const PAGINATION = {
   pageSize: 24,

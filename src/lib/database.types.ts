@@ -142,6 +142,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: Record<string, unknown>[];
       };
+      purge_expired_data: {
+        Args: Record<string, never>;
+        Returns: Record<string, number>;
+      };
       admin_stats: { Args: Record<string, never>; Returns: Record<string, number> };
       admin_list_venues: {
         Args: {

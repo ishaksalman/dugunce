@@ -1174,7 +1174,58 @@ await expectFail(
   "RLS gizledi");
 
 // =============================================================================
-console.log("\n\x1b[1m16) Rol yükseltme ve görüntülenme\x1b[0m");
+console.log("\n\x1b[1m16) Veri saklama süreleri\x1b[0m");
+// =============================================================================
+// Gizlilik metninde ilan edilen süreler gerçekten uygulanıyor mu?
+await asServer();
+
+await step("90 günden eski taleplerin IP özeti siliniyor", async () => {
+  const v = (await db.query(
+    "select id from public.venues where status='PUBLISHED' limit 1")).rows[0];
+  await db.query(
+    `insert into public.inquiries
+       (venue_id, full_name, phone, ip_hash, ua_hash, created_at)
+     values ($1, 'Eski Talep', '05001112233', 'eski-ip', 'eski-ua',
+             now() - interval '100 days')`, [v.id]);
+
+  const r = await db.query("select public.purge_expired_data() as r");
+  if (Number(r.rows[0].r.anonimlestirilen_talep) < 1) {
+    throw new Error(`anonimleştirilen: ${r.rows[0].r.anonimlestirilen_talep}`);
+  }
+  const kontrol = await db.query(
+    "select ip_hash, ua_hash, full_name from public.inquiries where full_name = 'Eski Talep'");
+  if (kontrol.rows[0].ip_hash !== null || kontrol.rows[0].ua_hash !== null) {
+    throw new Error("özetler silinmedi");
+  }
+  if (!kontrol.rows[0].full_name) throw new Error("talep silinmiş, oysa yalnızca iz silinmeli");
+});
+
+await step("3 yıldan eski talepler siliniyor", async () => {
+  const v = (await db.query(
+    "select id from public.venues where status='PUBLISHED' limit 1")).rows[0];
+  await db.query(
+    `insert into public.inquiries (venue_id, full_name, phone, created_at)
+     values ($1, 'Çok Eski Talep', '05009998877', now() - interval '4 years')`, [v.id]);
+  await db.query("select public.purge_expired_data()");
+  const kontrol = await db.query(
+    "select id from public.inquiries where full_name = 'Çok Eski Talep'");
+  if (kontrol.rows.length !== 0) throw new Error("eski talep silinmedi");
+});
+
+await step("güncel talepler korunuyor", async () => {
+  const r = await db.query(
+    "select count(*)::int as n from public.inquiries where created_at > now() - interval '1 day'");
+  if (r.rows[0].n === 0) throw new Error("güncel talep kalmadı");
+});
+
+await asUser(U.ownerA);
+await expectFail(
+  "mekan sahibi temizlik fonksiyonunu çağıramıyor",
+  () => db.query("select public.purge_expired_data()"),
+  "permission denied");
+
+// =============================================================================
+console.log("\n\x1b[1m17) Rol yükseltme ve görüntülenme\x1b[0m");
 // =============================================================================
 await asUser(U.customer);
 await expectFail(
