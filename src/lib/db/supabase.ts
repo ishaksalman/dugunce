@@ -6,6 +6,7 @@ import {
   normalizeInquiry,
   normalizeOwnerVenue, normalizeReview, normalizeVenueDetail, normalizeVenueForEdit,
   toVenueCard, type AdminReview, type AdminSeoPage, type AdminStats, type AdminUser,
+  type AdminDistrict, type AdminTaxonomy,
   type AdminVenue, type DavetProStatus,
   type InquiryStatus, type OwnerInquiry, type OwnerStats, type OwnerVenue,
   normalizeSeoPage, type ReviewStatus, type SeoPage, type SeoSitemapEntry,
@@ -320,6 +321,82 @@ export const supabaseSource: DataSource = {
     });
     if (error) throw new Error(error.message);
     return data as Record<string, unknown>;
+  },
+
+  // --- Taksonomi ------------------------------------------------------------
+
+  async adminListTaxonomy() {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_list_taxonomy");
+    if (error) throw new Error(error.message);
+    return data as unknown as AdminTaxonomy;
+  },
+
+  async adminListDistricts(cityId: string) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_list_districts", {
+      p_city_id: cityId,
+    });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as unknown as AdminDistrict[];
+  },
+
+  async adminUpsertEventType(input) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_upsert_event_type", {
+      p_id: input.id,
+      p_name: input.name,
+      p_seo_noun: input.seoNoun,
+      p_icon: input.icon,
+      p_sort_order: input.sortOrder,
+      p_is_active: input.isActive,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminUpsertVenueType(input) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_upsert_venue_type", {
+      p_id: input.id,
+      p_name: input.name,
+      p_sort_order: input.sortOrder,
+      p_is_active: input.isActive,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminUpsertFeature(input) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_upsert_feature", {
+      p_id: input.id,
+      p_kind: input.kind,
+      p_group_name: input.groupName,
+      p_name: input.name,
+      p_icon: input.icon,
+      p_is_filter: input.isFilter,
+      p_sort_order: input.sortOrder,
+      p_is_active: input.isActive,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminSetCityPopular(cityId: string, popular: boolean) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_set_city_popular", {
+      p_city_id: cityId,
+      p_popular: popular,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminUpsertDistrict(input) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_upsert_district", {
+      p_id: input.id,
+      p_city_id: input.cityId,
+      p_name: input.name,
+    });
+    if (error) throw new Error(error.message);
   },
 
   async getSeoPage(path: string): Promise<SeoPage | null> {

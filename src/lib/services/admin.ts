@@ -38,3 +38,13 @@ export const listAdminSeoPages = cache(async (input: AdminSeoQuery) => {
   const db = await getDataSource();
   return db.adminListSeoPages({ ...input, limit: 50 });
 });
+
+export const getAdminTaxonomy = cache(async () => {
+  const db = await getDataSource();
+  return db.adminListTaxonomy();
+});
+
+export const listAdminDistricts = cache(async (cityId: string) => {
+  const db = await getDataSource();
+  return db.adminListDistricts(cityId);
+});

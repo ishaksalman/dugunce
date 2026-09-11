@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import {
-  Building2, Globe, LayoutDashboard, LogOut, Menu, MessageSquare, Users, X,
-} from "lucide-react";
+import { Building2, Globe, LayoutDashboard, LogOut, Menu, MessageSquare, Tags, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
@@ -17,6 +15,7 @@ const ICONS = {
   kullanici: Users,
   yorum: MessageSquare,
   seo: Globe,
+  taksonomi: Tags,
 } as const;
 
 export interface AdminNavItem {

@@ -529,3 +529,62 @@ export interface DavetProStatus {
   basarisiz: number;
   son_hata: string | null;
 }
+
+// --- Taksonomi yönetimi ------------------------------------------------------
+
+export interface AdminEventType {
+  id: string;
+  name: string;
+  slug: string;
+  seo_noun: string;
+  icon: string | null;
+  sort_order: number;
+  is_active: boolean;
+  venue_count: number;
+}
+
+export interface AdminVenueType {
+  id: string;
+  name: string;
+  slug: string;
+  sort_order: number;
+  is_active: boolean;
+  venue_count: number;
+}
+
+export interface AdminFeature {
+  id: string;
+  kind: "ozellik" | "hizmet";
+  group_name: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  is_filter: boolean;
+  sort_order: number;
+  is_active: boolean;
+  venue_count: number;
+}
+
+export interface AdminCity {
+  id: string;
+  name: string;
+  slug: string;
+  plate_code: number;
+  is_popular: boolean;
+  venue_count: number;
+  district_count: number;
+}
+
+export interface AdminDistrict {
+  id: string;
+  name: string;
+  slug: string;
+  venue_count: number;
+}
+
+export interface AdminTaxonomy {
+  event_types: AdminEventType[];
+  venue_types: AdminVenueType[];
+  features: AdminFeature[];
+  cities: AdminCity[];
+}

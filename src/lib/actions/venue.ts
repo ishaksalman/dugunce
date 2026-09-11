@@ -10,20 +10,7 @@ import {
   venueDescriptionSchema, venueLocationSchema, venuePricingSchema,
   venueServicesSchema,
 } from "@/lib/schemas/venue";
-import { actionError, actionOk, unexpectedError, type ActionResult } from "@/lib/errors";
-
-function fieldErrorsOf(error: { issues: { path: PropertyKey[]; message: string }[] }) {
-  const out: Record<string, string> = {};
-  for (const issue of error.issues) {
-    const key = issue.path[0];
-    if (typeof key === "string" && !out[key]) out[key] = issue.message;
-  }
-  return out;
-}
-
-function invalid(error: Parameters<typeof fieldErrorsOf>[0]) {
-  return actionError("Lütfen formdaki hataları düzeltin.", fieldErrorsOf(error));
-}
+import { actionError, actionOk, invalidInput, unexpectedError, type ActionResult } from "@/lib/errors";
 
 /**
  * Yeni mekan. Yalnızca kimlik bilgisiyle taslak açılır; gerisi wizard'da.
@@ -35,7 +22,7 @@ export async function createVenue(
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = venueCreateSchema.safeParse(input);
-  if (!parsed.success) return invalid(parsed.error);
+  if (!parsed.success) return invalidInput(parsed.error);
 
   try {
     const user = await requireUser("/panel/mekanlarim/yeni");
@@ -119,7 +106,7 @@ export async function saveVenueBasics(
   input: unknown,
 ): Promise<ActionResult> {
   const parsed = venueBasicsSchema.safeParse(input);
-  if (!parsed.success) return invalid(parsed.error);
+  if (!parsed.success) return invalidInput(parsed.error);
   try {
     const supabase = await createClient();
     // Slug yalnızca TASLAKKEN adla birlikte değişir; yayındaki bir mekanın
@@ -165,7 +152,7 @@ export async function saveVenueLocation(
   input: unknown,
 ): Promise<ActionResult> {
   const parsed = venueLocationSchema.safeParse(input);
-  if (!parsed.success) return invalid(parsed.error);
+  if (!parsed.success) return invalidInput(parsed.error);
   try {
     return await saveStep(venueId, {
       city_id: parsed.data.cityId,
@@ -185,7 +172,7 @@ export async function saveVenueCapacity(
   input: unknown,
 ): Promise<ActionResult> {
   const parsed = venueCapacitySchema.safeParse(input);
-  if (!parsed.success) return invalid(parsed.error);
+  if (!parsed.success) return invalidInput(parsed.error);
   try {
     return await saveStep(venueId, {
       min_capacity: parsed.data.minCapacity,
@@ -203,7 +190,7 @@ export async function saveVenuePricing(
   input: unknown,
 ): Promise<ActionResult> {
   const parsed = venuePricingSchema.safeParse(input);
-  if (!parsed.success) return invalid(parsed.error);
+  if (!parsed.success) return invalidInput(parsed.error);
   try {
     return await saveStep(venueId, {
       starting_price: parsed.data.startingPrice,
@@ -220,7 +207,7 @@ export async function saveVenueDescription(
   input: unknown,
 ): Promise<ActionResult> {
   const parsed = venueDescriptionSchema.safeParse(input);
-  if (!parsed.success) return invalid(parsed.error);
+  if (!parsed.success) return invalidInput(parsed.error);
   try {
     return await saveStep(venueId, { description: parsed.data.description });
   } catch (error) {
@@ -237,7 +224,7 @@ export async function saveVenueServices(
   input: unknown,
 ): Promise<ActionResult> {
   const parsed = venueServicesSchema.safeParse(input);
-  if (!parsed.success) return invalid(parsed.error);
+  if (!parsed.success) return invalidInput(parsed.error);
   try {
     await requireUser();
     const supabase = await createClient();

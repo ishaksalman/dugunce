@@ -95,6 +95,14 @@ Pratikte iki fark:
   mekan sahibi ne düzelteceğini bilmeli.
 - Admin kendi rolünü ve hesap durumunu değiştiremez — son admin sistemden
   kilitlenmesin.
+- **Taksonomide SİLME yok, `is_active = false` var.** Etkinlik türü veya
+  özellik silmek `venue_event_types` / `venue_features` üzerinden cascade
+  edip mekan sahibinin girdiği veriyi götürüyor. İlçede `is_active` bile
+  yok — mekan ilçeye bağlı.
+- **Taksonomi slug'ı ilk kayıtta üretilir, bir daha DEĞİŞMEZ.** Etkinlik
+  türü slug'ı SEO landing adresinin, ilçe slug'ı mekan adresinin parçası;
+  özellik slug'ı ise `venues.feature_slugs` okuma kopyasında duruyor.
+  `admin_upsert_*` fonksiyonları güncellemede slug kolonuna dokunmuyor.
 - İnceleme bekleyen mekan vitrinde görünmüyor; onaylayacak kişi mekanı
   `/yonetim/mekanlar/[id]` ekranından görüyor (`get_venue_for_edit` admin'e
   de açık).

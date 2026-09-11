@@ -1289,6 +1289,97 @@ await expectFail(
   "permission denied");
 
 // =============================================================================
+console.log("\n\x1b[1m18) Taksonomi yönetimi\x1b[0m");
+// =============================================================================
+await asUser(U.ownerA);
+await expectFail(
+  "mekan sahibi taksonomiyi listeleyemiyor",
+  () => db.query("select public.admin_list_taxonomy()"),
+  "yönetici yetkisi");
+
+await expectFail(
+  "mekan sahibi etkinlik türü ekleyemiyor",
+  () => db.query("select public.admin_upsert_event_type(null, $1, $2)",
+    ["Korsan Etkinlik", "korsan"]),
+  "yönetici yetkisi");
+
+await asUser(U.admin);
+let yeniEtkinlik;
+await step("admin etkinlik türü ekliyor, slug Türkçe kurala göre üretiliyor", async () => {
+  const r = await db.query(
+    "select public.admin_upsert_event_type(null, $1, $2, null, 50, true) as d",
+    ["Söz Töreni", "söz töreni"]);
+  yeniEtkinlik = r.rows[0].d.id;
+  const e = await db.query("select slug, seo_noun from public.event_types where id=$1",
+    [yeniEtkinlik]);
+  if (e.rows[0].slug !== "soz-toreni") throw new Error(`slug: ${e.rows[0].slug}`);
+  // seo_noun cümle içinde geçiyor; küçük saklanmalı (İ→i sorunu).
+  if (e.rows[0].seo_noun !== "söz töreni") throw new Error(`seo_noun: ${e.rows[0].seo_noun}`);
+});
+
+await step("güncelleme slug'a DOKUNMUYOR", async () => {
+  // Slug SEO landing adresinin parçası; değişirse gelen bağlantılar kırılır.
+  await db.query(
+    "select public.admin_upsert_event_type($1, $2, $3, null, 5, true)",
+    [yeniEtkinlik, "Söz ve Nişan", "söz ve nişan"]);
+  const e = await db.query(
+    "select name, slug, sort_order from public.event_types where id=$1", [yeniEtkinlik]);
+  if (e.rows[0].slug !== "soz-toreni") throw new Error(`slug değişti: ${e.rows[0].slug}`);
+  if (e.rows[0].name !== "Söz ve Nişan") throw new Error("ad güncellenmedi");
+  if (e.rows[0].sort_order !== 5) throw new Error("sıra güncellenmedi");
+});
+
+await step("pasife alınan tür vitrin listesinden düşüyor", async () => {
+  await db.query(
+    "select public.admin_upsert_event_type($1, $2, $3, null, 5, false)",
+    [yeniEtkinlik, "Söz ve Nişan", "söz ve nişan"]);
+  const r = await db.query(
+    "select count(*)::int as n from public.event_types where id=$1 and is_active", [yeniEtkinlik]);
+  if (r.rows[0].n !== 0) throw new Error("hâlâ aktif");
+  // Satır DURUYOR: silinseydi ona bağlı venue_event_types cascade ile giderdi.
+  const v = await db.query(
+    "select count(*)::int as n from public.event_types where id=$1", [yeniEtkinlik]);
+  if (v.rows[0].n !== 1) throw new Error("satır silinmiş");
+});
+
+await step("özellik slug'ı da güncellemede sabit kalıyor", async () => {
+  const r = await db.query(
+    "select public.admin_upsert_feature(null, 'ozellik', $1, $2, null, true, 9, true) as d",
+    ["Alan ve İmkanlar", "Çocuk Oyun Alanı"]);
+  const id = r.rows[0].d.id;
+  const once = await db.query("select slug from public.features where id=$1", [id]);
+  if (once.rows[0].slug !== "cocuk-oyun-alani") throw new Error(`slug: ${once.rows[0].slug}`);
+  await db.query(
+    "select public.admin_upsert_feature($1, 'ozellik', $2, $3, null, false, 9, true)",
+    [id, "Alan ve İmkanlar", "Oyun Parkı"]);
+  const sonra = await db.query("select slug, name, is_filter from public.features where id=$1", [id]);
+  // `venues.feature_slugs` okuma kopyası bu slug'a göre yazılıyor.
+  if (sonra.rows[0].slug !== "cocuk-oyun-alani") throw new Error("slug değişti");
+  if (sonra.rows[0].is_filter !== false) throw new Error("is_filter güncellenmedi");
+});
+
+await step("şehir popüler bayrağı ve ilçe ekleme çalışıyor", async () => {
+  const c = await db.query("select id, is_popular from public.cities order by plate_code limit 1");
+  await db.query("select public.admin_set_city_popular($1, $2)", [c.rows[0].id, true]);
+  const sonra = await db.query("select is_popular from public.cities where id=$1", [c.rows[0].id]);
+  if (!sonra.rows[0].is_popular) throw new Error("popüler yapılamadı");
+
+  const d = await db.query("select public.admin_upsert_district(null, $1, $2) as d",
+    [c.rows[0].id, "Yeni İlçe"]);
+  const ilce = await db.query("select slug, city_id from public.districts where id=$1",
+    [d.rows[0].d.id]);
+  if (ilce.rows[0].slug !== "yeni-ilce") throw new Error(`slug: ${ilce.rows[0].slug}`);
+  if (ilce.rows[0].city_id !== c.rows[0].id) throw new Error("şehir yanlış");
+});
+
+await step("her işlem denetim izine yazılıyor", async () => {
+  const r = await db.query(
+    `select count(*)::int as n from public.admin_actions
+      where entity_type in ('event_type','feature','city','district')`);
+  if (r.rows[0].n < 6) throw new Error(`yalnızca ${r.rows[0].n} kayıt`);
+});
+
+// =============================================================================
 console.log(
   fail
     ? `\n\x1b[31m${fail} test başarısız\x1b[0m, ${pass} başarılı\n`

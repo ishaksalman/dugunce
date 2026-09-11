@@ -27,3 +27,25 @@ export function unexpectedError(context: string, error: unknown): ActionResult<n
     message: "Beklenmeyen bir hata oluştu. Lütfen biraz sonra tekrar deneyin.",
   };
 }
+
+/**
+ * Zod hatasını alan → mesaj sözlüğüne çevirir. İlk hata kazanır: kullanıcıya
+ * bir alanda üst üste üç uyarı göstermenin faydası yok.
+ */
+export function fieldErrorsOf(
+  error: { issues: { path: PropertyKey[]; message: string }[] },
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const issue of error.issues) {
+    const key = issue.path[0];
+    if (typeof key === "string" && !out[key]) out[key] = issue.message;
+  }
+  return out;
+}
+
+/** Form gönderimlerinin ortak "düzeltin" yanıtı. */
+export function invalidInput(
+  error: Parameters<typeof fieldErrorsOf>[0],
+): ActionResult<never> {
+  return actionError("Lütfen formdaki hataları düzeltin.", fieldErrorsOf(error));
+}

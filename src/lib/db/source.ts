@@ -1,5 +1,6 @@
 import type {
-  AdminReview, AdminSeoPage, AdminStats, AdminUser, AdminVenue, City, District,
+  AdminDistrict, AdminReview, AdminSeoPage, AdminStats,
+  AdminTaxonomy, AdminUser, AdminVenue, City, District,
   DavetProStatus, EventType,
   Feature, InquiryStatus, OwnerInquiry, OwnerStats, OwnerVenue, ReviewStatus,
   SeoPage, SeoSitemapEntry,
@@ -99,6 +100,44 @@ export interface DataSource {
   adminListSeoPages(input: AdminSeoQuery): Promise<AdminSeoResult>;
   adminUpdateSeoPage(id: string, patch: AdminSeoPatch): Promise<void>;
   adminRefreshSeoPages(minVenues: number): Promise<Record<string, unknown>>;
+
+  adminListTaxonomy(): Promise<AdminTaxonomy>;
+  adminListDistricts(cityId: string): Promise<AdminDistrict[]>;
+  adminUpsertEventType(input: AdminEventTypeInput): Promise<void>;
+  adminUpsertVenueType(input: AdminVenueTypeInput): Promise<void>;
+  adminUpsertFeature(input: AdminFeatureInput): Promise<void>;
+  adminSetCityPopular(cityId: string, popular: boolean): Promise<void>;
+  adminUpsertDistrict(input: AdminDistrictInput): Promise<void>;
+}
+
+export interface AdminEventTypeInput {
+  id: string | null;
+  name: string;
+  seoNoun: string;
+  icon: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+export interface AdminVenueTypeInput {
+  id: string | null;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+export interface AdminFeatureInput {
+  id: string | null;
+  kind: "ozellik" | "hizmet";
+  groupName: string;
+  name: string;
+  icon: string | null;
+  isFilter: boolean;
+  sortOrder: number;
+  isActive: boolean;
+}
+export interface AdminDistrictInput {
+  id: string | null;
+  cityId: string;
+  name: string;
 }
 
 export interface AdminSeoQuery {

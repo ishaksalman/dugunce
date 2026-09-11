@@ -220,6 +220,55 @@ export interface Database {
         Args: { p_min_venues?: number };
         Returns: Record<string, unknown>;
       };
+      admin_list_taxonomy: {
+        Args: Record<string, never>;
+        Returns: Record<string, unknown>;
+      };
+      admin_list_districts: {
+        Args: { p_city_id: string };
+        Returns: Record<string, unknown>;
+      };
+      admin_upsert_event_type: {
+        Args: {
+          p_id: string | null;
+          p_name: string;
+          p_seo_noun: string;
+          p_icon?: string | null;
+          p_sort_order?: number;
+          p_is_active?: boolean;
+        };
+        Returns: Record<string, unknown>;
+      };
+      admin_upsert_venue_type: {
+        Args: {
+          p_id: string | null;
+          p_name: string;
+          p_sort_order?: number;
+          p_is_active?: boolean;
+        };
+        Returns: Record<string, unknown>;
+      };
+      admin_upsert_feature: {
+        Args: {
+          p_id: string | null;
+          p_kind: "ozellik" | "hizmet";
+          p_group_name: string;
+          p_name: string;
+          p_icon?: string | null;
+          p_is_filter?: boolean;
+          p_sort_order?: number;
+          p_is_active?: boolean;
+        };
+        Returns: Record<string, unknown>;
+      };
+      admin_set_city_popular: {
+        Args: { p_city_id: string; p_popular: boolean };
+        Returns: Record<string, unknown>;
+      };
+      admin_upsert_district: {
+        Args: { p_id: string | null; p_city_id: string; p_name: string };
+        Returns: Record<string, unknown>;
+      };
       get_seo_page: {
         Args: { p_path: string };
         Returns: Record<string, unknown> | null;

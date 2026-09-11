@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   resetPasswordSchema, resetRequestSchema, signInSchema, signUpSchema,
 } from "@/lib/schemas/auth";
-import { actionError, actionOk, unexpectedError, type ActionResult } from "@/lib/errors";
+import { actionError, actionOk, fieldErrorsOf, unexpectedError, type ActionResult } from "@/lib/errors";
 import { SITE } from "@/lib/constants";
 
 /**
@@ -37,15 +37,6 @@ function turkishAuthError(message: string): string {
   // logluyoruz; aksi hâlde "işlem tamamlanamadı" teşhis edilemez bir duvar olur.
   console.error("[auth] eşlenmemiş Supabase hatası:", message);
   return "İşlem tamamlanamadı. Lütfen tekrar deneyin.";
-}
-
-function fieldErrorsOf(error: { issues: { path: PropertyKey[]; message: string }[] }) {
-  const out: Record<string, string> = {};
-  for (const issue of error.issues) {
-    const key = issue.path[0];
-    if (typeof key === "string" && !out[key]) out[key] = issue.message;
-  }
-  return out;
 }
 
 export async function signIn(input: unknown): Promise<ActionResult<{ next: string }>> {

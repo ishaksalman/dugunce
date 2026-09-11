@@ -18,6 +18,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
     },
     { href: "/yonetim/kullanicilar", label: "Kullanıcılar", icon: "kullanici" },
     { href: "/yonetim/seo", label: "SEO Sayfaları", icon: "seo" },
+    { href: "/yonetim/taksonomi", label: "Taksonomi", icon: "taksonomi" },
     {
       href: "/yonetim/yorumlar",
       label: "Yorumlar",

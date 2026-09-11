@@ -5,7 +5,9 @@ import { revalidateVenuePage } from "@/lib/revalidate";
 import { z } from "zod";
 import { getDataSource } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
-import { actionError, actionOk, unexpectedError, type ActionResult } from "@/lib/errors";
+import {
+  actionError, actionOk, invalidInput, unexpectedError, type ActionResult,
+} from "@/lib/errors";
 
 const VENUE_STATUS = ["DRAFT", "PENDING_REVIEW", "PUBLISHED", "REJECTED", "SUSPENDED"] as const;
 const USER_ROLE = ["customer", "venue_owner", "admin"] as const;
@@ -203,5 +205,137 @@ export async function refreshSeoPages(minVenues: unknown): Promise<ActionResult<
   } catch (error) {
     if (error instanceof Error) return actionError(turkishError(error.message));
     return unexpectedError("refreshSeoPages", error);
+  }
+}
+
+// --- Taksonomi ---------------------------------------------------------------
+
+
+/**
+ * Taksonomi vitrinin her yerinde: filtre paneli, ana sayfa, landing sayfaları,
+ * mekan detayı. Bir satır değişince hepsi bayatlıyor.
+ *
+ * Mekan detayını tek tek tazelemiyoruz — taksonomi nadiren değişiyor ve
+ * detay sayfası zaten saatte bir kendini yeniliyor.
+ */
+function taksonomiTazele() {
+  revalidatePath("/yonetim/taksonomi");
+  revalidatePath("/", "layout");
+  revalidatePath("/mekanlar");
+  revalidatePath("/[landing]", "page");
+}
+
+const adSchema = z.string().trim().min(2, "En az 2 karakter.").max(60, "En fazla 60 karakter.");
+const idSchema = z.union([z.string().uuid(), z.literal("")]).optional()
+  .transform((v) => (v ? v : null));
+const siraSchema = z.coerce.number().int().min(0).max(9999).default(0);
+
+const eventTypeSchema = z.object({
+  id: idSchema,
+  name: adSchema,
+  seoNoun: z.string().trim().min(2, "En az 2 karakter.").max(60),
+  icon: z.string().trim().max(40).optional().transform((v) => (v ? v : null)),
+  sortOrder: siraSchema,
+  isActive: z.coerce.boolean().default(false),
+});
+
+export async function saveEventType(input: unknown): Promise<ActionResult> {
+  const parsed = eventTypeSchema.safeParse(input);
+  if (!parsed.success) return invalidInput(parsed.error);
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    await db.adminUpsertEventType(parsed.data);
+    taksonomiTazele();
+    return actionOk();
+  } catch (error) {
+    if (error instanceof Error) return actionError(turkishError(error.message));
+    return unexpectedError("saveEventType", error);
+  }
+}
+
+const venueTypeSchema = z.object({
+  id: idSchema,
+  name: adSchema,
+  sortOrder: siraSchema,
+  isActive: z.coerce.boolean().default(false),
+});
+
+export async function saveVenueType(input: unknown): Promise<ActionResult> {
+  const parsed = venueTypeSchema.safeParse(input);
+  if (!parsed.success) return invalidInput(parsed.error);
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    await db.adminUpsertVenueType(parsed.data);
+    taksonomiTazele();
+    return actionOk();
+  } catch (error) {
+    if (error instanceof Error) return actionError(turkishError(error.message));
+    return unexpectedError("saveVenueType", error);
+  }
+}
+
+const featureSchema = z.object({
+  id: idSchema,
+  kind: z.enum(["ozellik", "hizmet"]),
+  groupName: z.string().trim().min(2, "En az 2 karakter.").max(60),
+  name: adSchema,
+  icon: z.string().trim().max(40).optional().transform((v) => (v ? v : null)),
+  isFilter: z.coerce.boolean().default(false),
+  sortOrder: siraSchema,
+  isActive: z.coerce.boolean().default(false),
+});
+
+export async function saveFeature(input: unknown): Promise<ActionResult> {
+  const parsed = featureSchema.safeParse(input);
+  if (!parsed.success) return invalidInput(parsed.error);
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    await db.adminUpsertFeature(parsed.data);
+    taksonomiTazele();
+    return actionOk();
+  } catch (error) {
+    if (error instanceof Error) return actionError(turkishError(error.message));
+    return unexpectedError("saveFeature", error);
+  }
+}
+
+export async function setCityPopular(input: unknown): Promise<ActionResult> {
+  const parsed = z
+    .object({ cityId: z.string().uuid(), popular: z.coerce.boolean() })
+    .safeParse(input);
+  if (!parsed.success) return actionError("Geçersiz istek.");
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    await db.adminSetCityPopular(parsed.data.cityId, parsed.data.popular);
+    taksonomiTazele();
+    return actionOk();
+  } catch (error) {
+    if (error instanceof Error) return actionError(turkishError(error.message));
+    return unexpectedError("setCityPopular", error);
+  }
+}
+
+const districtSchema = z.object({
+  id: idSchema,
+  cityId: z.string().uuid(),
+  name: adSchema,
+});
+
+export async function saveDistrict(input: unknown): Promise<ActionResult> {
+  const parsed = districtSchema.safeParse(input);
+  if (!parsed.success) return invalidInput(parsed.error);
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    await db.adminUpsertDistrict(parsed.data);
+    taksonomiTazele();
+    return actionOk();
+  } catch (error) {
+    if (error instanceof Error) return actionError(turkishError(error.message));
+    return unexpectedError("saveDistrict", error);
   }
 }
