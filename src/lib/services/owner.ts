@@ -47,3 +47,9 @@ export const getVenueForEdit = cache(async (venueId: string) => {
   const db = await getDataSource();
   return db.getVenueForEdit(venueId);
 });
+
+/** DavetPro bağlantı ve aktarım durumu. */
+export const getDavetProStatus = cache(async (venueId: string) => {
+  const db = await getDataSource();
+  return db.getDavetProStatus(venueId);
+});

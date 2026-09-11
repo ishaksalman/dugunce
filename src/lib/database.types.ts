@@ -236,6 +236,10 @@ export interface Database {
         Args: { p_ids: string[] };
         Returns: VenueSearchRow[];
       };
+      get_davetpro_status: {
+        Args: { p_venue_id: string };
+        Returns: Record<string, unknown> | null;
+      };
       get_venue_for_edit: {
         Args: { p_venue_id: string };
         Returns: Record<string, unknown> | null;

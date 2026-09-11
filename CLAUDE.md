@@ -5,7 +5,7 @@
 Türkiye'de düğün, nişan, kına ve davet mekanlarını listeleyen marketplace.
 Mimari kararların gerekçeleri için önce `docs/MIMARI.md` oku.
 
-Kardeş ürün **DavetPro** (`~/Desktop/davet/davetio`) ayrı bir veritabanı ve ayrı bir
+Kardeş ürün **DavetPro** (`~/Desktop/davet/davetpro`) ayrı bir veritabanı ve ayrı bir
 Supabase projesidir. İki sistem yalnızca HTTP üzerinden konuşur.
 
 ## Değişmez kurallar

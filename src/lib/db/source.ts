@@ -1,6 +1,6 @@
 import type {
   AdminReview, AdminSeoPage, AdminStats, AdminUser, AdminVenue, City, District,
-  EventType,
+  DavetProStatus, EventType,
   Feature, InquiryStatus, OwnerInquiry, OwnerStats, OwnerVenue, ReviewStatus,
   SeoPage, SeoSitemapEntry,
   UserRole, VenueCardData, VenueDetail, VenueForEdit, VenueReview, VenueStatus,
@@ -70,6 +70,8 @@ export interface DataSource {
   // --- Mekan düzenleme ------------------------------------------------------
   /** Sahibi olmadığı mekan için null döner. Taslakları da kapsar. */
   getVenueForEdit(venueId: string): Promise<VenueForEdit | null>;
+  /** DavetPro bağlantısı ve aktarım durumu. Sahibi değilse null. */
+  getDavetProStatus(venueId: string): Promise<DavetProStatus | null>;
 
   /** Favoriler için: verilen id'lerin kart verisi, gelen sırayla. */
   getVenuesByIds(ids: string[]): Promise<VenueCardData[]>;

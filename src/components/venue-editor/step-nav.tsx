@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Check } from "lucide-react";
+import { Check, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VENUE_STEPS } from "@/lib/schemas/venue";
 
@@ -56,6 +56,24 @@ export function StepNav({
           );
         })}
       </ol>
+
+      {/* Entegrasyon numaralı adım DEĞİL: yayına çıkmak için gerekmiyor,
+          isteğe bağlı bir ayar. Adım sayacına karışmasın. */}
+      <div className="mt-4 border-t pt-4">
+        <Link
+          href={`/panel/mekanlarim/${venueId}/entegrasyon`}
+          aria-current={pathname.endsWith("/entegrasyon") ? "page" : undefined}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+            pathname.endsWith("/entegrasyon")
+              ? "bg-secondary font-medium text-secondary-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          <Link2 className="size-4 shrink-0" aria-hidden />
+          Entegrasyon
+        </Link>
+      </div>
     </nav>
   );
 }

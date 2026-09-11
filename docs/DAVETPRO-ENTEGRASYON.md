@@ -4,7 +4,7 @@ Sürüm 1 · Bu belge iki depo arasındaki **sözleşmedir**. Bir tarafı
 değiştirirken diğerini kırmamak için önce burayı güncelleyin.
 
 - DavetMekanı: `~/Desktop/davet/davetmekani` — pazaryeri, müşteri tarafı
-- DavetPro: `~/Desktop/davet/davetio` — işletme yönetimi, operasyon tarafı
+- DavetPro: `~/Desktop/davet/davetpro` — işletme yönetimi, operasyon tarafı
 
 ## Temel ilkeler
 

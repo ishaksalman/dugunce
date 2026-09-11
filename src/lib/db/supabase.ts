@@ -6,7 +6,7 @@ import {
   normalizeInquiry,
   normalizeOwnerVenue, normalizeReview, normalizeVenueDetail, normalizeVenueForEdit,
   toVenueCard, type AdminReview, type AdminSeoPage, type AdminStats, type AdminUser,
-  type AdminVenue,
+  type AdminVenue, type DavetProStatus,
   type InquiryStatus, type OwnerInquiry, type OwnerStats, type OwnerVenue,
   normalizeSeoPage, type ReviewStatus, type SeoPage, type SeoSitemapEntry,
   type UserRole, type VenueDetail, type VenueForEdit,
@@ -176,6 +176,15 @@ export const supabaseSource: DataSource = {
     });
     if (error) throw new Error(`get_venue_for_edit: ${error.message}`);
     return data ? normalizeVenueForEdit(data as unknown as VenueForEdit) : null;
+  },
+
+  async getDavetProStatus(venueId: string): Promise<DavetProStatus | null> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("get_davetpro_status", {
+      p_venue_id: venueId,
+    });
+    if (error) throw new Error(`get_davetpro_status: ${error.message}`);
+    return (data as unknown as DavetProStatus | null) ?? null;
   },
 
   async getVenuesByIds(ids: string[]) {

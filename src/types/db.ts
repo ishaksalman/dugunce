@@ -517,3 +517,13 @@ export interface AdminSeoPage {
 export function normalizeAdminSeoPage(row: AdminSeoPage): AdminSeoPage {
   return { ...row, updated_at: toIso(row.updated_at) };
 }
+
+export interface DavetProStatus {
+  linked: boolean;
+  linked_at: string | null;
+  toplam_talep: number;
+  aktarilan: number;
+  bekleyen: number;
+  basarisiz: number;
+  son_hata: string | null;
+}
