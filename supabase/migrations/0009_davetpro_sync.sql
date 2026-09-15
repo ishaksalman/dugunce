@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0009 · DavetPro'ya talep aktarımı
+-- Düğünce · 0009 · DavetPro'ya talep aktarımı
 --
 -- Kontrat: docs/DAVETPRO-ENTEGRASYON.md
 --

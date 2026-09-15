@@ -6,7 +6,7 @@ import { processSyncQueue } from "@/lib/services/davetpro-sync";
 
 /**
  * DavetPro'ya geçiş (handoff) tamamlandığında DavetPro bu uç noktayı çağırır
- * ve hangi DavetMekanı mekanının hangi DavetPro salonuna karşılık geldiğini
+ * ve hangi Düğünce mekanının hangi DavetPro salonuna karşılık geldiğini
  * bildirir.
  *
  * Kontrat: docs/DAVETPRO-ENTEGRASYON.md → Uç nokta 3
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   const sonuclar: { venue_id: string; queued: number }[] = [];
 
   for (const m of parsed.data.mappings) {
-    // Bağlama ve geçmiş aktarımı aynı fonksiyonda: DavetMekanı panelinden
+    // Bağlama ve geçmiş aktarımı aynı fonksiyonda: Düğünce panelinden
     // kod ile bağlanmakla handoff ile bağlanmak aynı kod yolunu kullanıyor.
     const { data, error } = await supabase.rpc("link_venue_to_davetpro", {
       p_venue_id: m.davetmekani_venue_id,

@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0019 · SEO sayfalarının yönetimi
+-- Düğünce · 0019 · SEO sayfalarının yönetimi
 --
 -- Otomatik üretim (`refresh_seo_pages`) yalnızca YENİ satır ekliyor ve
 -- aktifliği eşiğe göre güncelliyor. Yönetici bir sayfanın metnini elle

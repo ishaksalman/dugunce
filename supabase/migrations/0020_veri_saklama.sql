@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0020 · Veri saklama süreleri
+-- Düğünce · 0020 · Veri saklama süreleri
 --
 -- Gizlilik metninde ilan ettiğimiz süreleri KOD ZORLUYOR. Metinde yazıp
 -- uygulamamak KVKK açısından da dürüstlük açısından da sorun.

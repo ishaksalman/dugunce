@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0005 · Mekan detay sorguları
+-- Düğünce · 0005 · Mekan detay sorguları
 --
 -- Detay sayfası tek bir jsonb döndüren fonksiyondan besleniyor. Sebep:
 -- Supabase (PostgREST) ve yerel geliştirme adaptörü aynı SQL'i çağırsın,

@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0007 · Mekan sahibi paneli
+-- Düğünce · 0007 · Mekan sahibi paneli
 --
 --  * Fotoğraf kovası ve yükleme yetkileri
 --  * customer → venue_owner rol yükseltmesi

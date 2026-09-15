@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0003 · RLS politikaları ve yayın hattı kilidi
+-- Düğünce · 0003 · RLS politikaları ve yayın hattı kilidi
 --
 -- Üç katmanlı savunmanın en dıştaki değil, EN İÇTEKİ katmanı burası.
 -- Uygulama kodundaki guard'lar kullanıcıya nazik hata mesajı vermek içindir;

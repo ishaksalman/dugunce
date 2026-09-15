@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# DavetMekanı — geliştirme notları
+# Düğünce — geliştirme notları
 
 Türkiye'de düğün, nişan, kına ve davet mekanlarını listeleyen marketplace.
 Mimari kararların gerekçeleri için önce `docs/MIMARI.md` oku.
@@ -195,11 +195,25 @@ bir tarafı değiştirirken önce orayı güncelle.
   çağrılar çalışma zamanında patlar. Paylaşılan sabitler tarafsız bir
   modülde durur (ör. `lib/inquiry.ts`).
 - **Next 16'da middleware'in yeni adı `proxy.ts`.** `middleware.ts` hâlâ
-  çalışıyor (DavetMekanı onu kullanıyor), DavetPro `src/proxy.ts` kullanıyor.
+  çalışıyor (Düğünce onu kullanıyor), DavetPro `src/proxy.ts` kullanıyor.
   İkisi de `src/` içinde olmak zorunda — kökte durursa sessizce hiç çalışmaz.
 - **Base UI `SelectValue` ham değeri basar.** Türkçe etiket için
   `<SelectValue>{(v) => ETIKET[v]}</SelectValue>` yaz; yoksa kullanıcı
   `fiyat-artan` ya da `REJECTED` görür.
+
+## Marka adı
+
+Ürünün adı **Düğünce**, alan adı `dugunce.com`. Görünen her yer
+`SITE.name` (`lib/constants.ts`) üzerinden geliyor.
+
+- **Ek alan kullanımları `SITE.ekli.*` sabitlerinden geçer.** Metne
+  `{SITE.name}'nı` yazmak marka değişince sessizce bozuluyor: ek Türkçede
+  son sesliye bağlı (DavetMekanı'nı → Düğünce'**yi**).
+- **Entegrasyon kontratındaki `davetmekani` adları BİLEREK duruyor** — uç
+  nokta yolu, `davetmekani_venue_id`, `iss` ve DavetPro'daki
+  `leads.external_source`. Bunlar tanımlayıcı; sonuncusu kayıtlı veri.
+  Gerekçe: `docs/DAVETPRO-ENTEGRASYON.md`.
+- Depo dizini hâlâ `davetmekani`.
 
 ## Renk ve tipografi
 

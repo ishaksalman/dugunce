@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0008 · Mekan sahibinin talep listesi
+-- Düğünce · 0008 · Mekan sahibinin talep listesi
 --
 -- Talepler RLS ile zaten korunuyor (sahip yalnızca kendi mekanının
 -- taleplerini görüyor). Bu fonksiyon mekan adı ve etkinlik türünü tek

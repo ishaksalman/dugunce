@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0022 · Google işletme bağlantısı
+-- Düğünce · 0022 · Google işletme bağlantısı
 --
 -- Kolonlar 0011'de açılmıştı ama hiçbir yerden okunmuyor/yazılmıyordu.
 -- Burada iki şey yapıyoruz:

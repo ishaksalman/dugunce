@@ -10,7 +10,7 @@ import { useEffect } from "react";
  */
 export function ViewTracker({ venueId }: { venueId: string }) {
   useEffect(() => {
-    const key = `davetmekani:goruntulendi:${venueId}`;
+    const key = `dugunce:goruntulendi:${venueId}`;
     try {
       if (sessionStorage.getItem(key)) return;
       sessionStorage.setItem(key, "1");

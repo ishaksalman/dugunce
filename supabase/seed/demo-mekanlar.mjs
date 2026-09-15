@@ -237,7 +237,7 @@ export const DEMO_MEKANLAR = [
 export function demoGorseller(slug, adet = 6) {
   return Array.from({ length: adet }, (_, i) => ({
     storagePath: `demo/${slug}/${i + 1}.jpg`,
-    url: `https://picsum.photos/seed/davetmekani-${slug}-${i + 1}/1600/1067`,
+    url: `https://picsum.photos/seed/dugunce-${slug}-${i + 1}/1600/1067`,
     width: 1600,
     height: 1067,
     kapak: i === 0,

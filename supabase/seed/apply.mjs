@@ -142,7 +142,7 @@ export async function seedDemoMekanlar(q, ownerIds) {
         m.kisa, m.aciklama, m.min, m.max, m.fiyat, m.fiyatTipi,
         "Fiyat; davetli sayısı, menü seçimi ve sezona göre değişir. Kesin fiyat için teklif alın.",
         m.kapali, m.acik, m.lat, m.lng,
-        "0850 000 00 00", "iletisim@davetmekani.test",
+        "0850 000 00 00", "iletisim@dugunce.test",
         m.oneCikan ?? false,
       ]);
     const venueId = rows[0].id;

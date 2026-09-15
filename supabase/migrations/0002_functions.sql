@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0002 · Fonksiyonlar ve trigger'lar
+-- Düğünce · 0002 · Fonksiyonlar ve trigger'lar
 --
 --  * Yetki yardımcıları (0003'teki politikalar bunlara dayanır)
 --  * Türkçe slug üretimi

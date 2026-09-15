@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0023 · Taksonomi yönetimi
+-- Düğünce · 0023 · Taksonomi yönetimi
 --
 -- Şehir / ilçe / etkinlik türü / mekan türü / özellik listesi component içine
 -- gömülmüyor, hepsi DB'den geliyor. Şimdiye kadar bu satırları değiştirmenin

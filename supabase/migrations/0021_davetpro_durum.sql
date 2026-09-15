@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0021 · DavetPro bağlantı durumu
+-- Düğünce · 0021 · DavetPro bağlantı durumu
 --
 -- Panelde mekan sahibine "taleplerin DavetPro'ya aktarılıyor mu, kaçı
 -- gitti, bekleyen var mı" bilgisini göstermek için.

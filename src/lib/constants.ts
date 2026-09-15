@@ -4,14 +4,30 @@
  */
 
 export const SITE = {
-  name: "DavetMekanı",
+  name: "Düğünce",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   description:
     "Düğün, nişan, kına ve tüm özel günlerin için Türkiye'nin en güzel davet mekanlarını keşfet. Kapasite, fiyat ve hizmetleri karşılaştır, doğrudan teklif al.",
+
+  /**
+   * Marka adının ek almış hâlleri.
+   *
+   * Türkçede ek son sesliye göre değişiyor; metne `{SITE.name}'nı` diye
+   * yazmak marka değişince sessizce bozuluyor (DavetMekanı'nı → Düğünce'nı).
+   * Ekli kullanımlar bu sabitlerden geçsin ki bir dahaki ada geçişte
+   * düzeltilecek tek yer burası olsun.
+   */
+  ekli: {
+    belirtme: "Düğünce'yi",   // …'yi kullanarak
+    yonelme: "Düğünce'ye",    // …'ye üye ol
+    bulunma: "Düğünce'de",    // …'de yayınla
+    cikma: "Düğünce'den",     // …'den çıkar
+    tamlayan: "Düğünce'nin",  // …'nin sorumluluğu
+  },
 } as const;
 
 /** Destek ve KVKK başvuru adresi. Tek yerde tutuluyor. */
-export const DESTEK_EPOSTA = "iletisim@davetmekani.com";
+export const DESTEK_EPOSTA = "iletisim@dugunce.com";
 
 /** Listeleme sayfası varsayılanları. */
 export const PAGINATION = {

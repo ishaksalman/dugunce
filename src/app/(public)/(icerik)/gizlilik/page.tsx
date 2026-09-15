@@ -16,7 +16,7 @@ import { DESTEK_EPOSTA, SITE } from "@/lib/constants";
 export const metadata: Metadata = {
   title: "Gizlilik Politikası ve KVKK Aydınlatma Metni",
   description:
-    "DavetMekanı'nda hangi kişisel verileri topluyoruz, neden topluyoruz, kiminle paylaşıyoruz ve haklarınız neler.",
+    "Düğünce'de hangi kişisel verileri topluyoruz, neden topluyoruz, kiminle paylaşıyoruz ve haklarınız neler.",
   alternates: { canonical: "/gizlilik" },
 };
 

@@ -5,7 +5,7 @@ import { SITE } from "@/lib/constants";
 export const metadata: Metadata = {
   title: "Hakkımızda",
   description:
-    "DavetMekanı, Türkiye'deki düğün, nişan, kına ve davet mekanlarını tek yerde toplayan ücretsiz bir keşif platformudur.",
+    "Düğünce, Türkiye'deki düğün, nişan, kına ve davet mekanlarını tek yerde toplayan ücretsiz bir keşif platformudur.",
   alternates: { canonical: "/hakkimizda" },
 };
 

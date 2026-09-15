@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0010 · Mekan düzenleme ekranı
+-- Düğünce · 0010 · Mekan düzenleme ekranı
 --
 -- Wizard'ın ihtiyacı olan her şeyi tek sorguda döndürür. `get_venue_detail`
 -- (0005) yayındaki mekanın VİTRİN görünümü; bu ise sahibin DÜZENLEME

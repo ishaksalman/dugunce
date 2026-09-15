@@ -2,8 +2,8 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-const KEY = "davetmekani:favoriler";
-const EVENT = "davetmekani:favoriler-degisti";
+const KEY = "dugunce:favoriler";
+const EVENT = "dugunce:favoriler-degisti";
 
 /**
  * Üye olmayan kullanıcının favorileri.

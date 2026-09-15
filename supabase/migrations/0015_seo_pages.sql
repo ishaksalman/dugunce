@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0015 · SEO landing sayfalarının üretimi
+-- Düğünce · 0015 · SEO landing sayfalarının üretimi
 --
 -- İndekslenen tek liste yüzeyi bu sayfalar. `/mekanlar?filtre=` her zaman
 -- noindex; sonsuz permütasyon duplicate content üretir.

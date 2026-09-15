@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0017 · Sitemap için mekan yolları
+-- Düğünce · 0017 · Sitemap için mekan yolları
 --
 -- PostgREST'in iç içe select'i (venues → cities/districts) elle yazılan
 -- `Database` tipiyle ifade edilmesi zor bir şekil üretiyor. Sitemap'in

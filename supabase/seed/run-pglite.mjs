@@ -25,7 +25,7 @@ const OWNERS = [
 ];
 for (const [i, id] of OWNERS.entries()) {
   await q("insert into auth.users (id, email, raw_user_meta_data) values ($1,$2,$3)",
-    [id, `demo-sahip-${i + 1}@davetmekani.test`,
+    [id, `demo-sahip-${i + 1}@dugunce.test`,
      JSON.stringify({ full_name: `Demo Mekan Sahibi ${i + 1}` })]);
 }
 await q("update public.profiles set role = 'venue_owner' where id = any($1)", [OWNERS]);
@@ -40,7 +40,7 @@ console.log("\n\x1b[1mDemo yorumlar\x1b[0m");
 console.log(await seedDemoYorumlar(q, async (i, adSoyad) => {
   const id = `b${String(i + 1).padStart(7, "0")}-0000-4000-8000-000000000000`;
   await q("insert into auth.users (id, email, raw_user_meta_data) values ($1,$2,$3) on conflict do nothing",
-    [id, `demo-yorumcu-${i + 1}@davetmekani.test`, JSON.stringify({ full_name: adSoyad })]);
+    [id, `demo-yorumcu-${i + 1}@dugunce.test`, JSON.stringify({ full_name: adSoyad })]);
   return id;
 }));
 

@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0001 · Enum'lar, taksonomi ve çekirdek tablolar
+-- Düğünce · 0001 · Enum'lar, taksonomi ve çekirdek tablolar
 --
 -- Bu dosya yalnızca *yapı* kurar: tip, tablo, kısıt, indeks.
 -- Fonksiyon ve trigger'lar 0002'de, RLS 0003'te.

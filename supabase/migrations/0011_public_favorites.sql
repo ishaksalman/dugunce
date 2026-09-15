@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0011 · Üyeliksiz favoriler
+-- Düğünce · 0011 · Üyeliksiz favoriler
 --
 -- Müşteri üyeliği MVP'den çıkarıldı: asıl huni (keşif → detay → teklif) baştan
 -- sona anonim çalışıyor ve her hesap taşınması gereken bir yükümlülük.

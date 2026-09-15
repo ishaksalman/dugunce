@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0018 · Eşik altındaki landing sayfasının çözülebilmesi
+-- Düğünce · 0018 · Eşik altındaki landing sayfasının çözülebilmesi
 --
 -- Tasarım: yeterli mekanı olmayan sayfa 200 döner ama `noindex` alır ve
 -- sitemap'e girmez. Kullanıcı bir yerden o bağlantıya geldiyse boş sayfa

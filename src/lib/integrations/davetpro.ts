@@ -7,7 +7,7 @@ import { imzaBasliklari } from "./signature";
  * Kontrat: docs/DAVETPRO-ENTEGRASYON.md
  *
  * İlke: bu modüldeki hiçbir çağrı kullanıcı akışını bloklamaz. Talep her
- * koşulda DavetMekanı'na kaydedilir; aktarım kuyruktan yürür.
+ * koşulda Düğünce'ye kaydedilir; aktarım kuyruktan yürür.
  */
 
 export interface DavetProLead {

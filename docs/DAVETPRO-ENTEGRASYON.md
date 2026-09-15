@@ -1,10 +1,25 @@
-# DavetMekanı ↔ DavetPro Entegrasyon Kontratı
+# Düğünce ↔ DavetPro Entegrasyon Kontratı
 
 Sürüm 1 · Bu belge iki depo arasındaki **sözleşmedir**. Bir tarafı
 değiştirirken diğerini kırmamak için önce burayı güncelleyin.
 
-- DavetMekanı: `~/Desktop/davet/davetmekani` — pazaryeri, müşteri tarafı
+- Düğünce: `~/Desktop/davet/davetmekani` — pazaryeri, müşteri tarafı
 - DavetPro: `~/Desktop/davet/davetpro` — işletme yönetimi, operasyon tarafı
+
+## Marka adı ve kontrat adları
+
+Ürünün adı **Düğünce** (alan adı `dugunce.com`). Kontrattaki şu adlar
+BİLEREK `davetmekani` olarak kaldı:
+
+- uç nokta yolu `/api/integrations/davetmekani/…`
+- gövde alanı `davetmekani_venue_id`
+- imza `iss` değeri ve DavetPro'daki `leads.external_source` = `"davetmekani"`
+- depo dizini `~/Desktop/davet/davetmekani`
+
+Bunlar marka yüzeyi değil, iki tarafın üzerinde anlaştığı **tanımlayıcılar**.
+`external_source` üstelik DavetPro'da kayıtlı veri: değiştirmek mevcut
+lead'lerin kaynağını kopuk bırakır. Yeniden adlandırmak isterseniz iki depoda
+aynı anda yapılması ve DavetPro'da veri göçü yazılması gerekir — ayrı bir iş.
 
 ## Temel ilkeler
 
@@ -20,10 +35,10 @@ değiştirirken diğerini kırmamak için önce burayı güncelleyin.
 
 | Veri | Sahibi | Yön |
 |---|---|---|
-| Vitrin içeriği (foto, açıklama, fiyat, SEO) | **DavetMekanı** | senkron yok |
-| Teklif talebi (lead) | DavetMekanı üretir | **→ DavetPro** |
-| Rezervasyon, ödeme, sözleşme, teklif | **DavetPro** | DavetMekanı görmez |
-| Dolu tarihler | **DavetPro** | → DavetMekanı *(v2)* |
+| Vitrin içeriği (foto, açıklama, fiyat, SEO) | **Düğünce** | senkron yok |
+| Teklif talebi (lead) | Düğünce üretir | **→ DavetPro** |
+| Rezervasyon, ödeme, sözleşme, teklif | **DavetPro** | Düğünce görmez |
+| Dolu tarihler | **DavetPro** | → Düğünce *(v2)* |
 
 ## Kimlik doğrulama
 
@@ -44,9 +59,9 @@ Alıcı taraf:
 
 ## Tip eşlemesi
 
-DavetMekanı `event_types.slug` → DavetPro `organization_type`:
+Düğünce `event_types.slug` → DavetPro `organization_type`:
 
-| DavetMekanı | DavetPro |
+| Düğünce | DavetPro |
 |---|---|
 | `dugun` | `dugun` |
 | `nisan` | `nisan` |
@@ -62,7 +77,7 @@ DavetMekanı `event_types.slug` → DavetPro `organization_type`:
 Eşlenmemiş bir slug gelirse **`diger`** kullanılır ve DavetPro tarafında
 uyarı loglanır — sessizce düşürülmez.
 
-DavetMekanı `inquiry_status` → DavetPro `lead_status`: **eşleme yok.**
+Düğünce `inquiry_status` → DavetPro `lead_status`: **eşleme yok.**
 Aktarılan her talep DavetPro'da `yeni` olarak başlar; durum yönetimi
 aktarımdan sonra tamamen DavetPro'nun işidir (tek yön kuralı).
 
@@ -80,7 +95,7 @@ fark istek gövdesindeki kayıt sayısıdır.
   "v": 1,
   "business_id": "uuid",          // DavetPro işletmesi
   "leads": [{
-    "external_id":       "uuid",  // DavetMekanı inquiries.id — IDEMPOTENCY ANAHTARI
+    "external_id":       "uuid",  // Düğünce inquiries.id — IDEMPOTENCY ANAHTARI
     "davetpro_venue_id": "uuid",  // null olabilir (işletmeye bağlanır, salona değil)
     "full_name":         "Ayşe Yılmaz",
     "phone":             "05321112233",
@@ -121,10 +136,10 @@ Yanıt:
 Mekan sahibinin **her iki üründe de hesabı varken** kullandığı akış.
 
 ```
-DavetPro › Ayarlar › "DavetMekanı'nda yayınla"
+DavetPro › Ayarlar › "Düğünce'de yayınla"
   → tek kullanımlık kod üretir (6 haneli, 15 dk TTL, business_id + venue_id taşır)
-DavetMekanı › Panel › "DavetPro hesabımı bağla" → kod girilir
-  → DavetMekanı bu uç noktayı çağırır
+Düğünce › Panel › "DavetPro hesabımı bağla" → kod girilir
+  → Düğünce bu uç noktayı çağırır
 ```
 
 `POST {DAVETPRO_URL}/api/integrations/davetmekani/verify-link`
@@ -144,18 +159,18 @@ Kod tüketilir (tek kullanımlık). Geçersiz/süresi dolmuş kod → **410**.
 
 ## Uç nokta 3 — DavetPro'ya geçiş (handoff)
 
-Mekan sahibinin **yalnızca DavetMekanı hesabı varken** kullandığı akış.
+Mekan sahibinin **yalnızca Düğünce hesabı varken** kullandığı akış.
 Amaç: kullanıcının verilerini yeniden yazmasını önlemek.
 
 ```
-DavetMekanı › Panel › "DavetPro'ya geç"
+Düğünce › Panel › "DavetPro'ya geç"
   → imzalı handoff jetonu üretir
   → kullanıcı {DAVETPRO_URL}/isletme-kur?handoff=<jeton> adresine gider
   → DavetPro imzayı doğrular, formu ön doldurur, e-postayı doğrulanmış sayar
   → kullanıcı SADECE parola belirler
   → DavetPro işletmeyi ve salonları oluşturur
-  → DavetPro callback ile eşleşmeyi DavetMekanı'na bildirir
-  → DavetMekanı geçmiş talepleri aktarır
+  → DavetPro callback ile eşleşmeyi Düğünce'ye bildirir
+  → Düğünce geçmiş talepleri aktarır
 ```
 
 Handoff jetonu (base64url gövde + `.` + imza), **TTL 15 dakika**:
@@ -167,7 +182,7 @@ Handoff jetonu (base64url gövde + `.` + imza), **TTL 15 dakika**:
   "iat": 1788883726,
   "exp": 1788884626,
   "user": {
-    "email": "ayse@ornek.com",     // DavetMekanı'nda DOĞRULANMIŞ adres
+    "email": "ayse@ornek.com",     // Düğünce'de DOĞRULANMIŞ adres
     "full_name": "Ayşe Yılmaz",
     "phone": "05321112233"
   },
@@ -181,15 +196,15 @@ Handoff jetonu (base64url gövde + `.` + imza), **TTL 15 dakika**:
     "max_capacity": 500,
     "phone": "0850 000 00 00"
   }],
-  "callback_url": "https://davetmekani.com/api/integrations/davetpro/link-complete"
+  "callback_url": "https://dugunce.com/api/integrations/davetpro/link-complete"
 }
 ```
 
 **E-posta doğrulaması:** DavetPro, jetondaki e-postayı doğrulanmış kabul
-eder — DavetMekanı zaten doğrulamıştır ve jeton imzalıdır. Kullanıcıyı
+eder — Düğünce zaten doğrulamıştır ve jeton imzalıdır. Kullanıcıyı
 ikinci kez doğrulatmak geçişi anlamsız yere zorlaştırır.
 
-Callback (DavetPro → DavetMekanı), aynı HMAC şemasıyla imzalı:
+Callback (DavetPro → Düğünce), aynı HMAC şemasıyla imzalı:
 
 `POST {callback_url}`
 
@@ -203,7 +218,7 @@ Callback (DavetPro → DavetMekanı), aynı HMAC şemasıyla imzalı:
 }
 ```
 
-DavetMekanı bu çağrıyı alınca:
+Düğünce bu çağrıyı alınca:
 1. `venues.davetpro_business_id` / `davetpro_venue_id` / `davetpro_linked_at` yazar,
 2. **o mekanın tüm geçmiş taleplerini** Uç Nokta 1 üzerinden aktarır,
 3. panelde mekanı "DavetPro'ya bağlı" olarak işaretler.
@@ -213,7 +228,7 @@ DavetMekanı bu çağrıyı alınca:
 ## Hata ve yeniden deneme
 
 - Gönderen taraf **kullanıcı akışını bloklamaz.** Talep her koşulda
-  DavetMekanı'na kaydedilir; DavetPro'ya aktarım başarısız olursa kuyruğa
+  Düğünce'ye kaydedilir; DavetPro'ya aktarım başarısız olursa kuyruğa
   yazılır ve tekrar denenir.
 - Yeniden deneme: 1 dk, 5 dk, 30 dk, 2 sa, 12 sa. Beş denemeden sonra durur
   ve admin panelinde görünür.
@@ -221,7 +236,7 @@ DavetMekanı bu çağrıyı alınca:
 
 ## Ortam değişkenleri
 
-| Değişken | DavetMekanı | DavetPro |
+| Değişken | Düğünce | DavetPro |
 |---|---|---|
 | `DAVETPRO_INTEGRATION_SECRET` | ✓ | ✓ *(aynı değer)* |
 | `DAVETPRO_URL` | ✓ | — |
@@ -229,6 +244,6 @@ DavetMekanı bu çağrıyı alınca:
 
 ## Sürüm 2'ye bırakılanlar
 
-- Dolu tarihlerin DavetPro → DavetMekanı akışı (`venue_availability`)
-- DavetPro'da verilen teklifin DavetMekanı'nda talep sahibine gösterilmesi
+- Dolu tarihlerin DavetPro → Düğünce akışı (`venue_availability`)
+- DavetPro'da verilen teklifin Düğünce'de talep sahibine gösterilmesi
 - Bağlantı koparma (unlink) ve veri sahipliğinin geri devri

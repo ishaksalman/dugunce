@@ -124,7 +124,7 @@ export function DavetProLink({
       </p>
 
       <ol className="mt-4 space-y-1.5 text-sm text-muted-foreground">
-        <li>1. DavetPro&apos;da <strong>Ayarlar › DavetMekanı&apos;nda yayınla</strong>&apos;ya girin</li>
+        <li>1. DavetPro&apos;da <strong>Ayarlar › Düğünce&apos;de yayınla</strong>&apos;ya girin</li>
         <li>2. Orada üretilen 6 haneli kodu aşağıya yapıştırın</li>
       </ol>
 

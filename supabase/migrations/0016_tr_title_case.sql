@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0016 · Türkçe başlık büyütmesi (her kelime)
+-- Düğünce · 0016 · Türkçe başlık büyütmesi (her kelime)
 --
 -- `tr_capitalize` yalnızca ilk harfi büyütüyordu; çok kelimeli etkinlik
 -- adlarında "Doğum günü Mekanları" ve "Kurumsal etkinlik Mekanları" gibi

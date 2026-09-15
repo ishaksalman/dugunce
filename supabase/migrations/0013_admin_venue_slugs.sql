@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0013 · Yönetim listesine şehir/ilçe slug'ı
+-- Düğünce · 0013 · Yönetim listesine şehir/ilçe slug'ı
 --
 -- Yayındaki bir mekanın vitrin sayfasına bağlantı verebilmek için gerekiyor.
 -- (İnceleme bekleyen mekanlar zaten vitrinde görünmüyor; onlar için yönetim

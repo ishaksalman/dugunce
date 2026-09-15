@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0006 · Teklif talebi oluşturma
+-- Düğünce · 0006 · Teklif talebi oluşturma
 --
 -- Talep, doğrudan INSERT ile değil bu fonksiyon üzerinden açılıyor. Sebep:
 -- hız sınırı için mevcut talepleri saymak gerekiyor, ama anonim kullanıcıya

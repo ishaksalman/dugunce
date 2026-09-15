@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0016 · Türkçe baş harf büyütme ve başlık düzeltmesi
+-- Düğünce · 0016 · Türkçe baş harf büyütme ve başlık düzeltmesi
 --
 -- `event_types.seo_noun` iki bağlamda kullanılıyor:
 --   başlıkta  → "İstanbul Düğün Mekanları"   (büyük)

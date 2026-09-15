@@ -51,7 +51,7 @@ if (demoIstendi) {
 
   const ownerIds = [];
   for (let i = 1; i <= 3; i++) {
-    const email = `demo-sahip-${i}@davetmekani.test`;
+    const email = `demo-sahip-${i}@dugunce.test`;
     const { data, error } = await admin.auth.admin.createUser({
       email,
       password: crypto.randomUUID(),
@@ -75,7 +75,7 @@ if (demoIstendi) {
   console.log("Demo yorumlar yükleniyor…");
   const reviewerCache = new Map();
   console.log(await seedDemoYorumlar(q, async (i, adSoyad) => {
-    const email = `demo-yorumcu-${i + 1}@davetmekani.test`;
+    const email = `demo-yorumcu-${i + 1}@dugunce.test`;
     if (reviewerCache.has(email)) return reviewerCache.get(email);
     const { data, error } = await admin.auth.admin.createUser({
       email,

@@ -22,7 +22,7 @@ export default function KullanimKosullariPage() {
       <p className="ust-bilgi">Son güncelleme: {GUNCELLEME}</p>
 
       <p>
-        {SITE.name}&apos;nı kullanarak bu koşulları kabul etmiş olursunuz.
+        {SITE.ekli.belirtme} kullanarak bu koşulları kabul etmiş olursunuz.
         Katılmıyorsanız lütfen platformu kullanmayın.
       </p>
 

@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0014 · auth.users.email tip uyumu
+-- Düğünce · 0014 · auth.users.email tip uyumu
 --
 -- `auth.users.email` gerçek Supabase'de varchar(255); fonksiyonlarımız `text`
 -- döndürmeyi vaat ediyordu ve PostgreSQL "structure of query does not match

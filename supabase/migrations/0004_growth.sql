@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0004 · Talepler, favoriler, yorumlar, SEO ve gelir modeli
+-- Düğünce · 0004 · Talepler, favoriler, yorumlar, SEO ve gelir modeli
 --
 -- Bu dosyadaki tabloların bir kısmının MVP'de arayüzü yok (plans,
 -- subscriptions, advertisements). Şimdiden duruyorlar çünkü sonradan

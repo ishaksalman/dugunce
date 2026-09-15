@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 const HERO_IMAGE =
-  "https://picsum.photos/seed/davetmekani-hero/2400/1400";
+  "https://picsum.photos/seed/dugunce-hero/2400/1400";
 
 export default async function HomePage() {
   const [cities, eventTypes, featured] = await Promise.all([
@@ -117,7 +117,7 @@ export default async function HomePage() {
               >
                 <div className="relative aspect-[4/5]">
                   <Image
-                    src={`https://picsum.photos/seed/davetmekani-sehir-${c.slug}/600/750`}
+                    src={`https://picsum.photos/seed/dugunce-sehir-${c.slug}/600/750`}
                     alt=""
                     fill
                     sizes="(min-width: 1024px) 200px, 45vw"

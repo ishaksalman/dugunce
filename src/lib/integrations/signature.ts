@@ -2,7 +2,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 /**
- * DavetMekanı ↔ DavetPro istek imzalama.
+ * Düğünce ↔ DavetPro istek imzalama.
  *
  * Kontrat: docs/DAVETPRO-ENTEGRASYON.md
  * DavetPro deposunda aynı dosyanın eşi var (src/lib/integrations/signature.ts);

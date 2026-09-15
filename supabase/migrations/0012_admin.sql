@@ -1,5 +1,5 @@
 -- =============================================================================
--- DavetMekanı · 0012 · Yönetim paneli
+-- Düğünce · 0012 · Yönetim paneli
 --
 -- Admin işlemleri doğrudan UPDATE ile de yapılabilirdi (RLS admin'e izin
 -- veriyor), ama o zaman denetim izi uygulama katmanına kalırdı ve atlanabilirdi.
