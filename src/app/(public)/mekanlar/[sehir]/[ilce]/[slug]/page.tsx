@@ -23,6 +23,7 @@ import { breadcrumbJsonLd, venueJsonLd } from "@/lib/seo/jsonld";
 import { formatCapacity, formatRating, formatStartingPrice } from "@/lib/format";
 import { listVenueSitemap } from "@/lib/services/seo";
 import { SITE } from "@/lib/constants";
+import { landingHref, landingPath } from "@/lib/seo/paths";
 
 // Detay sayfaları statik üretilir ve saatte bir tazelenir. Bu süre yalnızca
 // ağ: mekan düzenlendiğinde, fotoğrafı değiştiğinde veya admin durumunu
@@ -120,7 +121,10 @@ export default async function VenueDetailPage(
   const breadcrumbs = [
     { name: "Ana sayfa", path: "/" },
     { name: "Mekanlar", path: "/mekanlar" },
-    { name: venue.city.name, path: `/${venue.city.slug}-dugun-mekanlari` },
+    {
+      name: venue.city.name,
+      path: landingHref(landingPath({ citySlug: venue.city.slug, eventSlug: "dugun" })),
+    },
     { name: venue.name, path },
   ];
 
@@ -174,7 +178,7 @@ export default async function VenueDetailPage(
                   {venue.event_types.map((e) => (
                     <li key={e.slug}>
                       <Link
-                        href={`/${venue.city.slug}-${e.slug}-mekanlari`}
+                        href={landingHref(landingPath({ citySlug: venue.city.slug, eventSlug: e.slug }))}
                         className="inline-block rounded-full bg-secondary px-3 py-1.5 text-xs text-secondary-foreground transition-colors hover:bg-sage-200"
                       >
                         {e.name}

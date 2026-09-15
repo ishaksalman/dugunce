@@ -257,13 +257,31 @@ bir tarafı değiştirirken önce orayı güncelle.
 ## SEO
 
 - İndekslenen tek liste yüzeyi SEO landing sayfalarıdır
-  (`/istanbul-dugun-mekanlari`). `/mekanlar?filtre=` her zaman `noindex,follow`.
+  (`/istanbul/dugun-mekanlari`). `/mekanlar?filtre=` her zaman `noindex,follow`.
+- **Landing adresleri İÇ İÇE ve tek kaynaktan üretilir:** `lib/seo/paths.ts`
+  → `landingPath()`. Şehir bir ad alanı: `/{sehir}/{etkinlik}-mekanlari`,
+  ilçe bir alt segment. Bu formül daha önce beş yerde kopyalanmıştı; adres
+  şeması değişince biri unutuluyor ve 404 üretiyordu. Ürettiği yol
+  `seo_pages.path` ile BİREBİR aynı olmak zorunda — rota yol ayrıştırmıyor,
+  tabloya bakıyor.
+- **`sehir` sayfası ile `davet` etkinliğinin şehir sayfası aynı adres.**
+  Bu yüzden şehir düzeyinde `davet` ÜRETİLMİYOR (0024). İlçe düzeyinde
+  üretiliyor — orada çakışacak bir şey yok. Eskiden bunu
+  `on conflict do nothing` sessizce hallediyordu.
 - Bir landing sayfası en az 3 yayınlanmış mekan yoksa `is_active=false` olur:
   200 döner ama `noindex` alır ve sitemap'e girmez. Boş sayfa üretme.
 - **Landing sayfası `searchParams` KULLANMAZ.** Kullanırsa Next rotayı
   dinamik sayar, `generateStaticParams` işlevsiz kalır ve ana SEO yüzeyimiz
-  her istekte sunucuda render edilir. Sayfalama ayrı segmentte:
-  `/{landing}/sayfa/2` — `noindex, follow` alır, kanoniği 1. sayfadır.
+  her istekte sunucuda render edilir. Sayfalama adresin parçası:
+  `/istanbul/dugun-mekanlari/sayfa/2` — `noindex, follow` alır, kanoniği
+  1. sayfadır.
+- **Sayfalama catch-all'ın İÇİNDE çözülüyor** (`parseLandingSegments`).
+  Next'te catch-all segmentinden sonra rota tanımlanamıyor, yani
+  `/[...landing]/sayfa/[n]` diye bir dosya yazılamaz. Son iki segment
+  `sayfa` + sayı ise ayrılıyor.
+- **Kök catch-all statik rotaları YUTMAZ.** Next'te öncelik sırası
+  statik > dinamik > catch-all; `/giris`, `/mekanlar`, `/panel` kendi
+  rotalarına gidiyor. Yeni bir kök sayfa eklerken yine de kontrol et.
 - **`get_seo_page` `SECURITY DEFINER` olmak zorunda.** RLS politikası
   anonim kullanıcıya yalnızca aktif sayfaları okutuyor; invoker olsaydı eşik
   altındaki sayfa `null` döner ve rota 404 verirdi (tasarım 200 + noindex).

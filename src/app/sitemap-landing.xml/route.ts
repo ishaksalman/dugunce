@@ -1,5 +1,6 @@
 import { listActiveSeoPages } from "@/lib/services/seo";
 import { sitemapXml, XML_BASLIK } from "@/lib/seo/sitemap";
+import { landingHref } from "@/lib/seo/paths";
 
 /**
  * Yalnızca AKTİF landing sayfaları. Eşiği geçmeyenler hem `noindex` alıyor
@@ -12,7 +13,7 @@ export async function GET() {
   return new Response(
     sitemapXml(
       pages.map((p) => ({
-        path: `/${p.path}`,
+        path: landingHref(p.path),
         lastModified: p.updated_at,
         changeFrequency: "weekly" as const,
         priority:

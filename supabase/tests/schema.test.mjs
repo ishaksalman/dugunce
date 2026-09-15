@@ -1108,8 +1108,8 @@ await step("etkinlik ve şehir sayfaları doğru yolla üretildi", async () => {
   const r = await db.query(
     "select path, kind from public.seo_pages order by path");
   const yollar = r.rows.map((x) => x.path);
-  for (const beklenen of ["dugun-mekanlari", "istanbul-davet-mekanlari",
-                          "istanbul-dugun-mekanlari"]) {
+  for (const beklenen of ["dugun-mekanlari", "istanbul/davet-mekanlari",
+                          "istanbul/dugun-mekanlari"]) {
     if (!yollar.includes(beklenen)) {
       throw new Error(`${beklenen} yok. Üretilenler: ${yollar.slice(0, 8).join(", ")}`);
     }
@@ -1119,14 +1119,14 @@ await step("etkinlik ve şehir sayfaları doğru yolla üretildi", async () => {
 await step("ilçe × etkinlik sayfası üretildi", async () => {
   const r = await db.query(
     "select path from public.seo_pages where kind = 'ilce_etkinlik'");
-  if (!r.rows.some((x) => x.path === "istanbul-beylikduzu-dugun-mekanlari")) {
+  if (!r.rows.some((x) => x.path === "istanbul/beylikduzu/dugun-mekanlari")) {
     throw new Error(`ilçe sayfası yok: ${r.rows.map((x) => x.path).join(", ")}`);
   }
 });
 
 await step("mekanı olmayan kombinasyon için sayfa ÜRETİLMİYOR", async () => {
   const r = await db.query(
-    "select count(*)::int as n from public.seo_pages where path like 'bursa-%'");
+    "select count(*)::int as n from public.seo_pages where path like 'bursa/%'");
   if (r.rows[0].n !== 0) throw new Error(`${r.rows[0].n} boş sayfa üretilmiş`);
 });
 
@@ -1136,7 +1136,7 @@ await step("eşik altındaki sayfa PASİF (thin content koruması)", async () =>
   await db.query("update public.seo_pages set min_venue_count = 3");
   await db.query("select public.refresh_seo_pages(3::smallint)");
   const r = await db.query(
-    "select is_active from public.seo_pages where path = 'istanbul-dugun-mekanlari'");
+    "select is_active from public.seo_pages where path = 'istanbul/dugun-mekanlari'");
   if (r.rows[0].is_active !== false) {
     throw new Error("tek mekanlı sayfa hâlâ aktif");
   }
@@ -1144,12 +1144,81 @@ await step("eşik altındaki sayfa PASİF (thin content koruması)", async () =>
 
 await step("get_seo_page taksonomiyi birleştiriyor", async () => {
   const r = await db.query(
-    "select public.get_seo_page('istanbul-dugun-mekanlari') as p");
+    "select public.get_seo_page('istanbul/dugun-mekanlari') as p");
   const p2 = r.rows[0].p;
   if (!p2) throw new Error("sayfa dönmedi");
   if (p2.city_slug !== "istanbul") throw new Error(`şehir: ${p2.city_slug}`);
   if (p2.event_slug !== "dugun") throw new Error(`etkinlik: ${p2.event_slug}`);
   if (!p2.h1.includes("Düğün")) throw new Error(`h1: ${p2.h1}`);
+});
+
+await step("şehir × davet sayfası ÜRETİLMİYOR (şehir sayfası zaten o)", async () => {
+  // `sehir` sayfası /istanbul/davet-mekanlari adresinde. `davet` etkinliğini
+  // şehir düzeyinde de üretseydik iki sayfa aynı adrese düşerdi; eskiden
+  // `on conflict do nothing` bunu sessizce yutuyordu.
+  const r = await db.query(
+    `select kind from public.seo_pages where path = 'istanbul/davet-mekanlari'`);
+  if (r.rows.length !== 1) throw new Error(`${r.rows.length} satır`);
+  if (r.rows[0].kind !== "sehir") throw new Error(`kind: ${r.rows[0].kind}`);
+
+  const c = await db.query(
+    `select count(*)::int as n from public.seo_pages p
+       join public.event_types e on e.id = p.event_type_id
+      where p.kind = 'sehir_etkinlik' and e.slug = 'davet'`);
+  if (c.rows[0].n !== 0) throw new Error(`${c.rows[0].n} şehir × davet sayfası var`);
+});
+
+await step("ilçe düzeyinde davet sayfası ÜRETİLİYOR", async () => {
+  // Asimetri kasıtlı: ilçenin ayrı bir "davet" sayfası yok, dolayısıyla
+  // çakışma da yok. Fikstürde hiçbir mekan 'davet' türünde değil, o yüzden
+  // önce ekliyoruz — yoksa test veriyi sınar, kuralı değil.
+  // Fikstürde yalnızca düğün ve nişan var; 'davet' türünü burada açıyoruz.
+  const davet = (await db.query(
+    `insert into public.event_types (name, slug, seo_noun)
+     values ('Davet','davet','davet')
+     on conflict (slug) do update set name = excluded.name
+     returning id`)).rows[0];
+  await db.query(
+    `insert into public.venue_event_types (venue_id, event_type_id)
+     values ($1, $2) on conflict do nothing`, [venueA, davet.id]);
+  await db.query("select public.refresh_seo_pages(1::smallint)");
+
+  const r = await db.query(
+    `select p.path from public.seo_pages p
+       join public.event_types e on e.id = p.event_type_id
+      where p.kind = 'ilce_etkinlik' and e.slug = 'davet'`);
+  if (r.rows.length === 0) throw new Error("ilçe × davet sayfası üretilmemiş");
+  if (!r.rows[0].path.endsWith("/davet-mekanlari")) {
+    throw new Error(`yol: ${r.rows[0].path}`);
+  }
+
+  // Şehir düzeyinde ise hâlâ üretilmemeli.
+  const c = await db.query(
+    `select count(*)::int as n from public.seo_pages p
+       join public.event_types e on e.id = p.event_type_id
+      where p.kind = 'sehir_etkinlik' and e.slug = 'davet'`);
+  if (c.rows[0].n !== 0) throw new Error("şehir × davet üretilmiş");
+});
+
+await step("yol kısıtı tek ve çok segmentli adresleri kabul, bozukları RET ediyor", async () => {
+  const iyi = ["dugun-mekanlari", "istanbul/dugun-mekanlari",
+               "istanbul/beylikduzu/dugun-mekanlari"];
+  for (const yol of iyi) {
+    await db.query(
+      `select 1 where $1 ~ '^[a-z0-9-]+(/[a-z0-9-]+)*$'`, [yol]);
+  }
+  const et = (await db.query("select id from public.event_types limit 1")).rows[0];
+  for (const kotu of ["/bastan-slash", "cift//slash", "sonda-slash/", "BÜYÜK/harf"]) {
+    let gecti = false;
+    try {
+      await db.query(
+        `insert into public.seo_pages (path, kind, event_type_id, title, h1)
+         values ($1, 'etkinlik', $2, 'On karakterden uzun baslik', 'H1')`,
+        [kotu, et.id]);
+      gecti = true;
+    } catch { /* beklenen */ }
+    if (gecti) throw new Error(`kısıt geçildi: ${kotu}`);
+  }
 });
 
 await step("olmayan yol null döndürüyor", async () => {

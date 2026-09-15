@@ -10,6 +10,7 @@ import { getFeaturedVenues } from "@/lib/services/venues";
 import { formatNumber } from "@/lib/format";
 import { SITE } from "@/lib/constants";
 import type { Metadata } from "next";
+import { landingHref, landingPath } from "@/lib/seo/paths";
 
 // Ana sayfa saatte bir tazeleniyor; içerik nadiren değişiyor ve LCP kritik.
 export const revalidate = 3600;
@@ -90,7 +91,7 @@ export default async function HomePage() {
           {eventTypes.map((e) => (
             <li key={e.id}>
               <Link
-                href={`/${e.slug}-mekanlari`}
+                href={landingHref(landingPath({ eventSlug: e.slug }))}
                 className="inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm transition-colors hover:border-primary hover:bg-secondary"
               >
                 <Icon name={e.icon} className="size-4 text-muted-foreground" />
@@ -112,7 +113,7 @@ export default async function HomePage() {
           {popularCities.map((c) => (
             <li key={c.id}>
               <Link
-                href={`/${c.slug}-dugun-mekanlari`}
+                href={landingHref(landingPath({ citySlug: c.slug, eventSlug: "dugun" }))}
                 className="group relative block overflow-hidden rounded-xl"
               >
                 <div className="relative aspect-[4/5]">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SITE } from "@/lib/constants";
 import { getCities, getEventTypes } from "@/lib/services/taxonomy";
+import { landingHref, landingPath } from "@/lib/seo/paths";
 
 export async function Footer() {
   const [cities, eventTypes] = await Promise.all([getCities(true), getEventTypes()]);
@@ -23,7 +24,7 @@ export async function Footer() {
 
         <FooterColumn title="Popüler Şehirler">
           {cities.slice(0, 8).map((c) => (
-            <FooterLink key={c.id} href={`/${c.slug}-dugun-mekanlari`}>
+            <FooterLink key={c.id} href={landingHref(landingPath({ citySlug: c.slug, eventSlug: "dugun" }))}>
               {c.name} Düğün Mekanları
             </FooterLink>
           ))}
@@ -31,7 +32,7 @@ export async function Footer() {
 
         <FooterColumn title="Etkinlik Türleri">
           {eventTypes.slice(0, 8).map((e) => (
-            <FooterLink key={e.id} href={`/${e.slug}-mekanlari`}>
+            <FooterLink key={e.id} href={landingHref(landingPath({ eventSlug: e.slug }))}>
               {e.seo_noun} Mekanları
             </FooterLink>
           ))}

@@ -3,6 +3,7 @@ import { cache } from "react";
 import { getDataSource } from "@/lib/db";
 import type { SeoPage } from "@/types/db";
 import type { VenueFilters } from "@/lib/schemas/filters";
+import { landingHref, landingPath } from "@/lib/seo/paths";
 
 export const getSeoPage = cache(async (path: string) => {
   const db = await getDataSource();
@@ -39,16 +40,21 @@ export function seoBreadcrumbs(page: SeoPage) {
   const items = [{ name: "Ana sayfa", path: "/" }];
 
   if (page.city_slug && page.city_name) {
-    items.push({ name: page.city_name, path: `/${page.city_slug}-davet-mekanlari` });
+    items.push({
+      name: page.city_name,
+      path: landingHref(landingPath({ citySlug: page.city_slug })),
+    });
   }
   if (page.district_name && page.city_slug && page.event_slug) {
     // İlçe sayfasında ara adım olarak şehir × etkinlik sayfası daha yararlı:
     // kullanıcı ilçeden şehre genişlemek istiyor.
     items.push({
       name: `${page.city_name} ${page.event_name}`,
-      path: `/${page.city_slug}-${page.event_slug}-mekanlari`,
+      path: landingHref(
+        landingPath({ citySlug: page.city_slug, eventSlug: page.event_slug }),
+      ),
     });
   }
-  items.push({ name: page.h1, path: `/${page.path}` });
+  items.push({ name: page.h1, path: landingHref(page.path) });
   return items;
 }

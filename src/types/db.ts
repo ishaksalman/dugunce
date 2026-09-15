@@ -491,6 +491,10 @@ export interface SeoSitemapEntry {
   path: string;
   updated_at: string;
   kind: SeoPageKind;
+  h1: string;
+  city_slug: string | null;
+  district_slug: string | null;
+  event_slug: string | null;
 }
 
 export function normalizeSeoPage(row: SeoPage): SeoPage {

@@ -10,6 +10,7 @@ import { updateSeoPage } from "@/lib/actions/admin";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { AdminSeoPage } from "@/types/db";
+import { landingHref } from "@/lib/seo/paths";
 
 const TIP_ETIKET: Record<string, string> = {
   etkinlik: "Etkinlik",
@@ -145,7 +146,7 @@ export function SeoPageRow({ page }: { page: AdminSeoPage }) {
               className="h-8 gap-1.5"
               nativeButton={false}
               render={
-                <Link href={`/${page.path}`} target="_blank">
+                <Link href={landingHref(page.path)} target="_blank">
                   Sayfayı gör
                   <ExternalLink className="size-3.5" aria-hidden />
                 </Link>
