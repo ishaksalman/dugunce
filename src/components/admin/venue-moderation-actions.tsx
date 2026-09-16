@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ExternalLink, Star, X } from "lucide-react";
+import { Check, ExternalLink, Pencil, Star, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { setVenueFeatured, setVenueStatus } from "@/lib/actions/admin";
@@ -91,6 +91,22 @@ export function VenueModerationActions({ venue }: { venue: AdminVenue }) {
         render={
           <Link href={`/yonetim/mekanlar/${venue.id}`}>
             İncele
+          </Link>
+        }
+      />
+
+      {/* Katalog kaydının içeriğini yönetim dolduruyor. Sahipsiz mekan
+          "Mekanlarım" listesinde ÇIKMIYOR (get_my_venues owner_id'ye
+          bakıyor), dolayısıyla düzenleyiciye tek giriş burası. */}
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-8 gap-1.5"
+        nativeButton={false}
+        render={
+          <Link href={`/panel/mekanlarim/${venue.id}/temel-bilgiler`}>
+            <Pencil className="size-3.5" aria-hidden />
+            İçeriği düzenle
           </Link>
         }
       />
