@@ -33,10 +33,17 @@ export function AdminVenueRow({ venue }: { venue: AdminVenue }) {
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {venue.district_name}, {venue.city_name}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {venue.owner_name}
-                {venue.owner_email ? ` · ${venue.owner_email}` : ""}
-              </p>
+              {venue.is_claimed ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {venue.owner_name}
+                  {venue.owner_email ? ` · ${venue.owner_email}` : ""}
+                </p>
+              ) : (
+                // Katalog kaydı: yönetim ekledi, işletme henüz sahiplenmedi.
+                <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning-foreground">
+                  Sahiplenilmemiş
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {venue.is_featured ? (

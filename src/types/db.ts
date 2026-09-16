@@ -176,6 +176,8 @@ export interface VenueDetail {
   website_url: string | null;
   instagram_url: string | null;
   google_maps_url: string | null;
+  /** false = sahiplenilmemiş katalog kaydı; vitrinde sahiplenme çağrısı çıkar. */
+  is_claimed: boolean;
   rating_avg: string | number;
   rating_count: number;
   favorite_count: number;
@@ -397,8 +399,10 @@ export interface AdminVenue {
   city_slug: string;
   district_name: string;
   district_slug: string;
-  owner_name: string;
+  // Sahiplenilmemiş katalog kaydında NULL (0025).
+  owner_name: string | null;
   owner_email: string | null;
+  is_claimed: boolean;
   cover_url: string | null;
   view_count: number;
   inquiry_count: number;

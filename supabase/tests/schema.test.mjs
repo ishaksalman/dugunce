@@ -1449,6 +1449,152 @@ await step("her işlem denetim izine yazılıyor", async () => {
 });
 
 // =============================================================================
+console.log("\n\x1b[1m19) Sahipsiz katalog kaydı ve sahiplenme\x1b[0m");
+// =============================================================================
+let katalogId;
+
+await asUser(U.admin);
+await step("admin sahipsiz katalog kaydı açıyor", async () => {
+  const yer = (await db.query(
+    `select v.city_id, v.district_id from public.venues v where v.id = $1`, [venueA])).rows[0];
+  const r = await db.query(
+    "select public.admin_create_venue($1, $2, $3) as d",
+    ["Deneme Düğün Salonu", yer.city_id, yer.district_id]);
+  katalogId = r.rows[0].d.id;
+
+  await asServer();
+  const v = await db.query(
+    "select owner_id, status, category_id from public.venues where id = $1", [katalogId]);
+  await asUser(U.admin);
+  if (v.rows[0].owner_id !== null) throw new Error("kayıt sahipli doğdu");
+  if (v.rows[0].status !== "DRAFT") throw new Error(`durum: ${v.rows[0].status}`);
+  if (!v.rows[0].category_id) throw new Error("kategori atanmadı");
+});
+
+await step("aynı adla ikinci kayıt farklı slug alıyor", async () => {
+  const yer = (await db.query(
+    `select v.city_id, v.district_id from public.venues v where v.id = $1`, [venueA])).rows[0];
+  const r = await db.query(
+    "select public.admin_create_venue($1, $2, $3) as d",
+    ["Deneme Düğün Salonu", yer.city_id, yer.district_id]);
+  if (r.rows[0].d.slug === "deneme-dugun-salonu") {
+    throw new Error("slug çakıştı");
+  }
+});
+
+await step("ilçe şehre ait değilse kayıt açılmıyor", async () => {
+  const c = (await db.query(
+    `select id from public.cities where id <> (select city_id from public.venues where id=$1)
+      limit 1`, [venueA])).rows[0];
+  const d = (await db.query(
+    "select district_id from public.venues where id = $1", [venueA])).rows[0];
+  let gecti = false;
+  try {
+    await db.query("select public.admin_create_venue($1, $2, $3)",
+      ["Yanlış İlçe Salonu", c.id, d.district_id]);
+    gecti = true;
+  } catch { /* beklenen */ }
+  if (gecti) throw new Error("tutarsız şehir/ilçe kabul edildi");
+});
+
+await step("sahipsiz TASLAK kayıt yönetim listesinde GÖRÜNÜYOR", async () => {
+  // `join profiles on owner_id` INNER olsaydı kayıt buradan düşerdi ve
+  // katalog ekranı işe yaramazdı.
+  const r = await db.query(
+    "select id, is_claimed, owner_name from public.admin_list_venues(null, null, null, 100, 0)");
+  const satir = r.rows.find((x) => x.id === katalogId);
+  if (!satir) throw new Error("sahipsiz kayıt listede yok");
+  if (satir.is_claimed !== false) throw new Error("is_claimed yanlış");
+  if (satir.owner_name !== null) throw new Error(`owner_name: ${satir.owner_name}`);
+});
+
+await asAnon();
+await step("sahipsiz TASLAK anonime GÖRÜNMÜYOR", async () => {
+  const r = await db.query(
+    "select count(*)::int as n from public.venues where id = $1", [katalogId]);
+  if (r.rows[0].n !== 0) throw new Error("taslak sızdı");
+});
+
+await expectFail(
+  "oturumsuz sahiplenme başvurusu yapılamıyor",
+  () => db.query("select public.claim_venue($1)", [katalogId]),
+  "Oturum gerekli");
+
+await asUser(U.ownerB);
+let basvuruId;
+await step("kullanıcı sahipsiz profili sahiplenmek için başvuruyor", async () => {
+  const r = await db.query("select public.claim_venue($1, $2, $3) as d",
+    [katalogId, "Salonun sahibiyim, vergi no 123.", "05551112233"]);
+  basvuruId = r.rows[0].d.id;
+  const c = await db.query(
+    "select status, claimant_id from public.venue_claims where id = $1", [basvuruId]);
+  if (c.rows[0].status !== "PENDING") throw new Error(`durum: ${c.rows[0].status}`);
+  if (c.rows[0].claimant_id !== U.ownerB) throw new Error("başvuran yanlış");
+});
+
+await expectFail(
+  "aynı kişi ikinci kez başvuramıyor",
+  () => db.query("select public.claim_venue($1)", [katalogId]),
+  "bekleyen bir başvurunuz");
+
+await expectFail(
+  "SAHİPLİ profil sahiplenilemiyor",
+  () => db.query("select public.claim_venue($1)", [venueA]),
+  "zaten sahiplenilmiş");
+
+await asUser(U.ownerA);
+await step("başka kullanıcı başvuruyu OKUYAMIYOR", async () => {
+  const r = await db.query(
+    "select count(*)::int as n from public.venue_claims where id = $1", [basvuruId]);
+  if (r.rows[0].n !== 0) throw new Error("başkasının başvurusu sızdı");
+});
+
+await expectFail(
+  "mekan sahibi başvuruyu kendi onaylayamıyor",
+  () => db.query("select public.admin_review_claim($1, true)", [basvuruId]),
+  "yönetici yetkisi");
+
+await asUser(U.admin);
+await expectFail(
+  "gerekçesiz reddetme engelleniyor",
+  () => db.query("select public.admin_review_claim($1, false, null)", [basvuruId]),
+  "gerekçesi zorunlu");
+
+await step("onay sahipliği devrediyor ve rolü yükseltiyor", async () => {
+  await db.query("select public.admin_review_claim($1, true, $2)",
+    [basvuruId, "Vergi levhası doğrulandı."]);
+  await asServer();
+  const v = await db.query("select owner_id from public.venues where id = $1", [katalogId]);
+  const p = await db.query("select role from public.profiles where id = $1", [U.ownerB]);
+  const c = await db.query("select status from public.venue_claims where id = $1", [basvuruId]);
+  await asUser(U.admin);
+  if (v.rows[0].owner_id !== U.ownerB) throw new Error("sahiplik devredilmedi");
+  if (p.rows[0].role !== "venue_owner") throw new Error(`rol: ${p.rows[0].role}`);
+  if (c.rows[0].status !== "APPROVED") throw new Error(`başvuru: ${c.rows[0].status}`);
+});
+
+await expectFail(
+  "sonuçlanmış başvuru tekrar incelenemiyor",
+  () => db.query("select public.admin_review_claim($1, true, null)", [basvuruId]),
+  "zaten sonuçlanmış");
+
+await step("sahiplenen kişi artık kaydı düzenleyebiliyor", async () => {
+  await asUser(U.ownerB);
+  const r = await db.query(
+    "update public.venues set short_description = $2 where id = $1 returning id",
+    [katalogId, "Sahiplendikten sonra düzenlendi."]);
+  if (r.rows.length !== 1) throw new Error("sahibi düzenleyemedi");
+  await asUser(U.admin);
+});
+
+await step("admin onayı denetim izine yazılıyor", async () => {
+  const r = await db.query(
+    `select count(*)::int as n from public.admin_actions
+      where entity_type = 'venue_claim' and action = 'approved'`);
+  if (r.rows[0].n < 1) throw new Error("denetim izi yok");
+});
+
+// =============================================================================
 console.log(
   fail
     ? `\n\x1b[31m${fail} test başarısız\x1b[0m, ${pass} başarılı\n`

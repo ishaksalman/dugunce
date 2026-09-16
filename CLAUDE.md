@@ -115,6 +115,30 @@ zorunda. `auth.users.email` stub'da `text` iken gerçekte `varchar(255)`;
 üretimde "structure of query does not match function result type" ile
 patladı. Yeni bir `auth` kolonu kullanırken tipini gerçeğiyle karşılaştır.
 
+## Katalog kaydı ve sahiplenme
+
+Strateji: yönetim katalogu kendisi doldurur → profil Google'a düşer →
+işletme sahibi **sahiplenir** → talep almaya başlar.
+
+- **`venues.owner_id` NULL olabilir** (0025). NULL = sahiplenilmemiş katalog
+  kaydı. RLS bunu kendiliğinden doğru ele alıyor: `owner_id = auth.uid()`
+  NULL sahiple hiçbir kullanıcıya eşleşmiyor, yani sahipsiz taslağı yalnızca
+  admin görüyor ve düzenliyor.
+- **Sahipliği yalnızca `admin_review_claim()` verir.** `guard_venue_update`
+  ayrıcalıksız çağıranın `owner_id`'sini eski değere sabitliyor.
+- **`owner_id`'ye bakan JOIN'ler LEFT olmalı.** `admin_list_venues` INNER
+  JOIN'liyordu; sahipsiz kayıt yönetim listesinden tamamen düşüyordu ve
+  katalog ekranı işlevsiz kalırdı. Testte bu senaryo var.
+- **`business_categories` işletmenin NE OLDUĞU**, `venue_types` mekanın alt
+  türü (salon/otel/kır). Karıştırma. `path_prefix` kategorinin adres alanı:
+  bugün `/mekanlar/…`, ikinci kategoride `/fotografcilar/…`.
+- Kategori varsayılanı `guard_venue_insert` içinde doldurulur — PostgreSQL
+  DEFAULT'ta alt sorguya izin vermiyor.
+- **`venues.district_id` hâlâ NOT NULL.** İlçesiz işletme ancak ikinci
+  kategori gelince anlam kazanıyor; şimdi nullable yapmak vitrin
+  sorgularını LEFT JOIN'e çevirir ve ilçesiz kaydın adresini tanımsız
+  bırakır.
+
 ## Müşteri üyeliği YOK (bilinçli)
 
 MVP'de yalnızca mekan sahibi ve admin hesabı var. Gerekçe: asıl huni
