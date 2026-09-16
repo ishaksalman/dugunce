@@ -7,6 +7,7 @@ import { BadgeCheck, Building2, Globe, LayoutDashboard, LogOut, Menu, MessageSqu
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
+import { Wordmark } from "@/components/shared/wordmark";
 import { SITE } from "@/lib/constants";
 
 const ICONS = {
@@ -60,8 +61,9 @@ export function AdminShell({
 
       <aside className="hidden w-60 shrink-0 border-r bg-brand-950 text-white lg:flex lg:flex-col">
         <div className="flex h-16 items-center border-b border-white/10 px-5">
-          <Link href="/" className="font-heading text-base tracking-tight">
-            {SITE.name}
+          {/* Koyu zemin: currentColor sayesinde marka beyaz basılıyor. */}
+          <Link href="/" aria-label={`${SITE.name} ana sayfa`}>
+            <Wordmark className="h-5 w-auto" />
           </Link>
           <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[11px]">
             Yönetim

@@ -6,6 +6,7 @@ import { LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PanelNav, type NavItem } from "./panel-nav";
 import { signOut } from "@/lib/actions/auth";
+import { Wordmark } from "@/components/shared/wordmark";
 import { SITE } from "@/lib/constants";
 
 /**
@@ -39,8 +40,8 @@ export function PanelShell({
         >
           {open ? <X /> : <Menu />}
         </Button>
-        <Link href="/panel" className="font-heading text-lg">
-          {SITE.name}
+        <Link href="/panel" aria-label={`${SITE.name} paneli`}>
+          <Wordmark className="h-5 w-auto text-foreground" />
         </Link>
       </header>
 
@@ -56,11 +57,8 @@ export function PanelShell({
       {/* --- Masaüstü kenar menü --- */}
       <aside className="hidden w-64 shrink-0 border-r lg:flex lg:flex-col">
         <div className="flex h-16 items-center border-b px-5">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <span className="font-heading text-sm leading-none">D</span>
-            </span>
-            <span className="font-heading text-base tracking-tight">{SITE.name}</span>
+          <Link href="/" className="flex items-center" aria-label={`${SITE.name} ana sayfa`}>
+            <Wordmark className="h-5 w-auto text-foreground" />
           </Link>
         </div>
         <div className="flex-1 overflow-y-auto p-4">

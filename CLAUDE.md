@@ -252,6 +252,12 @@ bir tarafı değiştirirken önce orayı güncelle.
   Gerekçe: `docs/DAVETPRO-ENTEGRASYON.md`.
 - Depo dizini hâlâ `davetmekani`.
 
+- **Logo `components/shared/wordmark.tsx` içinde satır içi SVG.** Kaynak
+  dosyada renk sabit `#1E363D` idi; koyu zeminli yönetim kenar çubuğunda
+  görünmez oluyordu. `currentColor`'a çevrildi — bulunduğu yerin metin
+  rengini alıyor, tek varlık her zeminde çalışıyor. `<img>` ile bu mümkün
+  değil. Ham dosya `public/logo.svg` (OG görseli, e-posta vb. için).
+
 ## Renk ve tipografi
 
 - Marka renkleri `src/app/globals.css` içinde tek yerde: `--brand-*`

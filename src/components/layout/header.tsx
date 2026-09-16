@@ -1,17 +1,15 @@
 import Link from "next/link";
 import { Heart, Menu, Search } from "lucide-react";
 import { ButtonLink } from "@/components/shared/button-link";
+import { Wordmark } from "@/components/shared/wordmark";
 import { SITE } from "@/lib/constants";
 
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="container-page flex h-16 items-center gap-4">
-        <Link href="/" className="flex items-center gap-2" aria-label={`${SITE.name} ana sayfa`}>
-          <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <span className="font-heading text-base leading-none">D</span>
-          </span>
-          <span className="font-heading text-lg tracking-tight">{SITE.name}</span>
+        <Link href="/" className="flex items-center" aria-label={`${SITE.name} ana sayfa`}>
+          <Wordmark className="h-6 w-auto text-foreground" />
         </Link>
 
         <nav aria-label="Ana menü" className="ml-6 hidden items-center gap-1 md:flex">

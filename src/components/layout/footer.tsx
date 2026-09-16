@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Wordmark } from "@/components/shared/wordmark";
 import { SITE } from "@/lib/constants";
 import { getCities, getEventTypes } from "@/lib/services/taxonomy";
 import { landingHref, landingPath } from "@/lib/seo/paths";
@@ -10,12 +11,7 @@ export async function Footer() {
     <footer className="mt-24 border-t bg-muted/40">
       <div className="container-page grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <span className="font-heading text-base leading-none">D</span>
-            </span>
-            <span className="font-heading text-lg tracking-tight">{SITE.name}</span>
-          </div>
+          <Wordmark className="h-6 w-auto text-foreground" />
           <p className="max-w-xs text-sm text-muted-foreground">
             Düğün, nişan, kına ve tüm özel günlerin için Türkiye&apos;nin davet
             mekanlarını tek yerde keşfet.
