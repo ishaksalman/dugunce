@@ -136,7 +136,7 @@ Yanıt:
 Mekan sahibinin **her iki üründe de hesabı varken** kullandığı akış.
 
 ```
-DavetPro › Ayarlar › "Düğünce'de yayınla"
+DavetPro › Ayarlar › "Düğünce'de yayınla"  (0040: yalnızca yönetici)
   → tek kullanımlık kod üretir (6 haneli, 15 dk TTL, business_id + venue_id taşır)
 Düğünce › Panel › "DavetPro hesabımı bağla" → kod girilir
   → Düğünce bu uç noktayı çağırır
