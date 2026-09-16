@@ -3,9 +3,10 @@ import Link from "next/link";
 import { ArrowRight, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { ButtonLink } from "@/components/shared/button-link";
 import { HeroSearch } from "@/components/search/hero-search";
+import { CategoryNav } from "@/components/search/category-nav";
 import { VenueCard, VenueGrid } from "@/components/venue/venue-card";
 import { Icon } from "@/components/shared/icon";
-import { getCities, getEventTypes } from "@/lib/services/taxonomy";
+import { getBusinessCategories, getCities, getEventTypes } from "@/lib/services/taxonomy";
 import { getFeaturedVenues } from "@/lib/services/venues";
 import { formatNumber } from "@/lib/format";
 import { SITE } from "@/lib/constants";
@@ -25,9 +26,10 @@ const HERO_IMAGE =
   "https://picsum.photos/seed/dugunce-hero/2400/1400";
 
 export default async function HomePage() {
-  const [cities, eventTypes, featured] = await Promise.all([
+  const [cities, eventTypes, categories, featured] = await Promise.all([
     getCities(),
     getEventTypes(),
+    getBusinessCategories(),
     getFeaturedVenues(6),
   ]);
 
@@ -81,10 +83,23 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* --- Etkinlik türleri --------------------------------------------- */}
+      {/* --- Kategoriler --------------------------------------------------- */}
+      {/* Kategori işletmenin NE OLDUĞU; aşağıdaki etkinlik türü ise mekanın
+          hangi organizasyona uygun olduğu. İkisi farklı katman. */}
       <section className="container-page pt-14">
         <SectionHead
-          title="Ne için mekan arıyorsun?"
+          title="Ne arıyorsun?"
+          description="Düğününüz için ihtiyacınız olan işletmeyi seçerek başlayın."
+        />
+        <div className="mt-6">
+          <CategoryNav categories={categories} />
+        </div>
+      </section>
+
+      {/* --- Etkinlik türleri --------------------------------------------- */}
+      <section className="container-page pt-16">
+        <SectionHead
+          title="Hangi organizasyon için?"
           description="Etkinlik türüne göre başlayarak aramayı daralt."
         />
         <ul className="mt-6 flex flex-wrap gap-2">

@@ -33,7 +33,7 @@ export interface Database {
     Tables: {
       cities: ReadOnly<City & { sort_order: number; is_popular: boolean }>;
       districts: ReadOnly<District>;
-      business_categories: ReadOnly<BusinessCategory & { sort_order: number; is_active: boolean }>;
+      business_categories: ReadOnly<BusinessCategory>;
       event_types: ReadOnly<EventType & { is_active: boolean }>;
       venue_types: ReadOnly<VenueType & { is_active: boolean }>;
       features: ReadOnly<Feature & { is_active: boolean }>;

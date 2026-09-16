@@ -132,6 +132,14 @@ işletme sahibi **sahiplenir** → talep almaya başlar.
 - **`business_categories` işletmenin NE OLDUĞU**, `venue_types` mekanın alt
   türü (salon/otel/kır). Karıştırma. `path_prefix` kategorinin adres alanı:
   bugün `/mekanlar/…`, ikinci kategoride `/fotografcilar/…`.
+- **Planlanan kategoriler PASİF satır olarak duruyor** (0027: fotoğrafçı,
+  gelinlik, organizasyon, saç & makyaj, müzik). Ana sayfadaki "Ne arıyorsun?"
+  bloğunda "yakında" etiketiyle ve TIKLANAMAZ şekilde görünüyorlar — ölü
+  bağlantı üretmiyoruz. Kategoriyi açmak için `is_active = true` yeter;
+  liste component'e gömülü değil.
+- Kategori seçimi ile etkinlik türü FARKLI katman: kategori işletmenin ne
+  olduğu, etkinlik türü mekanın hangi organizasyona uygun olduğu. Ana
+  sayfada ikisi ayrı başlık altında.
 - Kategori varsayılanı `guard_venue_insert` içinde doldurulur — PostgreSQL
   DEFAULT'ta alt sorguya izin vermiyor.
 - **Sahiplenme çağrısı oturum durumunu SUNUCUDAN sormaz.** Sormak çerez

@@ -402,13 +402,14 @@ export const supabaseSource: DataSource = {
 
   // --- Katalog ve sahiplenme ------------------------------------------------
 
+  // Pasif (planlanan) kategoriler de dönüyor: ana sayfa onları "yakında"
+  // olarak gösteriyor. Yalnızca aktifleri isteyen çağıran kendi filtreliyor.
   async listBusinessCategories() {
     const supabase = createPublicClient();
     return unwrap(
       await supabase
         .from("business_categories")
-        .select("id, slug, name, plural_name, path_prefix")
-        .eq("is_active", true)
+        .select("id, slug, name, plural_name, path_prefix, sort_order, is_active")
         .order("sort_order"),
       "listBusinessCategories",
     ) as unknown as BusinessCategory[];

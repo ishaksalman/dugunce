@@ -44,7 +44,12 @@ export default async function AdminNewVenuePage() {
         </p>
       </div>
 
-      <CatalogVenueForm cities={cities} categories={categories} venueTypes={venueTypes} />
+      {/* Pasif kategoriye mekan bağlanamaz: yalnızca yayındakiler sunuluyor. */}
+      <CatalogVenueForm
+        cities={cities}
+        categories={categories.filter((k) => k.is_active)}
+        venueTypes={venueTypes}
+      />
     </div>
   );
 }

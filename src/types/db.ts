@@ -608,6 +608,9 @@ export interface BusinessCategory {
   name: string;
   plural_name: string;
   path_prefix: string;
+  sort_order: number;
+  /** false = planlanan kategori: vitrinde "yakında", mekan bağlanamaz. */
+  is_active: boolean;
 }
 
 export type ClaimStatus = "PENDING" | "APPROVED" | "REJECTED";

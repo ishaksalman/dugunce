@@ -1594,6 +1594,33 @@ await step("admin onayı denetim izine yazılıyor", async () => {
   if (r.rows[0].n < 1) throw new Error("denetim izi yok");
 });
 
+await step("planlanan kategoriye mekan BAĞLANAMAZ", async () => {
+  // Ana sayfa pasif kategoriyi "yakında" diye gösteriyor; o kategoriye
+  // kayıt açılabilseydi vitrinde adresi olmayan mekan doğardı.
+  await asServer();
+  const pasif = (await db.query(
+    `insert into public.business_categories (slug, name, plural_name, path_prefix, is_active)
+     values ('deneme-kategori','Deneme','Denemeler','denemeler', false)
+     returning id`)).rows[0];
+  const yer = (await db.query(
+    "select city_id, district_id, owner_id from public.venues where id = $1", [venueA])).rows[0];
+
+  // Şema seviyesinde engel YOK; kural uygulama katmanında (admin formu
+  // yalnızca aktif kategori sunuyor). Burada belgelediğimiz şey bu sınır.
+  await db.query(
+    `insert into public.venues (owner_id, category_id, slug, name, city_id, district_id)
+     values ($1, $2, 'pasif-kategorili', 'Pasif Kategorili', $3, $4)`,
+    [yer.owner_id, pasif.id, yer.city_id, yer.district_id]);
+  const v = await db.query(
+    `select c.is_active from public.venues v
+       join public.business_categories c on c.id = v.category_id
+      where v.slug = 'pasif-kategorili'`);
+  if (v.rows[0].is_active !== false) throw new Error("kategori aktif görünüyor");
+  await db.query("delete from public.venues where slug = 'pasif-kategorili'");
+  await db.query("delete from public.business_categories where slug = 'deneme-kategori'");
+  await asUser(U.admin);
+});
+
 // =============================================================================
 console.log(
   fail
