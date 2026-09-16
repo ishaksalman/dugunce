@@ -1,14 +1,23 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { TaxField, taxInput } from "./taxonomy-row";
 import { createCatalogVenue } from "@/lib/actions/admin";
-import type { BusinessCategory, City, VenueType } from "@/types/db";
+import type { BusinessCategory, City, SimilarVenue, VenueType } from "@/types/db";
 
 interface Ilce { id: string; slug: string; name: string }
+
+const DURUM_ETIKET: Record<string, string> = {
+  DRAFT: "taslak",
+  PENDING_REVIEW: "incelemede",
+  PUBLISHED: "yayında",
+  REJECTED: "reddedilmiş",
+  SUSPENDED: "askıda",
+};
 
 /**
  * Katalog kaydı açma formu.
@@ -35,8 +44,36 @@ export function CatalogVenueForm({
   const [districtId, setDistrictId] = useState("");
   const [cache, setCache] = useState<{ city: string; items: Ilce[] } | null>(null);
 
+  // Mükerrer uyarısı: "bunu zaten eklemiş miyim?" sorusunu form cevaplıyor.
+  const [ad, setAd] = useState("");
+  const [benzer, setBenzer] = useState<SimilarVenue[]>([]);
+  const [zorla, setZorla] = useState(false);
+
   const districts = cache && cache.city === cityId ? cache.items : [];
   const loading = cityId !== "" && cache?.city !== cityId;
+
+  // Yazarken arama; her tuşta istek atmamak için geciktirilmiş.
+  // Kısa girdide setState YOK — efekt içinde senkron setState yasak; sonucu
+  // aşağıda türetiyoruz, böylece bayat liste de kendiliğinden gizleniyor.
+  useEffect(() => {
+    const q = ad.trim();
+    if (q.length < 3) return;
+    const controller = new AbortController();
+    const t = setTimeout(() => {
+      const p = new URLSearchParams({ ad: q });
+      if (cityId) p.set("sehir", cityId);
+      fetch(`/api/yonetim/benzer-mekanlar?${p}`, { signal: controller.signal })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((d: { venues: SimilarVenue[] }) => setBenzer(d.venues))
+        .catch((e) => {
+          if (e.name !== "AbortError") setBenzer([]);
+        });
+    }, 350);
+    return () => {
+      clearTimeout(t);
+      controller.abort();
+    };
+  }, [ad, cityId]);
 
   useEffect(() => {
     const city = cities.find((c) => c.id === cityId);
@@ -53,6 +90,8 @@ export function CatalogVenueForm({
     return () => controller.abort();
   }, [cityId, cities]);
 
+  const benzerGoster = ad.trim().length >= 3 ? benzer : [];
+
   return (
     <form
       noValidate
@@ -63,7 +102,7 @@ export function CatalogVenueForm({
         setErrors({});
         setFormError(null);
         startTransition(async () => {
-          const r = await createCatalogVenue(data);
+          const r = await createCatalogVenue({ ...data, force: zorla });
           if (!r.ok) {
             setErrors(r.fieldErrors ?? {});
             setFormError(r.message);
@@ -86,8 +125,54 @@ export function CatalogVenueForm({
       ) : null}
 
       <TaxField label="İşletme adı" error={errors.name}>
-        <input name="name" autoFocus maxLength={120} className={taxInput} />
+        <input
+          name="name"
+          autoFocus
+          maxLength={120}
+          value={ad}
+          onChange={(e) => {
+            setAd(e.target.value);
+            setZorla(false);
+          }}
+          className={taxInput}
+        />
       </TaxField>
+
+      {benzerGoster.length > 0 ? (
+        <div className="rounded-xl border border-warning/40 bg-warning/5 p-3.5">
+          <p className="text-sm font-medium">Katalogda benzer kayıt var</p>
+          <ul className="mt-2 space-y-1.5 text-sm">
+            {benzerGoster.map((v) => (
+              <li key={v.id} className="flex flex-wrap items-center gap-x-2">
+                <Link
+                  href={`/yonetim/mekanlar/${v.id}`}
+                  target="_blank"
+                  className="font-medium hover:underline"
+                >
+                  {v.name}
+                </Link>
+                <span className="text-muted-foreground">{v.district_name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {DURUM_ETIKET[v.status] ?? v.status}
+                  {v.is_claimed ? " · sahiplenilmiş" : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <label className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={zorla}
+              onChange={(e) => setZorla(e.target.checked)}
+              className="mt-0.5 size-4 rounded border-input accent-primary"
+            />
+            <span>
+              Bu <strong>farklı</strong> bir işletme; yine de ekle. (Aynı ilçede
+              aynı adlı kayıt varsa bu kutu işaretlenmeden eklenmez.)
+            </span>
+          </label>
+        </div>
+      ) : null}
 
       {categories.length > 1 ? (
         <TaxField label="Kategori" error={errors.categoryId}>

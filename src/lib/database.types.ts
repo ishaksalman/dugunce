@@ -278,8 +278,13 @@ export interface Database {
           p_address?: string | null;
           p_contact_phone?: string | null;
           p_website_url?: string | null;
+          p_force?: boolean;
         };
         Returns: Record<string, unknown>;
+      };
+      admin_find_similar_venues: {
+        Args: { p_name: string; p_city_id?: string | null };
+        Returns: Record<string, unknown>[];
       };
       admin_list_claims: {
         Args: {

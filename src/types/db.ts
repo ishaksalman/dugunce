@@ -631,3 +631,11 @@ export interface AdminClaim {
   created_at: string;
   total_count: string | number;
 }
+
+export interface SimilarVenue {
+  id: string;
+  name: string;
+  district_name: string;
+  status: VenueStatus;
+  is_claimed: boolean;
+}

@@ -1471,15 +1471,72 @@ await step("admin sahipsiz katalog kaydı açıyor", async () => {
   if (!v.rows[0].category_id) throw new Error("kategori atanmadı");
 });
 
-await step("aynı adla ikinci kayıt farklı slug alıyor", async () => {
+await step("AYNI İLÇEDE aynı adlı ikinci kayıt ENGELLENİYOR", async () => {
+  // Katalog girişinde en olası hata: aynı salonu iki kez eklemek. Eskiden
+  // sessizce "-2" slug'ı üretiliyordu ve hata görünmez kalıyordu.
+  const yer = (await db.query(
+    `select v.city_id, v.district_id from public.venues v where v.id = $1`, [venueA])).rows[0];
+  let gecti = false;
+  try {
+    await db.query("select public.admin_create_venue($1, $2, $3)",
+      ["Deneme Düğün Salonu", yer.city_id, yer.district_id]);
+    gecti = true;
+  } catch (e) {
+    if (!e.message.includes("aynı adlı bir kayıt zaten var")) throw e;
+  }
+  if (gecti) throw new Error("mükerrer kayıt kabul edildi");
+});
+
+await step("küçük/büyük harf ve Türkçe karakter farkı da yakalanıyor", async () => {
+  const yer = (await db.query(
+    `select v.city_id, v.district_id from public.venues v where v.id = $1`, [venueA])).rows[0];
+  let gecti = false;
+  try {
+    await db.query("select public.admin_create_venue($1, $2, $3)",
+      ["DENEME DÜĞÜN SALONU", yer.city_id, yer.district_id]);
+    gecti = true;
+  } catch { /* beklenen */ }
+  if (gecti) throw new Error("yazım farkı mükerrerliği gizledi");
+});
+
+await step("p_force ile kasıtlı ekleme yapılabiliyor", async () => {
   const yer = (await db.query(
     `select v.city_id, v.district_id from public.venues v where v.id = $1`, [venueA])).rows[0];
   const r = await db.query(
-    "select public.admin_create_venue($1, $2, $3) as d",
+    "select public.admin_create_venue($1, $2, $3, null, null, null, null, null, true) as d",
     ["Deneme Düğün Salonu", yer.city_id, yer.district_id]);
-  if (r.rows[0].d.slug === "deneme-dugun-salonu") {
-    throw new Error("slug çakıştı");
+  if (!r.rows[0].d.slug.startsWith("deneme-dugun-salonu-")) {
+    throw new Error(`slug: ${r.rows[0].d.slug}`);
   }
+  await db.query("delete from public.venues where id = $1", [r.rows[0].d.id]);
+});
+
+await step("FARKLI ilçede aynı ad serbest (zincir salon)", async () => {
+  const c = (await db.query(
+    "select city_id from public.venues where id = $1", [venueA])).rows[0];
+  const baska = (await db.query(
+    `select id from public.districts where city_id = $1
+       and id <> (select district_id from public.venues where id = $2) limit 1`,
+    [c.city_id, venueA])).rows[0];
+  if (!baska) return; // fikstürde tek ilçe varsa atla
+  const r = await db.query(
+    "select public.admin_create_venue($1, $2, $3) as d",
+    ["Deneme Düğün Salonu", c.city_id, baska.id]);
+  if (!r.rows[0].d.id) throw new Error("zincir salon eklenemedi");
+  await db.query("delete from public.venues where id = $1", [r.rows[0].d.id]);
+});
+
+await step("benzer kayıt arama yazım farkına rağmen buluyor", async () => {
+  const c = (await db.query(
+    "select city_id from public.venues where id = $1", [venueA])).rows[0];
+  const r = await db.query(
+    "select * from public.admin_find_similar_venues($1, $2)",
+    ["deneme dugun", c.city_id]);
+  if (r.rows.length === 0) throw new Error("benzer kayıt bulunamadı");
+  // Kısa girdide sonuç dönmemeli; her harfte tüm katalogu listelemenin anlamı yok.
+  const kisa = await db.query(
+    "select * from public.admin_find_similar_venues($1, $2)", ["de", c.city_id]);
+  if (kisa.rows.length !== 0) throw new Error("çok kısa girdide sonuç döndü");
 });
 
 await step("ilçe şehre ait değilse kayıt açılmıyor", async () => {

@@ -23,6 +23,10 @@ function turkishError(message: string): string {
   if (message.includes("yönetici yetkisi")) return "Bu işlem için yönetici yetkisi gerekiyor.";
   if (message.includes("bulunamadı")) return "Kayıt bulunamadı.";
   if (message.includes("ilçe bu şehre ait değil")) return "Seçilen ilçe bu şehre ait değil.";
+  if (message.includes("aynı adlı bir kayıt zaten var")) {
+    return message.replace(/^.*?aynı adlı/, "Bu ilçede aynı adlı") +
+      " — farklı bir işletmeyse aşağıdaki kutuyu işaretleyin.";
+  }
   if (message.includes("zaten sonuçlanmış")) return "Bu başvuru zaten sonuçlanmış.";
   if (message.includes("arada sahiplenilmiş")) {
     return "Bu profil arada başka bir başvuruyla sahiplenilmiş.";
@@ -359,6 +363,8 @@ const katalogSchema = z.object({
   contactPhone: z.string().trim().max(20).optional().transform((v) => (v ? v : null)),
   websiteUrl: z.union([z.literal(""), z.string().trim().url("Geçerli bir adres girin.").max(300)])
     .optional().transform((v) => (v ? v : null)),
+  // Mükerrer uyarısını bilerek geçmek için; veritabanı da aynı kuralı uyguluyor.
+  force: z.coerce.boolean().default(false),
 });
 
 /**

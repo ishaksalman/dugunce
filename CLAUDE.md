@@ -142,6 +142,11 @@ işletme sahibi **sahiplenir** → talep almaya başlar.
   sayfada ikisi ayrı başlık altında.
 - Kategori varsayılanı `guard_venue_insert` içinde doldurulur — PostgreSQL
   DEFAULT'ta alt sorguya izin vermiyor.
+- **Katalog girişinde mükerrer kayıt AYNI İLÇEDE engellenir** (0028).
+  Karşılaştırma `slugify_tr()` üzerinden: büyük/küçük harf ve Türkçe karakter
+  farkı mükerrerliği gizlemesin. Farklı ilçede aynı ad serbest — zincir salon
+  gerçek bir durum. Bilerek eklemek için `p_force`. Eskiden slug'a sessizce
+  `-2` ekleniyordu ve kazara tekrar ekleme görünmezdi.
 - **Sahiplenme çağrısı oturum durumunu SUNUCUDAN sormaz.** Sormak çerez
   okumak, çerez okumak da mekan detayını dinamik yapıp statik üretimi
   öldürmek demek. Oturumsuz kullanıcı formu gönderince sunucu eylemindeki

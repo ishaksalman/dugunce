@@ -1,6 +1,7 @@
 import type {
   AdminClaim, AdminDistrict, AdminReview, AdminSeoPage, AdminStats,
   AdminTaxonomy, AdminUser, AdminVenue, BusinessCategory, City, ClaimStatus, District,
+  SimilarVenue,
   DavetProStatus, EventType,
   Feature, InquiryStatus, OwnerInquiry, OwnerStats, OwnerVenue, ReviewStatus,
   SeoPage, SeoSitemapEntry,
@@ -111,6 +112,7 @@ export interface DataSource {
 
   listBusinessCategories(): Promise<BusinessCategory[]>;
   adminCreateVenue(input: AdminVenueCreateInput): Promise<{ id: string; slug: string }>;
+  adminFindSimilarVenues(name: string, cityId: string | null): Promise<SimilarVenue[]>;
   adminListClaims(status: ClaimStatus | null, offset: number): Promise<AdminClaimResult>;
   adminReviewClaim(claimId: string, approve: boolean, note?: string): Promise<void>;
   claimVenue(venueId: string, note?: string, phone?: string): Promise<void>;
@@ -118,6 +120,8 @@ export interface DataSource {
 
 export interface AdminVenueCreateInput {
   name: string;
+  /** Mükerrer uyarısını bilerek geçmek için. */
+  force?: boolean;
   cityId: string;
   districtId: string;
   categoryId: string | null;

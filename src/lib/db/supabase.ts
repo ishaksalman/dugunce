@@ -8,6 +8,7 @@ import {
   toVenueCard, type AdminReview, type AdminSeoPage, type AdminStats, type AdminUser,
   toIso,
   type AdminClaim, type AdminDistrict, type AdminTaxonomy, type BusinessCategory,
+  type SimilarVenue,
   type AdminVenue, type DavetProStatus,
   type InquiryStatus, type OwnerInquiry, type OwnerStats, type OwnerVenue,
   normalizeSeoPage, type ReviewStatus, type SeoPage, type SeoSitemapEntry,
@@ -426,9 +427,20 @@ export const supabaseSource: DataSource = {
       p_address: input.address,
       p_contact_phone: input.contactPhone,
       p_website_url: input.websiteUrl,
+      p_force: input.force ?? false,
     });
     if (error) throw new Error(error.message);
     return data as unknown as { id: string; slug: string };
+  },
+
+  async adminFindSimilarVenues(name: string, cityId: string | null) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_find_similar_venues", {
+      p_name: name,
+      p_city_id: cityId,
+    });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as unknown as SimilarVenue[];
   },
 
   async adminListClaims(status, offset) {
