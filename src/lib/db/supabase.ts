@@ -433,11 +433,12 @@ export const supabaseSource: DataSource = {
     return data as unknown as { id: string; slug: string };
   },
 
-  async adminFindSimilarVenues(name: string, cityId: string | null) {
+  async adminFindSimilarVenues(name: string, cityId: string | null, phone: string | null) {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("admin_find_similar_venues", {
       p_name: name,
       p_city_id: cityId,
+      p_phone: phone,
     });
     if (error) throw new Error(error.message);
     return (data ?? []) as unknown as SimilarVenue[];

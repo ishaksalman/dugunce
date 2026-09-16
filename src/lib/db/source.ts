@@ -112,7 +112,11 @@ export interface DataSource {
 
   listBusinessCategories(): Promise<BusinessCategory[]>;
   adminCreateVenue(input: AdminVenueCreateInput): Promise<{ id: string; slug: string }>;
-  adminFindSimilarVenues(name: string, cityId: string | null): Promise<SimilarVenue[]>;
+  adminFindSimilarVenues(
+    name: string,
+    cityId: string | null,
+    phone: string | null,
+  ): Promise<SimilarVenue[]>;
   adminListClaims(status: ClaimStatus | null, offset: number): Promise<AdminClaimResult>;
   adminReviewClaim(claimId: string, approve: boolean, note?: string): Promise<void>;
   claimVenue(venueId: string, note?: string, phone?: string): Promise<void>;

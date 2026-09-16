@@ -46,6 +46,7 @@ export function CatalogVenueForm({
 
   // Mükerrer uyarısı: "bunu zaten eklemiş miyim?" sorusunu form cevaplıyor.
   const [ad, setAd] = useState("");
+  const [tel, setTel] = useState("");
   const [benzer, setBenzer] = useState<SimilarVenue[]>([]);
   const [zorla, setZorla] = useState(false);
 
@@ -57,11 +58,13 @@ export function CatalogVenueForm({
   // aşağıda türetiyoruz, böylece bayat liste de kendiliğinden gizleniyor.
   useEffect(() => {
     const q = ad.trim();
-    if (q.length < 3) return;
+    const t9 = tel.trim();
+    if (q.length < 3 && t9.length < 7) return;
     const controller = new AbortController();
     const t = setTimeout(() => {
       const p = new URLSearchParams({ ad: q });
       if (cityId) p.set("sehir", cityId);
+      if (t9.length >= 7) p.set("tel", t9);
       fetch(`/api/yonetim/benzer-mekanlar?${p}`, { signal: controller.signal })
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
         .then((d: { venues: SimilarVenue[] }) => setBenzer(d.venues))
@@ -73,7 +76,7 @@ export function CatalogVenueForm({
       clearTimeout(t);
       controller.abort();
     };
-  }, [ad, cityId]);
+  }, [ad, tel, cityId]);
 
   useEffect(() => {
     const city = cities.find((c) => c.id === cityId);
@@ -90,7 +93,8 @@ export function CatalogVenueForm({
     return () => controller.abort();
   }, [cityId, cities]);
 
-  const benzerGoster = ad.trim().length >= 3 ? benzer : [];
+  const benzerGoster =
+    ad.trim().length >= 3 || tel.trim().length >= 7 ? benzer : [];
 
   return (
     <form
@@ -156,6 +160,11 @@ export function CatalogVenueForm({
                   {DURUM_ETIKET[v.status] ?? v.status}
                   {v.is_claimed ? " · sahiplenilmiş" : ""}
                 </span>
+                {v.eslesme === "telefon" ? (
+                  <span className="rounded-full bg-warning/25 px-2 py-0.5 text-[11px] font-medium text-warning-foreground">
+                    aynı telefon
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -237,8 +246,23 @@ export function CatalogVenueForm({
       </TaxField>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <TaxField label="Telefon" error={errors.contactPhone} hint="İsteğe bağlı">
-          <input name="contactPhone" maxLength={20} className={taxInput} />
+        <TaxField
+          label="Telefon"
+          error={errors.contactPhone}
+          hint="İsteğe bağlı — girilirse mükerrer kaydı adtan daha güvenilir yakalar"
+        >
+          <input
+            name="contactPhone"
+            type="tel"
+            inputMode="tel"
+            maxLength={20}
+            value={tel}
+            onChange={(e) => {
+              setTel(e.target.value);
+              setZorla(false);
+            }}
+            className={taxInput}
+          />
         </TaxField>
         <TaxField label="Web sitesi" error={errors.websiteUrl} hint="İsteğe bağlı">
           <input name="websiteUrl" type="url" maxLength={300} className={taxInput} />

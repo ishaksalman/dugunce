@@ -638,4 +638,6 @@ export interface SimilarVenue {
   district_name: string;
   status: VenueStatus;
   is_claimed: boolean;
+  /** Hangi sinyal eşleşti: "telefon" çok daha güçlü bir mükerrer işareti. */
+  eslesme: "ad" | "telefon";
 }

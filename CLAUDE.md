@@ -142,11 +142,16 @@ işletme sahibi **sahiplenir** → talep almaya başlar.
   sayfada ikisi ayrı başlık altında.
 - Kategori varsayılanı `guard_venue_insert` içinde doldurulur — PostgreSQL
   DEFAULT'ta alt sorguya izin vermiyor.
-- **Katalog girişinde mükerrer kayıt AYNI İLÇEDE engellenir** (0028).
-  Karşılaştırma `slugify_tr()` üzerinden: büyük/küçük harf ve Türkçe karakter
-  farkı mükerrerliği gizlemesin. Farklı ilçede aynı ad serbest — zincir salon
-  gerçek bir durum. Bilerek eklemek için `p_force`. Eskiden slug'a sessizce
-  `-2` ekleniyordu ve kazara tekrar ekleme görünmezdi.
+- **Katalog girişinde mükerrer kayıt İKİ sinyalle yakalanır** (0028, 0029):
+  aynı ilçede aynı ad (`slugify_tr()` ile, yazım farkı gizlemesin) VEYA ülke
+  genelinde aynı telefon (`normalize_phone_tr()` ile). Farklı ilçede aynı ad
+  serbest — zincir salon gerçek bir durum. İkisi de `p_force` ile geçilebilir;
+  santral paylaşan mekanlar var, bu yüzden kısıt değil kontrol.
+  Eskiden slug'a sessizce `-2` ekleniyordu ve kazara tekrar ekleme görünmezdi.
+- **`venues.contact_phone_norm` üretilmiş kolondur**, uygulama ASLA yazmaz —
+  `feature_slugs` gibi. `normalize_phone_tr()` `0212…`, `+90212…`, `(0212)…`
+  yazımlarını 10 haneye indirger; tanımadığı biçimi olduğu gibi bırakır,
+  uydurmaz.
 - **Sahiplenme çağrısı oturum durumunu SUNUCUDAN sormaz.** Sormak çerez
   okumak, çerez okumak da mekan detayını dinamik yapıp statik üretimi
   öldürmek demek. Oturumsuz kullanıcı formu gönderince sunucu eylemindeki

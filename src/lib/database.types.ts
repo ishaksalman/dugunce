@@ -283,7 +283,7 @@ export interface Database {
         Returns: Record<string, unknown>;
       };
       admin_find_similar_venues: {
-        Args: { p_name: string; p_city_id?: string | null };
+        Args: { p_name: string; p_city_id?: string | null; p_phone?: string | null };
         Returns: Record<string, unknown>[];
       };
       admin_list_claims: {

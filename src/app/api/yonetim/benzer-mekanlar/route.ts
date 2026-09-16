@@ -14,9 +14,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const ad = (searchParams.get("ad") ?? "").trim();
   const sehir = searchParams.get("sehir");
-  if (ad.length < 3) return NextResponse.json({ venues: [] });
+  const tel = (searchParams.get("tel") ?? "").trim();
+  // Telefon tek başına yeterli sinyal; ad kısa olsa bile sorulabilir.
+  if (ad.length < 3 && tel.length < 7) return NextResponse.json({ venues: [] });
 
   const db = await getDataSource();
-  const venues = await db.adminFindSimilarVenues(ad, sehir || null);
+  const venues = await db.adminFindSimilarVenues(ad, sehir || null, tel || null);
   return NextResponse.json({ venues }, { headers: { "cache-control": "no-store" } });
 }

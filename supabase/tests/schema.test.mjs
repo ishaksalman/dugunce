@@ -1526,6 +1526,63 @@ await step("FARKLI ilçede aynı ad serbest (zincir salon)", async () => {
   await db.query("delete from public.venues where id = $1", [r.rows[0].d.id]);
 });
 
+await step("telefon dört farklı yazımda da aynı numaraya indirgeniyor", async () => {
+  const r = await db.query(
+    `select public.normalize_phone_tr($1) a, public.normalize_phone_tr($2) b,
+            public.normalize_phone_tr($3) c, public.normalize_phone_tr($4) d`,
+    ["0212 111 22 33", "+90 212 111 22 33", "(0212) 111-22-33", "02121112233"]);
+  const { a, b, c, d } = r.rows[0];
+  if (!(a === b && b === c && c === d && a === "2121112233")) {
+    throw new Error(JSON.stringify(r.rows[0]));
+  }
+  // Tanımadığı biçimi uydurmuyor.
+  const k = await db.query("select public.normalize_phone_tr($1) x", ["123"]);
+  if (k.rows[0].x !== "123") throw new Error(`kısa numara: ${k.rows[0].x}`);
+});
+
+await step("AYNI TELEFON farklı adla girilse de yakalanıyor", async () => {
+  // 0028'in ad kontrolünün kaçırdığı durum: aynı salon, başka yazım.
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  await db.query(
+    "select public.admin_create_venue($1,$2,$3,null,null,null,$4)",
+    ["Telefonlu Salon", yer.city_id, yer.district_id, "0212 999 88 77"]);
+
+  let gecti = false;
+  try {
+    await db.query(
+      "select public.admin_create_venue($1,$2,$3,null,null,null,$4)",
+      ["Bambaşka Bir Ad", yer.city_id, yer.district_id, "+90 212 999 88 77"]);
+    gecti = true;
+  } catch (e) {
+    if (!e.message.includes("telefon numarası başka bir kayıtta")) throw e;
+  }
+  if (gecti) throw new Error("aynı telefon ikinci kez kabul edildi");
+
+  // Santral paylaşan gerçek durum için force.
+  const r = await db.query(
+    "select public.admin_create_venue($1,$2,$3,null,null,null,$4,null,true) as d",
+    ["Bambaşka Bir Ad", yer.city_id, yer.district_id, "0212 999 88 77"]);
+  if (!r.rows[0].d.id) throw new Error("force ile eklenemedi");
+
+  await db.query("delete from public.venues where name in ($1,$2)",
+    ["Telefonlu Salon", "Bambaşka Bir Ad"]);
+});
+
+await step("telefon eşleşmesi aramada 'telefon' olarak işaretleniyor", async () => {
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  await db.query(
+    "select public.admin_create_venue($1,$2,$3,null,null,null,$4)",
+    ["Sinyal Testi Salonu", yer.city_id, yer.district_id, "0216 444 55 66"]);
+  const r = await db.query(
+    "select * from public.admin_find_similar_venues($1, null, $2)",
+    ["hiç benzemeyen ad", "+902164445566"]);
+  if (r.rows.length !== 1) throw new Error(`${r.rows.length} sonuç`);
+  if (r.rows[0].eslesme !== "telefon") throw new Error(`eşleşme: ${r.rows[0].eslesme}`);
+  await db.query("delete from public.venues where name = $1", ["Sinyal Testi Salonu"]);
+});
+
 await step("benzer kayıt arama yazım farkına rağmen buluyor", async () => {
   const c = (await db.query(
     "select city_id from public.venues where id = $1", [venueA])).rows[0];
