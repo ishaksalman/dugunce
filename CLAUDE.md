@@ -134,6 +134,11 @@ işletme sahibi **sahiplenir** → talep almaya başlar.
   bugün `/mekanlar/…`, ikinci kategoride `/fotografcilar/…`.
 - Kategori varsayılanı `guard_venue_insert` içinde doldurulur — PostgreSQL
   DEFAULT'ta alt sorguya izin vermiyor.
+- **Sahiplenme çağrısı oturum durumunu SUNUCUDAN sormaz.** Sormak çerez
+  okumak, çerez okumak da mekan detayını dinamik yapıp statik üretimi
+  öldürmek demek. Oturumsuz kullanıcı formu gönderince sunucu eylemindeki
+  `requireUser(devam)` giriş sayfasına yönlendiriyor ve dönüşte mekana
+  geri getiriyor.
 - **`venues.district_id` hâlâ NOT NULL.** İlçesiz işletme ancak ikinci
   kategori gelince anlam kazanıyor; şimdi nullable yapmak vitrin
   sorgularını LEFT JOIN'e çevirir ve ilçesiz kaydın adresini tanımsız

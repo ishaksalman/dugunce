@@ -9,9 +9,7 @@
  * çıktıyla değiştirilebilir; isimler o çıktıyla uyumlu seçildi.
  */
 import type {
-  AdminReview, AdminUser, AdminVenue, City, District, EventType, Feature,
-  InquiryStatus, OwnerInquiry, ReviewStatus, UserRole, VenueDetail, VenueReview,
-  VenueSearchRow, VenueStatus, VenueType,
+  AdminReview, AdminUser, AdminVenue, BusinessCategory, City, District, EventType, Feature, InquiryStatus, OwnerInquiry, ReviewStatus, UserRole, VenueDetail, VenueReview, VenueSearchRow, VenueStatus, VenueType,
 } from "@/types/db";
 import type { CreateInquiryResult } from "@/lib/db/source";
 
@@ -35,6 +33,7 @@ export interface Database {
     Tables: {
       cities: ReadOnly<City & { sort_order: number; is_popular: boolean }>;
       districts: ReadOnly<District>;
+      business_categories: ReadOnly<BusinessCategory & { sort_order: number; is_active: boolean }>;
       event_types: ReadOnly<EventType & { is_active: boolean }>;
       venue_types: ReadOnly<VenueType & { is_active: boolean }>;
       features: ReadOnly<Feature & { is_active: boolean }>;
@@ -267,6 +266,35 @@ export interface Database {
       };
       admin_upsert_district: {
         Args: { p_id: string | null; p_city_id: string; p_name: string };
+        Returns: Record<string, unknown>;
+      };
+      admin_create_venue: {
+        Args: {
+          p_name: string;
+          p_city_id: string;
+          p_district_id: string;
+          p_category_id?: string | null;
+          p_venue_type_id?: string | null;
+          p_address?: string | null;
+          p_contact_phone?: string | null;
+          p_website_url?: string | null;
+        };
+        Returns: Record<string, unknown>;
+      };
+      admin_list_claims: {
+        Args: {
+          p_status?: "PENDING" | "APPROVED" | "REJECTED" | null;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: Record<string, unknown>[];
+      };
+      admin_review_claim: {
+        Args: { p_claim_id: string; p_approve: boolean; p_note?: string | null };
+        Returns: Record<string, unknown>;
+      };
+      claim_venue: {
+        Args: { p_venue_id: string; p_note?: string | null; p_phone?: string | null };
         Returns: Record<string, unknown>;
       };
       get_seo_page: {

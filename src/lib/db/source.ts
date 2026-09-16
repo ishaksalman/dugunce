@@ -1,6 +1,6 @@
 import type {
-  AdminDistrict, AdminReview, AdminSeoPage, AdminStats,
-  AdminTaxonomy, AdminUser, AdminVenue, City, District,
+  AdminClaim, AdminDistrict, AdminReview, AdminSeoPage, AdminStats,
+  AdminTaxonomy, AdminUser, AdminVenue, BusinessCategory, City, ClaimStatus, District,
   DavetProStatus, EventType,
   Feature, InquiryStatus, OwnerInquiry, OwnerStats, OwnerVenue, ReviewStatus,
   SeoPage, SeoSitemapEntry,
@@ -108,7 +108,25 @@ export interface DataSource {
   adminUpsertFeature(input: AdminFeatureInput): Promise<void>;
   adminSetCityPopular(cityId: string, popular: boolean): Promise<void>;
   adminUpsertDistrict(input: AdminDistrictInput): Promise<void>;
+
+  listBusinessCategories(): Promise<BusinessCategory[]>;
+  adminCreateVenue(input: AdminVenueCreateInput): Promise<{ id: string; slug: string }>;
+  adminListClaims(status: ClaimStatus | null, offset: number): Promise<AdminClaimResult>;
+  adminReviewClaim(claimId: string, approve: boolean, note?: string): Promise<void>;
+  claimVenue(venueId: string, note?: string, phone?: string): Promise<void>;
 }
+
+export interface AdminVenueCreateInput {
+  name: string;
+  cityId: string;
+  districtId: string;
+  categoryId: string | null;
+  venueTypeId: string | null;
+  address: string | null;
+  contactPhone: string | null;
+  websiteUrl: string | null;
+}
+export interface AdminClaimResult { items: AdminClaim[]; total: number }
 
 export interface AdminEventTypeInput {
   id: string | null;

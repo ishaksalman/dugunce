@@ -22,6 +22,11 @@ function turkishError(message: string): string {
   if (message.includes("Kendi hesabınızı")) return "Kendi hesabınızı kapatamazsınız.";
   if (message.includes("yönetici yetkisi")) return "Bu işlem için yönetici yetkisi gerekiyor.";
   if (message.includes("bulunamadı")) return "Kayıt bulunamadı.";
+  if (message.includes("ilçe bu şehre ait değil")) return "Seçilen ilçe bu şehre ait değil.";
+  if (message.includes("zaten sonuçlanmış")) return "Bu başvuru zaten sonuçlanmış.";
+  if (message.includes("arada sahiplenilmiş")) {
+    return "Bu profil arada başka bir başvuruyla sahiplenilmiş.";
+  }
   return "İşlem tamamlanamadı. Lütfen tekrar deneyin.";
 }
 
@@ -337,5 +342,73 @@ export async function saveDistrict(input: unknown): Promise<ActionResult> {
   } catch (error) {
     if (error instanceof Error) return actionError(turkishError(error.message));
     return unexpectedError("saveDistrict", error);
+  }
+}
+
+// --- Katalog kaydı ve sahiplenme ---------------------------------------------
+
+const katalogSchema = z.object({
+  name: z.string().trim().min(2, "En az 2 karakter.").max(120),
+  cityId: z.string().uuid("Şehir seçin."),
+  districtId: z.string().uuid("İlçe seçin."),
+  categoryId: z.union([z.string().uuid(), z.literal("")]).optional()
+    .transform((v) => (v ? v : null)),
+  venueTypeId: z.union([z.string().uuid(), z.literal("")]).optional()
+    .transform((v) => (v ? v : null)),
+  address: z.string().trim().max(300).optional().transform((v) => (v ? v : null)),
+  contactPhone: z.string().trim().max(20).optional().transform((v) => (v ? v : null)),
+  websiteUrl: z.union([z.literal(""), z.string().trim().url("Geçerli bir adres girin.").max(300)])
+    .optional().transform((v) => (v ? v : null)),
+});
+
+/**
+ * Sahiplenilmemiş katalog kaydı açar.
+ *
+ * Kayıt TASLAK doğuyor ve sahipsiz: vitrinde görünmüyor. Yönetim içeriği
+ * doldurup yayına aldıktan sonra işletme sahibi profili sahiplenebiliyor.
+ */
+export async function createCatalogVenue(
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = katalogSchema.safeParse(input);
+  if (!parsed.success) return invalidInput(parsed.error);
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    const sonuc = await db.adminCreateVenue(parsed.data);
+    revalidatePath("/yonetim/mekanlar");
+    return actionOk({ id: sonuc.id });
+  } catch (error) {
+    if (error instanceof Error) return actionError(turkishError(error.message));
+    return unexpectedError("createCatalogVenue", error);
+  }
+}
+
+const basvuruSchema = z.object({
+  claimId: z.string().uuid(),
+  approve: z.coerce.boolean(),
+  note: z.string().trim().max(1000).optional().transform((v) => (v ? v : undefined)),
+});
+
+export async function reviewVenueClaim(input: unknown): Promise<ActionResult> {
+  const parsed = basvuruSchema.safeParse(input);
+  if (!parsed.success) return actionError("Geçersiz istek.");
+  // Reddetme gerekçesi veritabanında da zorunlu; burada kullanıcıya nazik hata.
+  if (!parsed.data.approve && !parsed.data.note) {
+    return actionError("Reddetme gerekçesi yazmalısınız.", {
+      note: "Gerekçe zorunlu.",
+    });
+  }
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    await db.adminReviewClaim(parsed.data.claimId, parsed.data.approve, parsed.data.note);
+    revalidatePath("/yonetim", "layout");
+    // Vitrindeki "profilinizi sahiplenin" çağrısı onaydan sonra kaybolmalı.
+    revalidatePath("/mekanlar/[sehir]/[ilce]/[slug]", "page");
+    return actionOk();
+  } catch (error) {
+    if (error instanceof Error) return actionError(turkishError(error.message));
+    return unexpectedError("reviewVenueClaim", error);
   }
 }

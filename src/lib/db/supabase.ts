@@ -6,7 +6,8 @@ import {
   normalizeInquiry,
   normalizeOwnerVenue, normalizeReview, normalizeVenueDetail, normalizeVenueForEdit,
   toVenueCard, type AdminReview, type AdminSeoPage, type AdminStats, type AdminUser,
-  type AdminDistrict, type AdminTaxonomy,
+  toIso,
+  type AdminClaim, type AdminDistrict, type AdminTaxonomy, type BusinessCategory,
   type AdminVenue, type DavetProStatus,
   type InquiryStatus, type OwnerInquiry, type OwnerStats, type OwnerVenue,
   normalizeSeoPage, type ReviewStatus, type SeoPage, type SeoSitemapEntry,
@@ -395,6 +396,71 @@ export const supabaseSource: DataSource = {
       p_id: input.id,
       p_city_id: input.cityId,
       p_name: input.name,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  // --- Katalog ve sahiplenme ------------------------------------------------
+
+  async listBusinessCategories() {
+    const supabase = createPublicClient();
+    return unwrap(
+      await supabase
+        .from("business_categories")
+        .select("id, slug, name, plural_name, path_prefix")
+        .eq("is_active", true)
+        .order("sort_order"),
+      "listBusinessCategories",
+    ) as unknown as BusinessCategory[];
+  },
+
+  async adminCreateVenue(input) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_create_venue", {
+      p_name: input.name,
+      p_city_id: input.cityId,
+      p_district_id: input.districtId,
+      p_category_id: input.categoryId,
+      p_venue_type_id: input.venueTypeId,
+      p_address: input.address,
+      p_contact_phone: input.contactPhone,
+      p_website_url: input.websiteUrl,
+    });
+    if (error) throw new Error(error.message);
+    return data as unknown as { id: string; slug: string };
+  },
+
+  async adminListClaims(status, offset) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_list_claims", {
+      p_status: status,
+      p_limit: 25,
+      p_offset: offset,
+    });
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as unknown as AdminClaim[];
+    return {
+      items: rows.map((r) => ({ ...r, created_at: toIso(r.created_at) })),
+      total: rows.length > 0 ? Number(rows[0].total_count) : 0,
+    };
+  },
+
+  async adminReviewClaim(claimId: string, approve: boolean, note?: string) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_review_claim", {
+      p_claim_id: claimId,
+      p_approve: approve,
+      p_note: note ?? null,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async claimVenue(venueId: string, note?: string, phone?: string) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("claim_venue", {
+      p_venue_id: venueId,
+      p_note: note ?? null,
+      p_phone: phone ?? null,
     });
     if (error) throw new Error(error.message);
   },

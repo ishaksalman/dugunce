@@ -44,3 +44,8 @@ export const getFilterFeatureGroups = cache(async () => {
   }
   return [...groups.entries()].map(([name, items]) => ({ name, items }));
 });
+
+export const getBusinessCategories = cache(async () => {
+  const db = await getDataSource();
+  return db.listBusinessCategories();
+});

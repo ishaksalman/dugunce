@@ -382,6 +382,9 @@ export interface AdminStats {
   rejected: number;
   suspended: number;
   pending_reviews: number;
+  pending_claims: number;
+  /** Sahipsiz katalog kaydı: kaç profil hâlâ sahibini bekliyor. */
+  unclaimed: number;
   total_users: number;
   venue_owners: number;
   inquiries_7d: number;
@@ -595,4 +598,33 @@ export interface AdminTaxonomy {
   venue_types: AdminVenueType[];
   features: AdminFeature[];
   cities: AdminCity[];
+}
+
+// --- Katalog ve sahiplenme ---------------------------------------------------
+
+export interface BusinessCategory {
+  id: string;
+  slug: string;
+  name: string;
+  plural_name: string;
+  path_prefix: string;
+}
+
+export type ClaimStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface AdminClaim {
+  id: string;
+  venue_id: string;
+  venue_name: string;
+  venue_slug: string;
+  city_name: string;
+  district_name: string;
+  claimant_name: string | null;
+  claimant_email: string | null;
+  claimant_phone: string | null;
+  note: string | null;
+  status: ClaimStatus;
+  review_note: string | null;
+  created_at: string;
+  total_count: string | number;
 }

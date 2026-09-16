@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { VenueGallery } from "@/components/venue/venue-gallery";
 import { VenueMap } from "@/components/venue/venue-map";
+import { ClaimCta } from "@/components/venue/claim-cta";
 import { VenueReviews } from "@/components/venue/venue-reviews";
 import { VenueCard, VenueGrid } from "@/components/venue/venue-card";
 import { FavoriteButton } from "@/components/venue/favorite-button";
@@ -263,6 +264,16 @@ export default async function VenueDetailPage(
                 googleMapsUrl={venue.google_maps_url}
               />
             </Section>
+
+            {/* --- Sahiplenme çağrısı --- */}
+            {/* Yalnızca yönetimin açtığı, henüz sahiplenilmemiş kayıtlarda. */}
+            {!venue.is_claimed ? (
+              <ClaimCta
+                venueId={venue.id}
+                venueName={venue.name}
+                devam={path}
+              />
+            ) : null}
 
             {/* --- Yorumlar --- */}
             <Section title="Değerlendirmeler">
