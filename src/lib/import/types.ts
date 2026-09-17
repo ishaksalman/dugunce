@@ -19,6 +19,11 @@ export interface BulkPreviewRow {
   mapsUrl: string | null;
   latitude: number | null;
   longitude: number | null;
+  address: string | null;
+  website: string | null;
+  placeId: string | null;
+  /** Google'daki ana kategori — düğün mekanı olmayanı ayıklamak için. */
+  kategori: string | null;
   /** Katalogda benzer kayıtlar — kullanıcı satır satır karar versin. */
   benzer: SimilarVenue[];
   hata: string | null;

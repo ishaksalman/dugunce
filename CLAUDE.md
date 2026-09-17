@@ -142,12 +142,24 @@ işletme sahibi **sahiplenir** → talep almaya başlar.
   sayfada ikisi ayrı başlık altında.
 - Kategori varsayılanı `guard_venue_insert` içinde doldurulur — PostgreSQL
   DEFAULT'ta alt sorguya izin vermiyor.
-- **Katalog girişinde mükerrer kayıt İKİ sinyalle yakalanır** (0028, 0029):
+- **Google Places dökümü (JSON dizisi) doğrudan yapıştırılabilir.** Yalnızca
+  OLGU alanları okunur: ad, adres, telefon, koordinat, web sitesi, place_id,
+  kategori. Google'ın editoryal açıklaması, kullanıcı yorumları ve fotoğraf
+  adresleri BİLEREK alınmaz — telifleri bizde değil. Teste bağlı.
+- **Apify'ın `url` alanı ARAMA adresidir**, mekan adresi değil; mekan
+  referansı sorguda durur. `cleanMapsUrl()` sorguyu attığı için onda biri de
+  aynı işe yaramaz adrese düşüyordu. JSON girdide adres `place_id`'den
+  kuruluyor (`placeUrlFromId`).
+- **Katalog girişinde mükerrer kayıt ÜÇ sinyalle yakalanır** (0028, 0029, 0032):
   aynı ilçede aynı ad (`slugify_tr()` ile, yazım farkı gizlemesin) VEYA ülke
   genelinde aynı telefon (`normalize_phone_tr()` ile). Farklı ilçede aynı ad
   serbest — zincir salon gerçek bir durum. İkisi de `p_force` ile geçilebilir;
   santral paylaşan mekanlar var, bu yüzden kısıt değil kontrol.
   Eskiden slug'a sessizce `-2` ekleniyordu ve kazara tekrar ekleme görünmezdi.
+- **En güçlü sinyal `google_place_id`** (0032). İşletmenin Google'daki
+  kanonik kimliği; ad farklı yazılabilir, telefon paylaşılabilir ama
+  place_id birebir aynıdır. Google'ın şartları place_id'yi süresiz saklamaya
+  AÇIKÇA izin veriyor — puan, yorum ve fotoğraf için aynı şey geçerli değil.
 - **`venues.contact_phone_norm` üretilmiş kolondur**, uygulama ASLA yazmaz —
   `feature_slugs` gibi. `normalize_phone_tr()` `0212…`, `+90212…`, `(0212)…`
   yazımlarını 10 haneye indirger; tanımadığı biçimi olduğu gibi bırakır,

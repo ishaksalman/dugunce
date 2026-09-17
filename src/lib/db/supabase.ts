@@ -428,17 +428,27 @@ export const supabaseSource: DataSource = {
       p_contact_phone: input.contactPhone,
       p_website_url: input.websiteUrl,
       p_force: input.force ?? false,
+      p_google_place_id: input.googlePlaceId ?? null,
+      p_google_maps_url: input.googleMapsUrl ?? null,
+      p_latitude: input.latitude ?? null,
+      p_longitude: input.longitude ?? null,
     });
     if (error) throw new Error(error.message);
     return data as unknown as { id: string; slug: string };
   },
 
-  async adminFindSimilarVenues(name: string, cityId: string | null, phone: string | null) {
+  async adminFindSimilarVenues(
+    name: string,
+    cityId: string | null,
+    phone: string | null,
+    placeId?: string | null,
+  ) {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("admin_find_similar_venues", {
       p_name: name,
       p_city_id: cityId,
       p_phone: phone,
+      p_place_id: placeId ?? null,
     });
     if (error) throw new Error(error.message);
     return (data ?? []) as unknown as SimilarVenue[];

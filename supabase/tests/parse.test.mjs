@@ -5,8 +5,8 @@
  * TypeScript kaynağı doğrudan çalıştırmak için Node'un tip sıyırma desteği
  * kullanılıyor (--experimental-strip-types).
  */
-import { parseBulkInput, parseMapsUrl, isMapsUrl, cleanMapsUrl }
-  from "../../src/lib/import/parse.ts";
+import { parseBulkInput, parseMapsUrl, isMapsUrl, cleanMapsUrl,
+  parsePlacesJson, jsonMu } from "../../src/lib/import/parse.ts";
 
 let pass = 0, fail = 0;
 const ok = (n) => { pass++; console.log(`  \x1b[32m✓\x1b[0m ${n}`); };
@@ -101,6 +101,87 @@ step("limit aşılınca fazlalık raporlanıyor", () => {
 step("satır numarası kaynak sırasını koruyor", () => {
   const { rows } = parseBulkInput("A\nB\nC");
   esit(rows.map((r) => r.satirNo), [1, 2, 3]);
+});
+
+step("JSON girdi tanınıyor", () => {
+  esit(jsonMu('[{"title":"x"}]'), true);
+  esit(jsonMu('  [\n{"title":"x"}]'), true);
+  esit(jsonMu("Bahçe Davet; 0212 111 22 33"), false);
+});
+
+step("Google Places dökümünden olgular okunuyor", () => {
+  const { rows } = parsePlacesJson(JSON.stringify([{
+    title: "Ansu Davet Organizasyon",
+    address: "Adnan Kahveci, Beylikdüzü/İstanbul",
+    phone: "+90 537 958 94 08",
+    website: "https://ornek.com",
+    placeId: "ChIJc8uPlrxftRQRdBHhLhAYVqk",
+    url: "https://www.google.com/maps/search/?api=1&query=x&query_place_id=y",
+    categoryName: "Düğün Salonu",
+    categories: ["Düğün Salonu", "Etkinlik Mekânı"],
+    location: { lat: 41.0003, lng: 28.645 },
+    permanentlyClosed: false,
+  }]));
+  const r = rows[0];
+  esit(r.name, "Ansu Davet Organizasyon");
+  esit(r.phone, "+90 537 958 94 08");
+  esit(r.placeId, "ChIJc8uPlrxftRQRdBHhLhAYVqk");
+  esit([r.latitude, r.longitude], [41.0003, 28.645]);
+  esit(r.kategori, "Düğün Salonu");
+  esit(r.hata, null);
+  // Apify'ın `url`'i ARAMA adresi; mekan referansı sorguda duruyor.
+  // Sorguyu atmak adresi anlamsız kılardı — kanonik adresi place_id'den
+  // kuruyoruz. (Bu, 10 kaydın onunun da seçilemez gelmesine yol açmıştı.)
+  esit(r.mapsUrl,
+    "https://www.google.com/maps/place/?q=place_id:ChIJc8uPlrxftRQRdBHhLhAYVqk");
+});
+
+step("place_id yoksa arama adresi olduğu gibi korunuyor", () => {
+  const { rows } = parsePlacesJson(JSON.stringify([{
+    title: "Placeidsiz",
+    url: "https://www.google.com/maps/search/?api=1&query=Placeidsiz",
+  }]));
+  esit(rows[0].mapsUrl, "https://www.google.com/maps/search/?api=1&query=Placeidsiz");
+});
+
+step("kapalı işletme işaretleniyor", () => {
+  const { rows } = parsePlacesJson(JSON.stringify([
+    { title: "Kapalı Salon", permanentlyClosed: true },
+    { title: "Geçici Kapalı", temporarilyClosed: true },
+  ]));
+  esit(rows[0].hata, "Google'da kapalı görünüyor.");
+  esit(rows[1].hata, "Google'da kapalı görünüyor.");
+});
+
+step("telif alanları OKUNMUYOR", () => {
+  // Yorum, fotoğraf ve Google'ın editoryal açıklaması bilerek alınmıyor.
+  const { rows } = parsePlacesJson(JSON.stringify([{
+    title: "Salon",
+    description: "Google'ın editoryal açıklaması",
+    reviews: [{ text: "Harika bir yerdi" }],
+    imageUrls: ["https://lh3.googleusercontent.com/x"],
+    ownerUpdates: [{ text: "Kampanyamız var" }],
+  }]));
+  const anahtarlar = Object.keys(rows[0]);
+  for (const yasak of ["description", "reviews", "imageUrls", "ownerUpdates"]) {
+    if (anahtarlar.includes(yasak)) throw new Error(`"${yasak}" alanı sızdı`);
+  }
+  const govde = JSON.stringify(rows[0]);
+  if (govde.includes("Harika bir yerdi")) throw new Error("yorum metni sızdı");
+  if (govde.includes("googleusercontent")) throw new Error("fotoğraf adresi sızdı");
+  if (govde.includes("editoryal")) throw new Error("Google açıklaması sızdı");
+});
+
+step("bozuk JSON hata veriyor, çökmüyor", () => {
+  esit(parsePlacesJson("{bozuk").hata, "JSON okunamadı.");
+  esit(parsePlacesJson('{"dizi":"degil"}').hata, "JSON bir dizi olmalı.");
+});
+
+step("JSON limiti de uygulanıyor", () => {
+  const cok = JSON.stringify(Array.from({ length: 55 }, (_, i) => ({ title: `S${i}` })));
+  const { rows, fazlalik } = parsePlacesJson(cok, 50);
+  esit(rows.length, 50);
+  esit(fazlalik, 5);
 });
 
 console.log(fail

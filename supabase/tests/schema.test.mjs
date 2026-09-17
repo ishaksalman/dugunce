@@ -1540,6 +1540,37 @@ await step("telefon dört farklı yazımda da aynı numaraya indirgeniyor", asyn
   if (k.rows[0].x !== "123") throw new Error(`kısa numara: ${k.rows[0].x}`);
 });
 
+await step("aynı Google Place ID ikinci kez eklenemiyor", async () => {
+  // Ad ve telefon dolaylı sinyal; place_id işletmenin Google'daki kanonik
+  // kimliği. Aynı kaydı iki kez almanın en kesin işareti bu.
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const pid = "ChIJtest0000000000000000";
+  await db.query(
+    "select public.admin_create_venue($1,$2,$3,null,null,null,null,null,false,$4)",
+    ["Place Testi A", yer.city_id, yer.district_id, pid]);
+
+  let gecti = false;
+  try {
+    await db.query(
+      "select public.admin_create_venue($1,$2,$3,null,null,null,null,null,false,$4)",
+      ["Bambaşka Ad B", yer.city_id, yer.district_id, pid]);
+    gecti = true;
+  } catch (e) {
+    if (!e.message.includes("Google kaydı zaten katalogda")) throw e;
+  }
+  if (gecti) throw new Error("aynı place_id ikinci kez kabul edildi");
+
+  // Arama da en güçlü sinyali "place_id" olarak işaretlemeli.
+  const r = await db.query(
+    "select * from public.admin_find_similar_venues($1, null, null, $2)",
+    ["hiç benzemeyen", pid]);
+  if (r.rows.length !== 1) throw new Error(`${r.rows.length} sonuç`);
+  if (r.rows[0].eslesme !== "place_id") throw new Error(`eşleşme: ${r.rows[0].eslesme}`);
+
+  await db.query("delete from public.venues where google_place_id = $1", [pid]);
+});
+
 await step("AYNI TELEFON farklı adla girilse de yakalanıyor", async () => {
   // 0028'in ad kontrolünün kaçırdığı durum: aynı salon, başka yazım.
   const yer = (await db.query(

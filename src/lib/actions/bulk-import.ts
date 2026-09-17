@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDataSource } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
-import { parseBulkInput } from "@/lib/import/parse";
+import { jsonMu, parseBulkInput, parsePlacesJson } from "@/lib/import/parse";
 import { resolveMapsUrls } from "@/lib/import/resolve";
 import { actionError, actionOk, unexpectedError, type ActionResult } from "@/lib/errors";
 import {
@@ -35,11 +35,22 @@ export async function previewBulkVenues(
     await requireRole(["admin"]);
     const db = await getDataSource();
 
-    const { rows, fazlalik } = parseBulkInput(parsed.data.metin, TOPLU_LIMIT);
+    // Girdi ya serbest satır listesi ya da Google Places dökümü (JSON dizisi).
+    const json = jsonMu(parsed.data.metin);
+    const cozum = json
+      ? parsePlacesJson(parsed.data.metin, TOPLU_LIMIT)
+      : { ...parseBulkInput(parsed.data.metin, TOPLU_LIMIT), hata: null };
+    if (cozum.hata) return actionError(cozum.hata);
+    const { rows, fazlalik } = cozum;
 
-    // Kısa bağlantılar ad ve koordinat içermiyor; çözülmeleri gerekiyor.
+    // Yalnızca EKSİĞİ olan satırlar için ağa çıkıyoruz. JSON girdide ad ve
+    // koordinat zaten dolu; her satır için yönlendirme takip etmek hem
+    // gereksiz hem de arama adreslerinde hata üretiyordu.
     const cozulen = await resolveMapsUrls(
-      rows.map((r) => r.mapsUrl).filter((u): u is string => u !== null),
+      rows
+        .filter((r) => !r.name || r.latitude === null)
+        .map((r) => r.mapsUrl)
+        .filter((u): u is string => u !== null),
     );
 
     const sonuc: BulkPreviewRow[] = [];
@@ -48,11 +59,12 @@ export async function previewBulkVenues(
       const name = r.name ?? c?.name ?? null;
 
       const benzer =
-        name || r.phone
+        name || r.phone || r.placeId
           ? await db.adminFindSimilarVenues(
               name ?? "",
               parsed.data.cityId,
               r.phone,
+              r.placeId,
             )
           : [];
 
@@ -62,8 +74,12 @@ export async function previewBulkVenues(
         name,
         phone: r.phone,
         mapsUrl: c?.finalUrl ?? r.mapsUrl,
-        latitude: c?.latitude ?? null,
-        longitude: c?.longitude ?? null,
+        latitude: r.latitude ?? c?.latitude ?? null,
+        longitude: r.longitude ?? c?.longitude ?? null,
+        address: r.address,
+        website: r.website,
+        placeId: r.placeId,
+        kategori: r.kategori,
         benzer,
         hata: r.hata ?? c?.hata ?? (name ? null : "Ad okunamadı, elle yazın."),
       });
@@ -86,6 +102,9 @@ const commitSchema = z.object({
         mapsUrl: z.string().trim().max(600).optional().transform((v) => (v ? v : null)),
         latitude: z.number().min(-90).max(90).nullable().optional(),
         longitude: z.number().min(-180).max(180).nullable().optional(),
+        address: z.string().trim().max(300).nullable().optional(),
+        website: z.string().trim().max(300).nullable().optional(),
+        placeId: z.string().trim().max(120).nullable().optional(),
         force: z.boolean().optional(),
       }),
     )
@@ -119,33 +138,23 @@ export async function commitBulkVenues(
 
     for (const satir of parsed.data.rows) {
       try {
-        const { id } = await db.adminCreateVenue({
+        // Konum ve Google alanları artık admin_create_venue içinde: tek
+        // işlemde yazılıyor ve place_id mükerrer kontrolü orada çalışıyor.
+        await db.adminCreateVenue({
           name: satir.name,
           cityId: parsed.data.cityId,
           districtId: parsed.data.districtId,
           categoryId: null,
           venueTypeId: null,
-          address: null,
+          address: satir.address ?? null,
           contactPhone: satir.phone,
-          websiteUrl: null,
+          websiteUrl: satir.website ?? null,
           force: satir.force ?? false,
+          googlePlaceId: satir.placeId ?? null,
+          googleMapsUrl: satir.mapsUrl,
+          latitude: satir.latitude ?? null,
+          longitude: satir.longitude ?? null,
         });
-
-        // Koordinat ve Maps bağlantısı ayrı: admin_create_venue kimlik
-        // alanlarını alıyor, konumu düzenleme katmanı yazıyor.
-        if (satir.latitude !== null && satir.latitude !== undefined) {
-          await db.adminSetVenueLocation(id, {
-            latitude: satir.latitude,
-            longitude: satir.longitude ?? null,
-            googleMapsUrl: satir.mapsUrl,
-          });
-        } else if (satir.mapsUrl) {
-          await db.adminSetVenueLocation(id, {
-            latitude: null,
-            longitude: null,
-            googleMapsUrl: satir.mapsUrl,
-          });
-        }
 
         eklenen += 1;
       } catch (e) {
@@ -169,6 +178,9 @@ function temizHata(message: string): string {
   }
   if (message.includes("telefon numarası başka bir kayıtta")) {
     return "Bu telefon başka kayıtta";
+  }
+  if (message.includes("Google kaydı zaten katalogda")) {
+    return "Bu Google kaydı zaten katalogda";
   }
   if (message.includes("ilçe bu şehre ait değil")) return "İlçe şehre ait değil";
   return "Kaydedilemedi";

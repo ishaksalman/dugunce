@@ -116,6 +116,7 @@ export interface DataSource {
     name: string,
     cityId: string | null,
     phone: string | null,
+    placeId?: string | null,
   ): Promise<SimilarVenue[]>;
   /** Toplu girişte koordinat ve Maps bağlantısını yazar (admin). */
   adminSetVenueLocation(venueId: string, input: AdminVenueLocationInput): Promise<void>;
@@ -135,6 +136,10 @@ export interface AdminVenueCreateInput {
   address: string | null;
   contactPhone: string | null;
   websiteUrl: string | null;
+  googlePlaceId?: string | null;
+  googleMapsUrl?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 export interface AdminVenueLocationInput {
   latitude: number | null;

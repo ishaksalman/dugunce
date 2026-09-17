@@ -86,6 +86,9 @@ export function BulkImportForm({ cities }: { cities: City[] }) {
           mapsUrl: x.mapsUrl ?? undefined,
           latitude: x.latitude,
           longitude: x.longitude,
+          address: x.address,
+          website: x.website,
+          placeId: x.placeId,
           force: zorla.has(x.satirNo),
         })),
       });
@@ -172,7 +175,7 @@ export function BulkImportForm({ cities }: { cities: City[] }) {
 
       <TaxField
         label="Satırlar"
-        hint={`Her satır bir işletme. Google Maps bağlantısı, ad ve telefon — sırası önemli değil, ; ile ayırın. En fazla ${TOPLU_LIMIT} satır.`}
+        hint={`Her satır bir işletme (Maps bağlantısı, ad, telefon — sırası önemli değil, ; ile ayırın) YA DA Google Places dökümü (JSON dizisi). En fazla ${TOPLU_LIMIT} kayıt.`}
       >
         <textarea
           value={metin}
@@ -250,15 +253,20 @@ export function BulkImportForm({ cities }: { cities: City[] }) {
                       <p className="font-medium">
                         {r.name ?? <span className="text-muted-foreground">(ad yok)</span>}
                       </p>
-                      <p className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                      <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                        {r.kategori ? <span>{r.kategori}</span> : null}
                         {r.phone ? <span className="tabular">{r.phone}</span> : null}
                         {r.latitude !== null ? (
                           <span className="tabular">
                             {r.latitude}, {r.longitude}
                           </span>
                         ) : null}
-                        {r.mapsUrl ? <span>Maps bağlantısı var</span> : null}
+                        {r.placeId ? <span>place_id var</span> : null}
+                        {r.website ? <span>web sitesi var</span> : null}
                       </p>
+                      {r.address ? (
+                        <p className="mt-0.5 text-xs text-muted-foreground">{r.address}</p>
+                      ) : null}
 
                       {r.hata ? (
                         <p className="mt-1.5 text-xs text-destructive">{r.hata}</p>
