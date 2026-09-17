@@ -162,6 +162,26 @@ işletme sahibi **sahiplenir** → talep almaya başlar.
   sorgularını LEFT JOIN'e çevirir ve ilçesiz kaydın adresini tanımsız
   bırakır.
 
+## Toplu katalog girişi
+
+`/yonetim/mekanlar/toplu` — bir ilçedeki işletmeleri tek seferde açar.
+Kaynak bağımsız: yapıştırılan satırlar Maps bağlantısı, ad ve telefon
+içerebilir, **sırası önemli değil** (her parça içeriğine göre tanınır).
+
+- **Önizleme adımı atlanamaz.** Kötü bir yapıştırma 50 çöp kayıt açar ve
+  tek tek silmek açmaktan uzun sürer. Önizleme hiçbir şey YAZMAZ.
+- **Her satır `admin_create_venue`'den geçer.** Toplu iş diye o kapıyı
+  atlamak mükerrer kontrolünü ve denetim izini 50 katına çıkan bir hataya
+  çevirirdi. Bir satırın hatası diğerlerini düşürmez, sebebiyle raporlanır.
+- **Kısa bağlantı (`maps.app.goo.gl`) sunucuda çözülür** — ad ve koordinat
+  ancak uzun adreste var. Sayfa içeriği OKUNMAZ, yalnızca yönlendirmenin
+  bittiği adres. Eş zamanlılık 4, zaman aşımı 8 sn.
+- **Ayrıştırıcı saf fonksiyon** (`lib/import/parse.ts`) ve kendi testi var
+  (`npm run test:parse`) — ağ ve veritabanı olmadan koşuyor.
+- **`"use server"` modülü YALNIZCA async fonksiyon dışa aktarabilir.**
+  Sabit ya da tip koymak modülün tamamını derlenemez yapıyor ve `tsc` bunu
+  GÖRMÜYOR — kural Next'in. Ortak tipler `lib/import/types.ts` içinde.
+
 ## Müşteri üyeliği YOK (bilinçli)
 
 MVP'de yalnızca mekan sahibi ve admin hesabı var. Gerekçe: asıl huni

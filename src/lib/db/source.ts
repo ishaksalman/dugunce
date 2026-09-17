@@ -117,6 +117,8 @@ export interface DataSource {
     cityId: string | null,
     phone: string | null,
   ): Promise<SimilarVenue[]>;
+  /** Toplu girişte koordinat ve Maps bağlantısını yazar (admin). */
+  adminSetVenueLocation(venueId: string, input: AdminVenueLocationInput): Promise<void>;
   adminListClaims(status: ClaimStatus | null, offset: number): Promise<AdminClaimResult>;
   adminReviewClaim(claimId: string, approve: boolean, note?: string): Promise<void>;
   claimVenue(venueId: string, note?: string, phone?: string): Promise<void>;
@@ -133,6 +135,11 @@ export interface AdminVenueCreateInput {
   address: string | null;
   contactPhone: string | null;
   websiteUrl: string | null;
+}
+export interface AdminVenueLocationInput {
+  latitude: number | null;
+  longitude: number | null;
+  googleMapsUrl: string | null;
 }
 export interface AdminClaimResult { items: AdminClaim[]; total: number }
 

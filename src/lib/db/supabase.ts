@@ -444,6 +444,22 @@ export const supabaseSource: DataSource = {
     return (data ?? []) as unknown as SimilarVenue[];
   },
 
+  // Konum alanlarını doğrudan güncelliyoruz: `venues_update` politikası
+  // admin'e izin veriyor ve `guard_venue_update` ayrıcalıklı çağıranın
+  // değerlerine dokunmuyor.
+  async adminSetVenueLocation(venueId: string, input) {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("venues")
+      .update({
+        latitude: input.latitude,
+        longitude: input.longitude,
+        google_maps_url: input.googleMapsUrl,
+      })
+      .eq("id", venueId);
+    if (error) throw new Error(error.message);
+  },
+
   async adminListClaims(status, offset) {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("admin_list_claims", {

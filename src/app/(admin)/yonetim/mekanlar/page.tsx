@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { ListPlus, Plus } from "lucide-react";
 import { ButtonLink } from "@/components/shared/button-link";
 import { AdminVenueRow } from "@/components/admin/venue-row";
 import { PaginationNav } from "@/components/shared/pagination-nav";
@@ -73,10 +73,21 @@ export default async function AdminVenuesPage({
             {formatNumber(total)} mekan
           </p>
         </div>
-        <ButtonLink href="/yonetim/mekanlar/yeni" size="lg" className="h-10 gap-1.5">
-          <Plus className="size-4" aria-hidden />
-          Katalog kaydı aç
-        </ButtonLink>
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink
+            href="/yonetim/mekanlar/toplu"
+            variant="outline"
+            size="lg"
+            className="h-10 gap-1.5"
+          >
+            <ListPlus className="size-4" aria-hidden />
+            Toplu giriş
+          </ButtonLink>
+          <ButtonLink href="/yonetim/mekanlar/yeni" size="lg" className="h-10 gap-1.5">
+            <Plus className="size-4" aria-hidden />
+            Katalog kaydı aç
+          </ButtonLink>
+        </div>
       </header>
 
       <nav aria-label="Duruma göre filtrele" className="mb-4 flex flex-wrap gap-1.5">
