@@ -144,6 +144,44 @@ step("place_id yoksa arama adresi olduğu gibi korunuyor", () => {
   esit(rows[0].mapsUrl, "https://www.google.com/maps/search/?api=1&query=Placeidsiz");
 });
 
+step("puan ve değerlendirme SAYISI okunuyor, yorum METNİ okunmuyor", () => {
+  const { rows } = parsePlacesJson(JSON.stringify([{
+    title: "Puanlı Salon",
+    totalScore: 4.2,
+    reviewsCount: 7279,
+    reviews: [{ text: "Harika bir yerdi", reviewerId: "1" }],
+  }]));
+  const r = rows[0];
+  esit(r.puan, 4.2);
+  esit(r.puanAdedi, 7279);
+  if (JSON.stringify(r).includes("Harika bir yerdi")) throw new Error("yorum metni sızdı");
+});
+
+step("geçersiz puan alınmıyor", () => {
+  const { rows } = parsePlacesJson(JSON.stringify([
+    { title: "A", totalScore: 7 },
+    { title: "B", totalScore: "4.2" },
+    { title: "C", reviewsCount: -3 },
+  ]));
+  esit(rows[0].puan, null, "5 üstü puan");
+  esit(rows[1].puan, null, "metin puan");
+  esit(rows[2].puanAdedi, null, "negatif adet");
+});
+
+step("kırpma puan alanlarını KORUYOR", () => {
+  const { json } = trimPlacesJson(JSON.stringify([{
+    title: "S", totalScore: 4.2, reviewsCount: 100,
+    reviews: [{ text: "metin" }],
+  }]), 50);
+  const g = JSON.parse(json)[0];
+  esit(g.totalScore, 4.2);
+  esit(g.reviewsCount, 100);
+  // "reviews" araması yanlış olurdu: "reviewsCount"un alt dizesi. Yorum
+  // METNİNİ arıyoruz.
+  if (json.includes('"reviews"')) throw new Error("yorum dizisi kırpmadan geçti");
+  if (json.includes("metin")) throw new Error("yorum metni kırpmadan geçti");
+});
+
 step("kapalı işletme işaretleniyor", () => {
   const { rows } = parsePlacesJson(JSON.stringify([
     { title: "Kapalı Salon", permanentlyClosed: true },

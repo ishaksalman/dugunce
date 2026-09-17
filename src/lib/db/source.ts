@@ -140,6 +140,8 @@ export interface AdminVenueCreateInput {
   googleMapsUrl?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  googleRating?: number | null;
+  googleRatingCount?: number | null;
 }
 export interface AdminVenueLocationInput {
   latitude: number | null;

@@ -183,6 +183,14 @@ export interface VenueDetail {
    * `description` boşken gösteriliyor; sahibi kendi metnini yazınca susuyor.
    */
   auto_summary: string | null;
+  /**
+   * Google işletme puanı — SAYI, yorum metni değil (0033).
+   * Bizim `rating_avg`'imizle karıştırılmaz ve JSON-LD aggregateRating'e
+   * GİRMEZ. Kaynağı ve okunma tarihi her zaman birlikte gösterilir.
+   */
+  google_rating: string | number | null;
+  google_rating_count: number | null;
+  google_rating_at: string | null;
   rating_avg: string | number;
   rating_count: number;
   favorite_count: number;

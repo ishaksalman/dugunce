@@ -82,6 +82,8 @@ export async function previewBulkVenues(
         website: r.website,
         placeId: r.placeId,
         kategori: r.kategori,
+        puan: r.puan,
+        puanAdedi: r.puanAdedi,
         benzer,
         hata: r.hata ?? c?.hata ?? (name ? null : "Ad okunamadı, elle yazın."),
       });
@@ -107,6 +109,8 @@ const commitSchema = z.object({
         address: z.string().trim().max(300).nullable().optional(),
         website: z.string().trim().max(300).nullable().optional(),
         placeId: z.string().trim().max(120).nullable().optional(),
+        puan: z.number().min(0).max(5).nullable().optional(),
+        puanAdedi: z.number().int().min(0).nullable().optional(),
         force: z.boolean().optional(),
       }),
     )
@@ -156,6 +160,8 @@ export async function commitBulkVenues(
           googleMapsUrl: satir.mapsUrl,
           latitude: satir.latitude ?? null,
           longitude: satir.longitude ?? null,
+          googleRating: satir.puan ?? null,
+          googleRatingCount: satir.puanAdedi ?? null,
         });
 
         eklenen += 1;

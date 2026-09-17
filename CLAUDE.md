@@ -354,6 +354,21 @@ metni üretiyor.
   kalıp dizi literali sanılıyor ("malformed array literal"). Düz metin
   eklerken `::text` cast'i şart.
 
+## Google puanı (0033/0034)
+
+Vitrinde **sayı** gösteriliyor: puan ve değerlendirme adedi. Yorum
+METİNLERİ alınmıyor — sayı olgudur, yorum metni onu yazan kişinin eseridir.
+
+- **Kendi `rating_avg`'imize KARIŞMAZ ve JSON-LD `aggregateRating`'e
+  GİRMEZ.** Başkasının puanını kendi işaretlememizde göstermek Google'ın
+  yapılandırılmış veri politikasına aykırı. Test bunu doğruluyor.
+- **Kaynak ve okunma tarihi her zaman yazılır.**
+- **Tazelik kararı SQL'de** (`venue_google_rating_fresh`, 90 gün). Bileşende
+  `Date.now()` okumak PRERENDER edilen sayfada build anında donuyordu, puan
+  hiç düşmüyordu — üstelik React'in saf render kuralına da aykırıydı (lint
+  yakaladı). Sorgu bayat puanı null döndürüyor.
+- `google_rating_at` olmadan `google_rating` yazılamaz (kısıt).
+
 ## Teklif talepleri
 
 - Talep doğrudan INSERT ile açılmaz; `create_inquiry()` RPC'si üzerinden.

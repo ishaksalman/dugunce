@@ -34,6 +34,9 @@ export interface ParsedRow {
   kategori: string | null;
   kategoriler: string[];
   kapali: boolean;
+  /** Google puanı ve değerlendirme sayısı. Yorum METNİ asla taşınmaz. */
+  puan: number | null;
+  puanAdedi: number | null;
   /** Ayrıştırma sırasında fark edilen sorun; satır yine de gösterilir. */
   hata: string | null;
 }
@@ -42,6 +45,7 @@ const BOS_SATIR = {
   address: null, website: null, placeId: null,
   latitude: null, longitude: null,
   kategori: null, kategoriler: [] as string[], kapali: false,
+  puan: null, puanAdedi: null,
 };
 
 const MAPS_HOST =
@@ -171,6 +175,8 @@ export const PLACES_ALANLARI = [
   "title", "address", "phone", "website", "placeId", "url",
   "categoryName", "categories", "permanentlyClosed", "temporarilyClosed",
   "location",
+  // Puan ve değerlendirme SAYISI — yorum METNİ değil.
+  "totalScore", "reviewsCount",
 ] as const;
 
 interface PlacesKaydi {
@@ -185,6 +191,8 @@ interface PlacesKaydi {
   permanentlyClosed?: unknown;
   temporarilyClosed?: unknown;
   location?: unknown;
+  totalScore?: unknown;
+  reviewsCount?: unknown;
 }
 
 function metin(v: unknown): string | null {
@@ -242,6 +250,14 @@ export function parsePlacesJson(ham: string, enFazla = 50): {
         ? r.categories.filter((c): c is string => typeof c === "string")
         : [],
       kapali,
+      puan:
+        typeof r.totalScore === "number" && r.totalScore >= 0 && r.totalScore <= 5
+          ? r.totalScore
+          : null,
+      puanAdedi:
+        typeof r.reviewsCount === "number" && r.reviewsCount >= 0
+          ? Math.trunc(r.reviewsCount)
+          : null,
       hata: !name
         ? "Ad okunamadı."
         : kapali

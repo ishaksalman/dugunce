@@ -91,6 +91,8 @@ export function BulkImportForm({ cities }: { cities: City[] }) {
           address: x.address,
           website: x.website,
           placeId: x.placeId,
+          puan: x.puan,
+          puanAdedi: x.puanAdedi,
           force: zorla.has(x.satirNo),
         })),
       });
@@ -307,6 +309,12 @@ export function BulkImportForm({ cities }: { cities: City[] }) {
                         {r.latitude !== null ? (
                           <span className="tabular">
                             {r.latitude}, {r.longitude}
+                          </span>
+                        ) : null}
+                        {r.puan !== null ? (
+                          <span className="tabular">
+                            Google {r.puan.toLocaleString("tr-TR")}
+                            {r.puanAdedi !== null ? ` · ${formatNumber(r.puanAdedi)}` : ""}
                           </span>
                         ) : null}
                         {r.placeId ? <span>place_id var</span> : null}

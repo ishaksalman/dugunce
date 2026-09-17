@@ -432,6 +432,8 @@ export const supabaseSource: DataSource = {
       p_google_maps_url: input.googleMapsUrl ?? null,
       p_latitude: input.latitude ?? null,
       p_longitude: input.longitude ?? null,
+      p_google_rating: input.googleRating ?? null,
+      p_google_rating_count: input.googleRatingCount ?? null,
     });
     if (error) throw new Error(error.message);
     return data as unknown as { id: string; slug: string };

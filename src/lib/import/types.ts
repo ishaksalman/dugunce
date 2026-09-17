@@ -24,6 +24,8 @@ export interface BulkPreviewRow {
   placeId: string | null;
   /** Google'daki ana kategori — düğün mekanı olmayanı ayıklamak için. */
   kategori: string | null;
+  puan: number | null;
+  puanAdedi: number | null;
   /** Katalogda benzer kayıtlar — kullanıcı satır satır karar versin. */
   benzer: SimilarVenue[];
   hata: string | null;

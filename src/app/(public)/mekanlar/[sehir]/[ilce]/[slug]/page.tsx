@@ -7,6 +7,7 @@ import {
 import { VenueGallery } from "@/components/venue/venue-gallery";
 import { VenueMap } from "@/components/venue/venue-map";
 import { ClaimCta } from "@/components/venue/claim-cta";
+import { GoogleRating } from "@/components/venue/google-rating";
 import { VenueReviews } from "@/components/venue/venue-reviews";
 import { VenueCard, VenueGrid } from "@/components/venue/venue-card";
 import { FavoriteButton } from "@/components/venue/favorite-button";
@@ -278,8 +279,19 @@ export default async function VenueDetailPage(
               />
             ) : null}
 
-            {/* --- Yorumlar --- */}
+            {/* --- Değerlendirmeler --- */}
             <Section title="Değerlendirmeler">
+              {/* Google puanı AYRI bir kutuda ve kaynağı yazılı. Kendi
+                  yorumlarımızla aynı sayıya karışmıyor; JSON-LD'ye de
+                  girmiyor (bkz. lib/seo/jsonld.ts). */}
+              <div className="mb-5">
+                <GoogleRating
+                  rating={venue.google_rating}
+                  count={venue.google_rating_count}
+                  readAt={venue.google_rating_at}
+                  mapsUrl={venue.google_maps_url}
+                />
+              </div>
               <VenueReviews
                 reviews={reviewData.items}
                 total={reviewData.total}
