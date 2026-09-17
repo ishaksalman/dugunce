@@ -298,6 +298,30 @@ bir tarafı değiştirirken önce orayı güncelle.
 - `.next/types` (üretim build çıktısı) bayatlarsa yeni rotalar `AppRoutes`
   tipinde görünmez ve `tsc` yanlış hata verir. Çözüm: `rm -rf .next/types`.
 
+## Mekan özeti (otomatik metin)
+
+Katalog kaydı açılır açılmaz detay sayfası dolu görünsün diye
+`venue_auto_summary()` (0030/0031) yapılandırılmış veriden Türkçe tanıtım
+metni üretiyor.
+
+- **Yalnızca VAR OLAN veriden cümle kurulur.** Kuruluş yılı yok — yazılmaz.
+  Müşteri memnuniyeti verisi yok — "misafirler memnun" denmez. Eksik alan
+  cümleyi düşürür, uydurmaz.
+- **`venues.description` kolonuna YAZILMAZ.** O kolon mekan sahibinin kendi
+  anlatımı ve `venue_completion_of()` onu ölçüyor; otomatik metin tamamlanma
+  oranını şişirmemeli. Vitrin `description` boşken özeti gösteriyor.
+- **İlçe adına ek TAKILMAZ.** `tr_locative` ünlüyle biten ada kaynaştırma
+  'n'si koymuyor ("Beylikdüzü'de" yanlış, doğrusu "Beylikdüzü'nde") ve bu
+  kural algoritmik değil — sondaki ünlünün iyelik eki olup olmadığına bağlı.
+  Bu yüzden kalıp `{şehir tamlayan} {ilçe} ilçesinde`: ek sabit "ilçe"
+  sözcüğüne geliyor. Şehirdeki tamlayan eki (`tr_genitive`) ise algoritmik —
+  ünlüyle bitene 'n' girer, istisnasız.
+- **Para `tr_money()` ile yazılır.** `to_char`'ın `G` ayracı yerel ayara
+  bakıp virgül basıyordu (1,250); Türkçede binlik ayracı nokta.
+- **plpgsql'de `text[] || 'düz metin'` PATLAR** — literal `unknown` tipte
+  kalıp dizi literali sanılıyor ("malformed array literal"). Düz metin
+  eklerken `::text` cast'i şart.
+
 ## Teklif talepleri
 
 - Talep doğrudan INSERT ile açılmaz; `create_inquiry()` RPC'si üzerinden.

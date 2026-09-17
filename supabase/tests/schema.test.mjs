@@ -1736,6 +1736,84 @@ await step("planlanan kategoriye mekan BAĞLANAMAZ", async () => {
 });
 
 // =============================================================================
+console.log("\n\x1b[1m20) Mekan özeti\x1b[0m");
+// =============================================================================
+await asServer();
+
+await step("tamlayan eki kaynaştırma 'n'sini doğru koyuyor", async () => {
+  // Ünlüyle bitene girer, ünsüzle bitene girmez. Locative'in aksine bu kural
+  // istisnasız — iyelik eki olup olmadığına bakmıyor.
+  const r = await db.query(
+    `select public.tr_genitive('Ankara') a, public.tr_genitive('İstanbul') b,
+            public.tr_genitive('Ordu') c, public.tr_genitive('İzmir') d,
+            public.tr_genitive('Bursa') e, public.tr_genitive('Bingöl') f`);
+  const b = r.rows[0];
+  const bekleniyor = { a: "Ankara'nın", b: "İstanbul'un", c: "Ordu'nun",
+                       d: "İzmir'in", e: "Bursa'nın", f: "Bingöl'ün" };
+  for (const k of Object.keys(bekleniyor)) {
+    if (b[k] !== bekleniyor[k]) {
+      throw new Error(`${k}: ${b[k]} ≠ ${bekleniyor[k]}`);
+    }
+  }
+});
+
+await step("para Türkçe binlik ayracıyla yazılıyor", async () => {
+  const r = await db.query(
+    `select public.tr_money(1250) a, public.tr_money(75000) b, public.tr_money(950) c`);
+  const { a, b, c } = r.rows[0];
+  if (a !== "1.250" || b !== "75.000" || c !== "950") {
+    throw new Error(JSON.stringify(r.rows[0]));
+  }
+});
+
+await step("özet yalnızca VAR OLAN veriden cümle kuruyor", async () => {
+  // Kapasite, fiyat, özellik yok → o cümleler hiç kurulmuyor. Uydurma yok.
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const bos = (await db.query(
+    `insert into public.venues (owner_id, slug, name, city_id, district_id, status)
+     values (null, 'ozet-bos', 'Özet Boş', $1, $2, 'DRAFT') returning id`,
+    [yer.city_id, yer.district_id])).rows[0];
+  const r = await db.query("select public.venue_auto_summary($1) s", [bos.id]);
+  const metin = r.rows[0].s;
+  if (!metin.includes("hizmet veriyor")) throw new Error(metin);
+  for (const yasak of ["kişi", "TL", "Mekanda", "Sunulan hizmetler"]) {
+    if (metin.includes(yasak)) throw new Error(`boş mekanda "${yasak}" geçti: ${metin}`);
+  }
+});
+
+await step("veri zenginleştikçe cümle ekleniyor", async () => {
+  const id = (await db.query("select id from public.venues where slug = 'ozet-bos'")).rows[0].id;
+  const once = (await db.query("select public.venue_auto_summary($1) s", [id])).rows[0].s;
+  await db.query(
+    `update public.venues set min_capacity = 100, max_capacity = 400,
+       has_indoor = true, has_outdoor = true where id = $1`, [id]);
+  const sonra = (await db.query("select public.venue_auto_summary($1) s", [id])).rows[0].s;
+  if (sonra.length <= once.length) throw new Error("cümle eklenmedi");
+  if (!sonra.includes("100 ile 400 kişi")) throw new Error(sonra);
+  await db.query("delete from public.venues where id = $1", [id]);
+});
+
+await step("özet `description` kolonuna YAZILMIYOR", async () => {
+  // Otomatik metin tamamlanma oranını şişirmemeli: o, sahibin girdisini ölçüyor.
+  const r = await db.query(
+    "select description, completion_score from public.venues where id = $1", [venueA]);
+  const once = r.rows[0];
+  await db.query("select public.venue_auto_summary($1)", [venueA]);
+  const sonra = (await db.query(
+    "select description, completion_score from public.venues where id = $1", [venueA])).rows[0];
+  if (once.description !== sonra.description) throw new Error("description değişti");
+  if (once.completion_score !== sonra.completion_score) throw new Error("skor değişti");
+});
+
+await step("vitrin verisi özeti taşıyor", async () => {
+  const slug = (await db.query(
+    "select slug from public.venues where id = $1", [venueA])).rows[0].slug;
+  const r = await db.query("select public.get_venue_detail($1) d", [slug]);
+  if (!r.rows[0].d.auto_summary) throw new Error("auto_summary yok");
+});
+
+// =============================================================================
 console.log(
   fail
     ? `\n\x1b[31m${fail} test başarısız\x1b[0m, ${pass} başarılı\n`

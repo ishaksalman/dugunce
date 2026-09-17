@@ -244,10 +244,13 @@ export default async function VenueDetailPage(
             ) : null}
 
             {/* --- Hakkında --- */}
-            {venue.description ? (
+            {/* Sahibinin kendi anlatımı varsa o; yoksa yapılandırılmış
+                veriden üretilen özet. Otomatik metin `description` kolonuna
+                YAZILMIYOR — tamamlanma oranı sahibin girdisini ölçüyor. */}
+            {venue.description || venue.auto_summary ? (
               <Section title={`${venue.name} hakkında`}>
                 <p className="whitespace-pre-line leading-relaxed text-muted-foreground">
-                  {venue.description}
+                  {venue.description ?? venue.auto_summary}
                 </p>
               </Section>
             ) : null}
