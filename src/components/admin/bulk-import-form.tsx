@@ -3,12 +3,13 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowRight, Check } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { TaxField, taxInput } from "./taxonomy-row";
 import { commitBulkVenues, previewBulkVenues } from "@/lib/actions/bulk-import";
 import { TOPLU_LIMIT, type BulkPreviewRow } from "@/lib/import/types";
+import { trimPlacesJson } from "@/lib/import/parse";
 import { formatNumber } from "@/lib/format";
 import type { City } from "@/types/db";
 
@@ -39,6 +40,7 @@ export function BulkImportForm({ cities }: { cities: City[] }) {
   const [secili, setSecili] = useState<Set<number>>(new Set());
   const [zorla, setZorla] = useState<Set<number>>(new Set());
   const [hata, setHata] = useState<string | null>(null);
+  const [dosyaNotu, setDosyaNotu] = useState<string | null>(null);
 
   const districts = cache && cache.city === cityId ? cache.items : [];
   const ilceYukleniyor = cityId !== "" && cache?.city !== cityId;
@@ -173,6 +175,51 @@ export function BulkImportForm({ cities }: { cities: City[] }) {
         </TaxField>
       </div>
 
+      <div className="rounded-xl border border-dashed p-3.5">
+        <label className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border bg-background px-3 font-medium transition-colors hover:bg-muted">
+            <Upload className="size-4" aria-hidden />
+            JSON dosyası seç
+            <input
+              type="file"
+              accept=".json,application/json"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                setHata(null);
+                setDosyaNotu(null);
+                setRows(null);
+                f.text().then((ham) => {
+                  // Kırpma TARAYICIDA: ham döküm kayıt başına ~12 KB ve
+                  // yorumlar, fotoğraf adresleri, açılış saatleri içeriyor.
+                  // Almadığımız alanlar sunucuya hiç gitmiyor.
+                  const { json, okunan, alinan, hata: h } = trimPlacesJson(ham, TOPLU_LIMIT);
+                  if (h) {
+                    setHata(h);
+                    return;
+                  }
+                  setMetin(json);
+                  setDosyaNotu(
+                    okunan > alinan
+                      ? `${f.name}: ${formatNumber(okunan)} kayıttan ilk ${formatNumber(alinan)} tanesi alındı.`
+                      : `${f.name}: ${formatNumber(alinan)} kayıt okundu.`,
+                  );
+                });
+                e.target.value = "";
+              }}
+            />
+          </span>
+          <span className="text-muted-foreground">
+            Google Places dökümünü olduğu gibi seçin — yalnızca gerekli alanlar
+            okunur, yorum ve fotoğraflar alınmaz.
+          </span>
+        </label>
+        {dosyaNotu ? (
+          <p className="mt-2 text-sm text-muted-foreground">{dosyaNotu}</p>
+        ) : null}
+      </div>
+
       <TaxField
         label="Satırlar"
         hint={`Her satır bir işletme (Maps bağlantısı, ad, telefon — sırası önemli değil, ; ile ayırın) YA DA Google Places dökümü (JSON dizisi). En fazla ${TOPLU_LIMIT} kayıt.`}
@@ -182,6 +229,7 @@ export function BulkImportForm({ cities }: { cities: City[] }) {
           onChange={(e) => {
             setMetin(e.target.value);
             setRows(null);
+            setDosyaNotu(null);
           }}
           rows={8}
           placeholder={ORNEK}

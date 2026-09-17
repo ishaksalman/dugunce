@@ -12,7 +12,9 @@ import {
 } from "@/lib/import/types";
 
 const previewSchema = z.object({
-  metin: z.string().min(1, "Yapıştırılacak bir şey yok.").max(20000),
+  // Kırpılmış 50 kayıt ~30 KB; ham döküm buraya sığmaz ve sığmamalı —
+  // dosya tarayıcıda kırpılıyor (trimPlacesJson).
+  metin: z.string().min(1, "Yapıştırılacak bir şey yok.").max(80000),
   cityId: z.string().uuid("Şehir seçin."),
 });
 

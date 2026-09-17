@@ -162,6 +162,17 @@ export function parseBulkInput(metin: string, enFazla = 50): {
  *
  * `city` alanı ilçe adını taşıyor, `state` ili. Apify'ın adlandırması bu.
  */
+/**
+ * Ayrıştırıcının OKUDUĞU alanlar. Dosya kırpma bu listeyi kullanıyor ki
+ * tarayıcı ile sunucu aynı şeyi kastetsin — ve yorum/fotoğraf/açıklama
+ * gibi almadığımız alanlar ağa hiç çıkmasın.
+ */
+export const PLACES_ALANLARI = [
+  "title", "address", "phone", "website", "placeId", "url",
+  "categoryName", "categories", "permanentlyClosed", "temporarilyClosed",
+  "location",
+] as const;
+
 interface PlacesKaydi {
   title?: unknown;
   address?: unknown;
@@ -245,4 +256,43 @@ export function parsePlacesJson(ham: string, enFazla = 50): {
 /** Girdi JSON mu, satır listesi mi? */
 export function jsonMu(metin: string): boolean {
   return metin.trim().startsWith("[");
+}
+
+/**
+ * Ham Google Places dökümünü yapıştırılabilir boya indirger.
+ *
+ * Apify çıktısı kayıt başına ~12 KB: yorumlar, fotoğraf adresleri, açılış
+ * saatleri, popüler saatler… 50 kayıtlık dosya 620 KB oluyor ve sunucu
+ * eyleminin metin sınırının 31 katı. Tarayıcıda kırpıyoruz; hem sığıyor
+ * hem de almadığımız alanlar hiç ağa çıkmıyor.
+ */
+export function trimPlacesJson(
+  ham: string,
+  enFazla = 50,
+): { json: string; okunan: number; alinan: number; hata: string | null } {
+  let veri: unknown;
+  try {
+    veri = JSON.parse(ham);
+  } catch {
+    return { json: "", okunan: 0, alinan: 0, hata: "JSON okunamadı." };
+  }
+  if (!Array.isArray(veri)) {
+    return { json: "", okunan: 0, alinan: 0, hata: "JSON bir dizi olmalı." };
+  }
+
+  const kirpik = veri.slice(0, enFazla).map((x) => {
+    const r = (x ?? {}) as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const alan of PLACES_ALANLARI) {
+      if (r[alan] !== undefined) out[alan] = r[alan];
+    }
+    return out;
+  });
+
+  return {
+    json: JSON.stringify(kirpik),
+    okunan: veri.length,
+    alinan: kirpik.length,
+    hata: null,
+  };
 }

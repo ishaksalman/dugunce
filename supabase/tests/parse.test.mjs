@@ -6,7 +6,7 @@
  * kullanılıyor (--experimental-strip-types).
  */
 import { parseBulkInput, parseMapsUrl, isMapsUrl, cleanMapsUrl,
-  parsePlacesJson, jsonMu } from "../../src/lib/import/parse.ts";
+  parsePlacesJson, jsonMu, trimPlacesJson } from "../../src/lib/import/parse.ts";
 
 let pass = 0, fail = 0;
 const ok = (n) => { pass++; console.log(`  \x1b[32m✓\x1b[0m ${n}`); };
@@ -182,6 +182,58 @@ step("JSON limiti de uygulanıyor", () => {
   const { rows, fazlalik } = parsePlacesJson(cok, 50);
   esit(rows.length, 50);
   esit(fazlalik, 5);
+});
+
+step("ham döküm kırpılınca telif alanları ATILIYOR", () => {
+  // Apify çıktısı kayıt başına ~12 KB; yorum ve fotoğraf adresleri sunucuya
+  // hiç çıkmamalı. Kırpma tarayıcıda yapılıyor.
+  const ham = JSON.stringify([{
+    title: "Salon", phone: "0212 111 22 33",
+    placeId: "ChIJx", location: { lat: 41, lng: 28 },
+    description: "Google editoryal metni",
+    reviews: [{ text: "Harika bir yerdi", reviewerId: "123" }],
+    imageUrls: ["https://lh3.googleusercontent.com/a", "https://lh3.googleusercontent.com/b"],
+    openingHours: [{ day: "Pazartesi", hours: "09:00 to 23:00" }],
+    popularTimesHistogram: { Pazartesi: [1, 2, 3] },
+    ownerUpdates: [{ text: "Kampanya" }],
+  }]);
+  const { json, okunan, alinan, hata } = trimPlacesJson(ham, 50);
+  esit(hata, null);
+  esit([okunan, alinan], [1, 1]);
+  for (const yasak of ["reviews", "imageUrls", "description", "ownerUpdates",
+                       "openingHours", "popularTimesHistogram",
+                       "Harika bir yerdi", "googleusercontent"]) {
+    if (json.includes(yasak)) throw new Error(`"${yasak}" kırpmadan geçti`);
+  }
+  // Gerekli alanlar duruyor.
+  const geri = JSON.parse(json)[0];
+  esit(geri.title, "Salon");
+  esit(geri.placeId, "ChIJx");
+  esit(geri.location, { lat: 41, lng: 28 });
+});
+
+step("kırpma boyutu ciddi şekilde düşürüyor", () => {
+  const kayit = {
+    title: "S", placeId: "x", location: { lat: 1, lng: 2 },
+    reviews: Array.from({ length: 20 }, (_, i) => ({ text: "y".repeat(200), id: i })),
+    imageUrls: Array.from({ length: 30 }, (_, i) => `https://lh3.googleusercontent.com/${i}`),
+  };
+  const ham = JSON.stringify([kayit, kayit, kayit]);
+  const { json } = trimPlacesJson(ham, 50);
+  if (json.length >= ham.length / 10) {
+    throw new Error(`yeterince küçülmedi: ${ham.length} → ${json.length}`);
+  }
+});
+
+step("kırpmada limit uygulanıyor ve okunan sayısı raporlanıyor", () => {
+  const cok = JSON.stringify(Array.from({ length: 120 }, (_, i) => ({ title: `S${i}` })));
+  const { okunan, alinan } = trimPlacesJson(cok, 50);
+  esit([okunan, alinan], [120, 50]);
+});
+
+step("bozuk dosya kırpmada da çökmüyor", () => {
+  esit(trimPlacesJson("{bozuk").hata, "JSON okunamadı.");
+  esit(trimPlacesJson('{"a":1}').hata, "JSON bir dizi olmalı.");
 });
 
 console.log(fail
