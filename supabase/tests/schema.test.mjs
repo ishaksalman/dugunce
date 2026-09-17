@@ -1845,6 +1845,110 @@ await step("vitrin verisi özeti taşıyor", async () => {
 });
 
 // =============================================================================
+console.log("\n\x1b[1m21) Katalog kaydını silme\x1b[0m");
+// =============================================================================
+await asUser(U.admin);
+
+let silinebilir;
+await step("geçmişi olmayan katalog kaydı silinebiliyor", async () => {
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const r = await db.query(
+    "select public.admin_create_venue($1,$2,$3) as d",
+    ["Silinecek Katalog Kaydı", yer.city_id, yer.district_id]);
+  silinebilir = r.rows[0].d.id;
+
+  await db.query("select public.admin_delete_venue($1)", [silinebilir]);
+  const k = await db.query(
+    "select count(*)::int as n from public.venues where id = $1", [silinebilir]);
+  if (k.rows[0].n !== 0) throw new Error("silinmedi");
+});
+
+await step("silme denetim izine YAZILIYOR", async () => {
+  // Kayıt gittikten sonra "bu neydi" diye bakılabilsin.
+  const r = await db.query(
+    `select meta from public.admin_actions
+      where entity_type = 'venue' and action = 'deleted:catalog'
+      order by created_at desc limit 1`);
+  if (r.rows.length === 0) throw new Error("iz yok");
+  if (r.rows[0].meta.name !== "Silinecek Katalog Kaydı") {
+    throw new Error(JSON.stringify(r.rows[0].meta));
+  }
+});
+
+await step("SAHİPLENİLMİŞ mekan silinemiyor", async () => {
+  let gecti = false;
+  try {
+    await db.query("select public.admin_delete_venue($1)", [venueA]);
+    gecti = true;
+  } catch (e) {
+    if (!e.message.includes("Sahiplenilmiş")) throw e;
+  }
+  if (gecti) throw new Error("sahipli mekan silindi");
+});
+
+await step("YAYINLANMIŞ sahipsiz kayıt silinemiyor", async () => {
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const r = await db.query(
+    "select public.admin_create_venue($1,$2,$3) as d",
+    ["Yayınlanmış Katalog", yer.city_id, yer.district_id]);
+  const id = r.rows[0].d.id;
+  await db.query(
+    "update public.venues set status='PUBLISHED', published_at=now() where id=$1", [id]);
+
+  let gecti = false;
+  try {
+    await db.query("select public.admin_delete_venue($1)", [id]);
+    gecti = true;
+  } catch (e) {
+    if (!e.message.includes("Yayınlanmış")) throw e;
+  }
+  if (gecti) throw new Error("yayınlanmış kayıt silindi");
+  await db.query("delete from public.venues where id = $1", [id]);
+});
+
+await step("TEKLİF TALEBİ almış kayıt silinemiyor", async () => {
+  // En önemlisi bu: talep silinirse müşteri kaydı da öksüz kalır.
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const r = await db.query(
+    "select public.admin_create_venue($1,$2,$3) as d",
+    ["Talepli Katalog", yer.city_id, yer.district_id]);
+  const id = r.rows[0].d.id;
+  await asServer();
+  await db.query(
+    `insert into public.inquiries (venue_id, full_name, phone)
+     values ($1, 'Deneme Kişi', '05551112233')`, [id]);
+  await asUser(U.admin);
+
+  let gecti = false;
+  try {
+    await db.query("select public.admin_delete_venue($1)", [id]);
+    gecti = true;
+  } catch (e) {
+    if (!e.message.includes("teklif talebi")) throw e;
+  }
+  if (gecti) throw new Error("talepli kayıt silindi");
+  await asServer();
+  await db.query("delete from public.venues where id = $1", [id]);
+  await asUser(U.admin);
+});
+
+await step("liste can_delete bayrağını doğru veriyor", async () => {
+  const r = await db.query(
+    "select id, can_delete from public.admin_list_venues(null, null, null, 100, 0)");
+  const sahipli = r.rows.find((x) => x.id === venueA);
+  if (sahipli.can_delete !== false) throw new Error("sahipli kayıt silinebilir görünüyor");
+});
+
+await asUser(U.ownerA);
+await expectFail(
+  "mekan sahibi silme fonksiyonunu çağıramıyor",
+  () => db.query("select public.admin_delete_venue($1)", [venueA]),
+  "yönetici yetkisi");
+
+// =============================================================================
 console.log(
   fail
     ? `\n\x1b[31m${fail} test başarısız\x1b[0m, ${pass} başarılı\n`

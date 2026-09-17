@@ -419,6 +419,11 @@ export interface AdminVenue {
   owner_name: string | null;
   owner_email: string | null;
   is_claimed: boolean;
+  /**
+   * Silme YALNIZCA geçmişi olmayan katalog kaydında (0035): sahipsiz, hiç
+   * yayınlanmamış, teklif talebi ve yorumu yok. Kural veritabanında.
+   */
+  can_delete: boolean;
   cover_url: string | null;
   view_count: number;
   inquiry_count: number;

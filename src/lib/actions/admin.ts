@@ -418,3 +418,31 @@ export async function reviewVenueClaim(input: unknown): Promise<ActionResult> {
     return unexpectedError("reviewVenueClaim", error);
   }
 }
+
+/**
+ * Katalog kaydını siler.
+ *
+ * "Mekan silinmez, askıya alınır" kuralı gerçek mekanlar için geçerli ve
+ * değişmedi. Bu yalnızca yönetimin yanlışlıkla açtığı, geçmişi olmayan
+ * kayıt için: sahipsiz, hiç yayınlanmamış, talebi ve yorumu yok.
+ * Koşulları veritabanı zorluyor (0035).
+ */
+export async function deleteCatalogVenue(venueId: unknown): Promise<ActionResult> {
+  const parsed = z.string().uuid().safeParse(venueId);
+  if (!parsed.success) return actionError("Geçersiz mekan.");
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    await db.adminDeleteVenue(parsed.data);
+    revalidatePath("/yonetim/mekanlar");
+    revalidatePath("/yonetim", "layout");
+    return actionOk();
+  } catch (error) {
+    if (error instanceof Error) {
+      // Veritabanının gerekçesi kullanıcıya en yararlı mesaj.
+      if (error.message.includes("silinemez")) return actionError(error.message);
+      return actionError(turkishError(error.message));
+    }
+    return unexpectedError("deleteCatalogVenue", error);
+  }
+}

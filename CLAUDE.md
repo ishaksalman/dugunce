@@ -93,6 +93,13 @@ Pratikte iki fark:
   sessizce boş sonuç değil.
 - **Reddetme ve askıya alma gerekçesiz yapılamaz** (veritabanı zorluyor);
   mekan sahibi ne düzelteceğini bilmeli.
+- **Mekan SİLİNMEZ, askıya alınır — tek istisnası geçmişi olmayan katalog
+  kaydı** (0035). Toplu giriş yanlış kayıt üretebiliyor ("Turlar", "Kafe");
+  onları askıda tutmak katalogda çöp biriktirmek olur. `admin_delete_venue`
+  dört koşulu birden arıyor: sahipsiz + hiç yayınlanmamış + teklif talebi yok
+  + yorumu yok. Biri bile tutmuyorsa askıya alma kullanılır. Karar
+  veritabanında; liste `can_delete` ile bunu yansıtıyor, arayüz kural
+  koymuyor. Silme denetim izine ad, slug, telefon ve place_id ile yazılıyor.
 - Admin kendi rolünü ve hesap durumunu değiştiremez — son admin sistemden
   kilitlenmesin.
 - **Taksonomide SİLME yok, `is_active = false` var.** Etkinlik türü veya

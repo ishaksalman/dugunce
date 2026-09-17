@@ -291,6 +291,10 @@ export interface Database {
         };
         Returns: Record<string, unknown>[];
       };
+      admin_delete_venue: {
+        Args: { p_venue_id: string };
+        Returns: Record<string, unknown>;
+      };
       admin_list_claims: {
         Args: {
           p_status?: "PENDING" | "APPROVED" | "REJECTED" | null;

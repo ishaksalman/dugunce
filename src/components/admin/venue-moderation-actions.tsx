@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ExternalLink, Pencil, Star, X } from "lucide-react";
+import { Check, ExternalLink, Pencil, Star, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { setVenueFeatured, setVenueStatus } from "@/lib/actions/admin";
+import { deleteCatalogVenue, setVenueFeatured, setVenueStatus } from "@/lib/actions/admin";
 import { venueHref } from "@/components/venue/venue-card";
 import type { AdminVenue } from "@/types/db";
 
@@ -19,6 +19,7 @@ export function VenueModerationActions({ venue }: { venue: AdminVenue }) {
   const [pending, startTransition] = useTransition();
   const [gerekce, setGerekce] = useState<"REJECTED" | "SUSPENDED" | null>(null);
   const [metin, setMetin] = useState("");
+  const [silOnay, setSilOnay] = useState(false);
 
   const calistir = (islem: () => Promise<{ ok: boolean; message?: string }>) =>
     startTransition(async () => {
@@ -32,6 +33,53 @@ export function VenueModerationActions({ venue }: { venue: AdminVenue }) {
       toast.success("Güncellendi");
       router.refresh();
     });
+
+  if (silOnay) {
+    return (
+      <div className="w-full space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+        <p className="text-sm font-medium text-destructive">
+          “{venue.name}” kalıcı olarak silinsin mi?
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Bu kayıt sahiplenilmemiş, hiç yayınlanmamış ve talep/yorum almamış —
+          bu yüzden silinebiliyor. İşlem geri alınamaz; denetim izinde kaydı
+          kalır.
+        </p>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="destructive"
+            className="h-8"
+            disabled={pending}
+            onClick={() =>
+              startTransition(async () => {
+                const r = await deleteCatalogVenue(venue.id);
+                if (!r.ok) {
+                  toast.error(r.message ?? "Silinemedi.");
+                  setSilOnay(false);
+                  return;
+                }
+                toast.success(`${venue.name} silindi`);
+                setSilOnay(false);
+                router.refresh();
+              })
+            }
+          >
+            Kalıcı olarak sil
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8"
+            disabled={pending}
+            onClick={() => setSilOnay(false)}
+          >
+            Vazgeç
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (gerekce) {
     return (
@@ -122,6 +170,22 @@ export function VenueModerationActions({ venue }: { venue: AdminVenue }) {
         >
           <Check className="size-3.5" aria-hidden />
           Yayınla
+        </Button>
+      ) : null}
+
+      {/* Silinebilirlik kararı veritabanında (0035): sahipsiz, hiç
+          yayınlanmamış, talep ve yorum yok. Arayüz yalnızca onu yansıtıyor —
+          gerçek mekanlar için kural hâlâ "askıya al". */}
+      {venue.can_delete ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          disabled={pending}
+          onClick={() => setSilOnay(true)}
+        >
+          <Trash2 className="size-3.5" aria-hidden />
+          Sil
         </Button>
       ) : null}
 

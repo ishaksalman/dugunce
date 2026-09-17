@@ -120,6 +120,7 @@ export interface DataSource {
   ): Promise<SimilarVenue[]>;
   /** Toplu girişte koordinat ve Maps bağlantısını yazar (admin). */
   adminSetVenueLocation(venueId: string, input: AdminVenueLocationInput): Promise<void>;
+  adminDeleteVenue(venueId: string): Promise<{ name: string }>;
   adminListClaims(status: ClaimStatus | null, offset: number): Promise<AdminClaimResult>;
   adminReviewClaim(claimId: string, approve: boolean, note?: string): Promise<void>;
   claimVenue(venueId: string, note?: string, phone?: string): Promise<void>;

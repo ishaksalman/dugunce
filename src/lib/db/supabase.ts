@@ -472,6 +472,15 @@ export const supabaseSource: DataSource = {
     if (error) throw new Error(error.message);
   },
 
+  async adminDeleteVenue(venueId: string) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_delete_venue", {
+      p_venue_id: venueId,
+    });
+    if (error) throw new Error(error.message);
+    return data as unknown as { name: string };
+  },
+
   async adminListClaims(status, offset) {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("admin_list_claims", {
