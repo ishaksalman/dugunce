@@ -8,6 +8,7 @@ import {
   toVenueCard, type AdminReview, type AdminSeoPage, type AdminStats, type AdminUser,
   toIso,
   type AdminClaim, type AdminDistrict, type AdminTaxonomy, type BusinessCategory,
+  type ImportItem,
   type SimilarVenue,
   type AdminVenue, type DavetProStatus,
   type InquiryStatus, type OwnerInquiry, type OwnerStats, type OwnerVenue,
@@ -432,6 +433,8 @@ export const supabaseSource: DataSource = {
       p_google_maps_url: input.googleMapsUrl ?? null,
       p_latitude: input.latitude ?? null,
       p_longitude: input.longitude ?? null,
+      p_source: input.source ?? null,
+      p_source_url: input.sourceUrl ?? null,
       p_google_rating: input.googleRating ?? null,
       p_google_rating_count: input.googleRatingCount ?? null,
     });
@@ -479,6 +482,66 @@ export const supabaseSource: DataSource = {
     });
     if (error) throw new Error(error.message);
     return data as unknown as { name: string };
+  },
+
+  // --- İçe aktarma günlüğü --------------------------------------------------
+
+  async adminStartImportRun(source: string, note?: string) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_start_import_run", {
+      p_source: source,
+      p_note: note ?? null,
+    });
+    if (error) throw new Error(error.message);
+    return data as unknown as string;
+  },
+
+  async adminFinishImportRun(runId: string) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_finish_import_run", { p_run_id: runId });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminLogImportItem(input) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_log_import_item", {
+      p_run_id: input.runId,
+      p_status: input.status,
+      p_source_url: input.sourceUrl ?? null,
+      p_name: input.name ?? null,
+      p_venue_id: input.venueId ?? null,
+      p_image_total: input.imageTotal ?? 0,
+      p_image_ok: input.imageOk ?? 0,
+      p_image_failed: input.imageFailed ?? 0,
+      p_error: input.error ?? null,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async adminImportProcessed(sourceUrls: string[]) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_import_islenmis_mi", {
+      p_source_urls: sourceUrls,
+    });
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as unknown as { source_url: string; islenmis: boolean }[];
+    return new Map(rows.map((r) => [r.source_url, r.islenmis]));
+  },
+
+  async adminListImportItems(runId, status, offset) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_list_import_items", {
+      p_run_id: runId,
+      p_status: status,
+      p_limit: 50,
+      p_offset: offset,
+    });
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as unknown as ImportItem[];
+    return {
+      items: rows.map((r) => ({ ...r, created_at: toIso(r.created_at) })),
+      total: rows.length > 0 ? Number(rows[0].total_count) : 0,
+    };
   },
 
   async adminListClaims(status, offset) {

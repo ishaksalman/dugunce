@@ -201,6 +201,35 @@ içerebilir, **sırası önemli değil** (her parça içeriğine göre tanınır
   Sabit ya da tip koymak modülün tamamını derlenemez yapıyor ve `tsc` bunu
   GÖRMÜYOR — kural Next'in. Ortak tipler `lib/import/types.ts` içinde.
 
+## İçe aktarma boru hattı
+
+`lib/import/images.ts` + `lib/actions/import-run.ts` — bir işletmeyi kaydıyla
+ve görselleriyle birlikte alan, KAYNAKTAN BAĞIMSIZ hat.
+
+- **Kaynağın meşruluğuna bu katman karar VERMEZ.** "Şu adresteki dosyayı al
+  ve kaydet" der; o adresi yayınlama hakkının bizde olup olmadığı çağıranın
+  sorumluluğu. Meşru kaynaklar: işletmenin kendi verdiği galeri, tamamlama
+  bağlantısından yüklenenler, izni alınmış site/hesap.
+- **Yeni medya sistemi YOK.** Mevcut `venue-images` kovası, `{venueId}/…`
+  yolu ve `venue_images` tablosu kullanılıyor; tarayıcıdan yüklenen fotoğrafla
+  buradan gelen aynı yerde duruyor. `owns_storage_path` admin'e zaten izin
+  veriyor, sahipsiz kayda yükleme çalışıyor.
+- **Görsel hatası kaydı DÜŞÜRMEZ.** 8 görselin 2'si inse kayıt açılır, durum
+  `partial` olur. Hiçbiri inmezse `needs_review` — kayıt var, galerisi boş.
+- **Eleme ölçütleri:** 8 KB altı (ikon/izleme pikseli), 8 MB üstü, 400 px
+  altı kenar, desteklenmeyen tür, içerik özeti eşleşen tekrar. Özet aynı
+  zamanda Storage yolu — aynı dosya iki kez yüklenmiyor.
+- **`source_url` TEKİL ve `p_force` ile bile geçilmez.** Aynı kaynak
+  sayfasının iki kayıt üretmesi karar değil, veri hatası. (Zincir salonun
+  aynı telefonu gerçek bir durum, o yüzden telefon force ile geçilebiliyor.)
+  Kayıt silinirse adres yeniden işlenebilir — tekillik canlı satıra bakıyor.
+- **Mükerrer sinyalleri güçlüden zayıfa:** kaynak adresi → place_id →
+  ad+ilçe → telefon → web sitesi.
+- **`admin_create_venue`'yi türetirken EN SON sürümü temel al.** 0037 bunu
+  0032'den türetti, araya giren 0033'ün Google puanı yazımını sessizce
+  düşürdü ve ikinci bir 15 parametreli aşırı yükleme üretip çağrıyı belirsiz
+  bıraktı. 0038 düzeltti, test ikisini birden sabitliyor.
+
 ## Müşteri üyeliği YOK (bilinçli)
 
 MVP'de yalnızca mekan sahibi ve admin hesabı var. Gerekçe: asıl huni

@@ -1540,6 +1540,50 @@ await step("telefon dört farklı yazımda da aynı numaraya indirgeniyor", asyn
   if (k.rows[0].x !== "123") throw new Error(`kısa numara: ${k.rows[0].x}`);
 });
 
+await step("kaynak alanları ve Google puanı BİRLİKTE yazılıyor", async () => {
+  // 0037 bu fonksiyonu eski gövdeden türetince google_rating yazımı sessizce
+  // düşmüştü. İki özelliğin aynı anda çalıştığını sabitliyoruz.
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const r = await db.query(
+    `select public.admin_create_venue($1,$2,$3,null,null,null,null,null,false,
+       null,null,null,null,$4,$5,$6,$7) as d`,
+    ["Kaynak ve Puan", yer.city_id, yer.district_id, 4.6, 120,
+     "test-kaynak", "https://ornek.test/isletme/1"]);
+  const id = r.rows[0].d.id;
+  const v = await db.query(
+    `select google_rating, google_rating_count, google_rating_at,
+            source, source_url, source_last_checked
+       from public.venues where id = $1`, [id]);
+  const x = v.rows[0];
+  if (Number(x.google_rating) !== 4.6) throw new Error(`puan: ${x.google_rating}`);
+  if (x.google_rating_count !== 120) throw new Error(`adet: ${x.google_rating_count}`);
+  if (!x.google_rating_at) throw new Error("puan tarihi yazılmadı");
+  if (x.source !== "test-kaynak") throw new Error(`kaynak: ${x.source}`);
+  if (x.source_url !== "https://ornek.test/isletme/1") throw new Error("kaynak adresi yok");
+  if (!x.source_last_checked) throw new Error("kontrol tarihi yazılmadı");
+});
+
+await step("aynı KAYNAK ADRESİ force ile bile ikinci kez işlenemiyor", async () => {
+  // Zincir salonun aynı telefonu gerçek bir durum; aynı kaynak sayfasının
+  // iki kayıt üretmesi değil — bu yüzden force burada geçmiyor.
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  let gecti = false;
+  try {
+    await db.query(
+      `select public.admin_create_venue($1,$2,$3,null,null,null,null,null,true,
+         null,null,null,null,null,null,$4,$5)`,
+      ["Bambaşka Ad", yer.city_id, yer.district_id,
+       "test-kaynak", "https://ornek.test/isletme/1"]);
+    gecti = true;
+  } catch (e) {
+    if (!e.message.includes("kaynak adresi zaten işlenmiş")) throw e;
+  }
+  if (gecti) throw new Error("aynı kaynak adresi ikinci kez işlendi");
+  await db.query("delete from public.venues where name = $1", ["Kaynak ve Puan"]);
+});
+
 await step("aynı Google Place ID ikinci kez eklenemiyor", async () => {
   // Ad ve telefon dolaylı sinyal; place_id işletmenin Google'daki kanonik
   // kimliği. Aynı kaydı iki kez almanın en kesin işareti bu.

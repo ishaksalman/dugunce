@@ -279,7 +279,9 @@ export interface Database {
           p_contact_phone?: string | null;
           p_website_url?: string | null;
           p_force?: boolean;
-        };
+                  p_source?: string | null;
+          p_source_url?: string | null;
+};
         Returns: Record<string, unknown>;
       };
       admin_find_similar_venues: {
@@ -288,6 +290,41 @@ export interface Database {
           p_city_id?: string | null;
           p_phone?: string | null;
           p_place_id?: string | null;
+        };
+        Returns: Record<string, unknown>[];
+      };
+      admin_start_import_run: {
+        Args: { p_source: string; p_note?: string | null };
+        Returns: string;
+      };
+      admin_finish_import_run: {
+        Args: { p_run_id: string };
+        Returns: undefined;
+      };
+      admin_log_import_item: {
+        Args: {
+          p_run_id: string;
+          p_status: "imported" | "duplicate" | "partial" | "failed" | "needs_review";
+          p_source_url?: string | null;
+          p_name?: string | null;
+          p_venue_id?: string | null;
+          p_image_total?: number;
+          p_image_ok?: number;
+          p_image_failed?: number;
+          p_error?: string | null;
+        };
+        Returns: string;
+      };
+      admin_import_islenmis_mi: {
+        Args: { p_source_urls: string[] };
+        Returns: Record<string, unknown>[];
+      };
+      admin_list_import_items: {
+        Args: {
+          p_run_id?: string | null;
+          p_status?: "imported" | "duplicate" | "partial" | "failed" | "needs_review" | null;
+          p_limit?: number;
+          p_offset?: number;
         };
         Returns: Record<string, unknown>[];
       };

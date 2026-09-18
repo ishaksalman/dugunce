@@ -1,12 +1,5 @@
 import type {
-  AdminClaim, AdminDistrict, AdminReview, AdminSeoPage, AdminStats,
-  AdminTaxonomy, AdminUser, AdminVenue, BusinessCategory, City, ClaimStatus, District,
-  SimilarVenue,
-  DavetProStatus, EventType,
-  Feature, InquiryStatus, OwnerInquiry, OwnerStats, OwnerVenue, ReviewStatus,
-  SeoPage, SeoSitemapEntry,
-  UserRole, VenueCardData, VenueDetail, VenueForEdit, VenueReview, VenueStatus,
-  VenueType,
+  AdminClaim, AdminDistrict, AdminReview, AdminSeoPage, AdminStats, AdminTaxonomy, AdminUser, AdminVenue, BusinessCategory, City, ClaimStatus, DavetProStatus, District, EventType, Feature, ImportItem, ImportStatus, InquiryStatus, OwnerInquiry, OwnerStats, OwnerVenue, ReviewStatus, SeoPage, SeoSitemapEntry, SimilarVenue, UserRole, VenueCardData, VenueDetail, VenueForEdit, VenueReview, VenueStatus, VenueType,
 } from "@/types/db";
 
 export interface SearchInput {
@@ -121,6 +114,16 @@ export interface DataSource {
   /** Toplu girişte koordinat ve Maps bağlantısını yazar (admin). */
   adminSetVenueLocation(venueId: string, input: AdminVenueLocationInput): Promise<void>;
   adminDeleteVenue(venueId: string): Promise<{ name: string }>;
+
+  adminStartImportRun(source: string, note?: string): Promise<string>;
+  adminFinishImportRun(runId: string): Promise<void>;
+  adminLogImportItem(input: ImportItemInput): Promise<void>;
+  adminImportProcessed(sourceUrls: string[]): Promise<Map<string, boolean>>;
+  adminListImportItems(
+    runId: string | null,
+    status: ImportStatus | null,
+    offset: number,
+  ): Promise<{ items: ImportItem[]; total: number }>;
   adminListClaims(status: ClaimStatus | null, offset: number): Promise<AdminClaimResult>;
   adminReviewClaim(claimId: string, approve: boolean, note?: string): Promise<void>;
   claimVenue(venueId: string, note?: string, phone?: string): Promise<void>;
@@ -143,6 +146,19 @@ export interface AdminVenueCreateInput {
   longitude?: number | null;
   googleRating?: number | null;
   googleRatingCount?: number | null;
+  source?: string | null;
+  sourceUrl?: string | null;
+}
+export interface ImportItemInput {
+  runId: string;
+  status: ImportStatus;
+  sourceUrl?: string | null;
+  name?: string | null;
+  venueId?: string | null;
+  imageTotal?: number;
+  imageOk?: number;
+  imageFailed?: number;
+  error?: string | null;
 }
 export interface AdminVenueLocationInput {
   latitude: number | null;

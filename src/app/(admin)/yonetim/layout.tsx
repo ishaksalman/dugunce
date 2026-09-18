@@ -23,6 +23,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
       badge: Number(stats.pending_claims),
     },
     { href: "/yonetim/kullanicilar", label: "Kullanıcılar", icon: "kullanici" },
+    { href: "/yonetim/ice-aktarma", label: "İçe Aktarma", icon: "iceaktarma" },
     { href: "/yonetim/seo", label: "SEO Sayfaları", icon: "seo" },
     { href: "/yonetim/taksonomi", label: "Taksonomi", icon: "taksonomi" },
     {

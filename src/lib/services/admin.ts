@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { getDataSource } from "@/lib/db";
-import type { ClaimStatus } from "@/types/db";
+import type { ClaimStatus, ImportStatus } from "@/types/db";
 import type {
   AdminReviewQuery, AdminSeoQuery, AdminUserQuery, AdminVenueQuery,
 } from "@/lib/db/source";
@@ -54,3 +54,10 @@ export const listAdminClaims = cache(async (status: ClaimStatus | null, offset =
   const db = await getDataSource();
   return db.adminListClaims(status, offset);
 });
+
+export const listImportItems = cache(
+  async (runId: string | null, status: ImportStatus | null, offset = 0) => {
+    const db = await getDataSource();
+    return db.adminListImportItems(runId, status, offset);
+  },
+);

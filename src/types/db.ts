@@ -659,3 +659,25 @@ export interface SimilarVenue {
   /** Hangi sinyal eşleşti: "telefon" çok daha güçlü bir mükerrer işareti. */
   eslesme: "ad" | "telefon";
 }
+
+// --- İçe aktarma günlüğü -----------------------------------------------------
+
+export type ImportStatus =
+  | "imported" | "duplicate" | "partial" | "failed" | "needs_review";
+
+export interface ImportItem {
+  id: string;
+  run_id: string;
+  source: string;
+  source_url: string | null;
+  name: string | null;
+  venue_id: string | null;
+  venue_slug: string | null;
+  status: ImportStatus;
+  image_total: number;
+  image_ok: number;
+  image_failed: number;
+  error: string | null;
+  created_at: string;
+  total_count: string | number;
+}
