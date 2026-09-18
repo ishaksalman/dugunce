@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Play } from "lucide-react";
+import { ButtonLink } from "@/components/shared/button-link";
 import { EmptyState } from "@/components/shared/states";
 import { PaginationNav } from "@/components/shared/pagination-nav";
 import { listImportItems } from "@/lib/services/admin";
@@ -63,11 +65,17 @@ export default async function ImportLogPage({
 
   return (
     <div className="px-4 py-8 sm:px-8 lg:py-10">
-      <header className="mb-6">
-        <h1 className="font-heading text-2xl sm:text-3xl">İçe aktarma günlüğü</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {formatNumber(total)} kayıt
-        </p>
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-2xl sm:text-3xl">İçe aktarma günlüğü</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {formatNumber(total)} kayıt
+          </p>
+        </div>
+        <ButtonLink href="/yonetim/ice-aktarma/yeni" size="lg" className="h-10 gap-1.5">
+          <Play className="size-4" aria-hidden />
+          Aktarım çalıştır
+        </ButtonLink>
       </header>
 
       <div className="mb-6 rounded-xl border border-sage-300/60 bg-sage-50/60 p-4 text-sm">

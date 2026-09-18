@@ -7,6 +7,7 @@
  */
 import { parseBulkInput, parseMapsUrl, isMapsUrl, cleanMapsUrl,
   parsePlacesJson, jsonMu, trimPlacesJson } from "../../src/lib/import/parse.ts";
+import { parseImportPayload } from "../../src/lib/import/payload.ts";
 
 let pass = 0, fail = 0;
 const ok = (n) => { pass++; console.log(`  \x1b[32m✓\x1b[0m ${n}`); };
@@ -272,6 +273,78 @@ step("kırpmada limit uygulanıyor ve okunan sayısı raporlanıyor", () => {
 step("bozuk dosya kırpmada da çökmüyor", () => {
   esit(trimPlacesJson("{bozuk").hata, "JSON okunamadı.");
   esit(trimPlacesJson('{"a":1}').hata, "JSON bir dizi olmalı.");
+});
+
+console.log("\n\x1b[1mAktarım yükü ayrıştırıcısı\x1b[0m");
+
+step("alanlar okunuyor, bilinmeyenler yok sayılıyor", () => {
+  const { rows, hata } = parseImportPayload(JSON.stringify([{
+    name: "Bahçe Davet",
+    sourceUrl: "https://ornek.com/isletme/12",
+    phone: "0212 111 22 33",
+    address: "Örnek Mah.",
+    website: "https://ornek.com",
+    placeId: "ChIJx",
+    latitude: 41.0003,
+    longitude: 28.645,
+    imageUrls: ["https://ornek.com/1.jpg", "https://ornek.com/2.jpg"],
+    bilinmeyenAlan: "taşınmamalı",
+    reviews: [{ text: "yorum" }],
+  }]));
+  esit(hata, null);
+  const r = rows[0];
+  esit(r.name, "Bahçe Davet");
+  esit(r.sourceUrl, "https://ornek.com/isletme/12");
+  esit([r.latitude, r.longitude], [41.0003, 28.645]);
+  esit(r.imageUrls.length, 2);
+  esit(r.hata, null);
+  const govde = JSON.stringify(r);
+  if (govde.includes("taşınmamalı")) throw new Error("bilinmeyen alan taşındı");
+  if (govde.includes("yorum")) throw new Error("yorum taşındı");
+});
+
+step("adsız satır hata veriyor", () => {
+  const { rows } = parseImportPayload(JSON.stringify([{ phone: "0212 111 22 33" }]));
+  esit(rows[0].hata, "İşletme adı gerekli.");
+  esit(rows[0].name, null);
+});
+
+step("geçersiz görsel adresi eleniyor ve raporlanıyor", () => {
+  const { rows } = parseImportPayload(JSON.stringify([{
+    name: "Salon",
+    imageUrls: ["https://ok.com/1.jpg", "dosya.jpg", "", null, 42, "ftp://x/y.jpg"],
+  }]));
+  esit(rows[0].imageUrls, ["https://ok.com/1.jpg"]);
+  esit(rows[0].hata, "5 görsel adresi geçersiz, atlandı.");
+});
+
+step("tekrar eden görsel adresi bir kez alınıyor", () => {
+  const { rows } = parseImportPayload(JSON.stringify([{
+    name: "Salon",
+    imageUrls: ["https://ok.com/1.jpg", "https://ok.com/1.jpg", "https://ok.com/2.jpg"],
+  }]));
+  esit(rows[0].imageUrls.length, 2);
+});
+
+step("aralık dışı koordinat null oluyor", () => {
+  const { rows } = parseImportPayload(JSON.stringify([
+    { name: "A", latitude: 999, longitude: 28 },
+    { name: "B", latitude: "41", longitude: 28 },
+  ]));
+  esit(rows[0].latitude, null, "enlem aralık dışı");
+  esit(rows[1].latitude, null, "metin enlem sayı değil");
+});
+
+step("bozuk yük çökmüyor", () => {
+  esit(parseImportPayload("{bozuk").hata, "JSON okunamadı.");
+  esit(parseImportPayload('{"a":1}').hata, "JSON bir dizi olmalı.");
+  esit(parseImportPayload("[null, 5]").rows.length, 2, "boş öğeler hata satırı olur");
+});
+
+step("limit uygulanıyor", () => {
+  const cok = JSON.stringify(Array.from({ length: 60 }, (_, i) => ({ name: `S${i}` })));
+  const { rows, fazlalik } = parseImportPayload(cok, 50);
+  esit([rows.length, fazlalik], [50, 10]);
 });
 
 console.log(fail

@@ -225,6 +225,10 @@ ve görselleriyle birlikte alan, KAYNAKTAN BAĞIMSIZ hat.
   Kayıt silinirse adres yeniden işlenebilir — tekillik canlı satıra bakıyor.
 - **Mükerrer sinyalleri güçlüden zayıfa:** kaynak adresi → place_id →
   ad+ilçe → telefon → web sitesi.
+- **Sürücü ekranı `/yonetim/ice-aktarma/yeni`.** Satırları TEK TEK ve sırayla
+  çalıştırıyor; toplu tek çağrı yapmamanın sebebi görseller — bir galerinin
+  inmesi dakikalar sürebiliyor ve kullanıcının nerede olduğunu görmesi
+  gerekiyor. Ekran kaynağın meşruluğunu denetleyemiyor; bunu açıkça yazıyor.
 - **`admin_create_venue`'yi türetirken EN SON sürümü temel al.** 0037 bunu
   0032'den türetti, araya giren 0033'ün Google puanı yazımını sessizce
   düşürdü ve ikinci bir 15 parametreli aşırı yükleme üretip çağrıyı belirsiz
