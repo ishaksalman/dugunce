@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/davetpro-sync",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 5 * * *"
     },
     {
       "path": "/api/cron/veri-temizligi",
