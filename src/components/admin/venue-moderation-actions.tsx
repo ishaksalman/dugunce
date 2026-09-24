@@ -14,12 +14,21 @@ import type { AdminVenue } from "@/types/db";
  * Onay/red/askıya alma. Reddetme ve askıya alma gerekçe ister — mekan
  * sahibi ne düzelteceğini bilmeli. Kural veritabanında da zorlanıyor.
  */
+const ONE_CIKMA_SURELERI = [7, 30, 90] as const;
+
 export function VenueModerationActions({ venue }: { venue: AdminVenue }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [gerekce, setGerekce] = useState<"REJECTED" | "SUSPENDED" | null>(null);
   const [metin, setMetin] = useState("");
   const [silOnay, setSilOnay] = useState(false);
+  const [sureSecici, setSureSecici] = useState(false);
+  const [gunSayisi, setGunSayisi] = useState<number>(30);
+
+  // `featured_active` SQL'de hesaplanıyor (0043) — Date.now() bileşende
+  // saf olmayan bir çağrı olurdu. Buton etiketi bunu yansıtıyor: süresi
+  // dolmuşsa "öne çıkar" değil "yenile".
+  const suresiDoldu = venue.is_featured && !venue.featured_active;
 
   const calistir = (islem: () => Promise<{ ok: boolean; message?: string }>) =>
     startTransition(async () => {
@@ -30,6 +39,7 @@ export function VenueModerationActions({ venue }: { venue: AdminVenue }) {
       }
       setGerekce(null);
       setMetin("");
+      setSureSecici(false);
       toast.success("Güncellendi");
       router.refresh();
     });
@@ -73,6 +83,53 @@ export function VenueModerationActions({ venue }: { venue: AdminVenue }) {
             className="h-8"
             disabled={pending}
             onClick={() => setSilOnay(false)}
+          >
+            Vazgeç
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (sureSecici) {
+    return (
+      <div className="w-full space-y-2 rounded-lg border bg-secondary/30 p-3">
+        <p className="text-xs font-medium">Ne kadar süre öne çıksın?</p>
+        <div className="flex flex-wrap items-center gap-2">
+          {ONE_CIKMA_SURELERI.map((gun) => (
+            <button
+              key={gun}
+              type="button"
+              onClick={() => setGunSayisi(gun)}
+              className={`h-8 rounded-lg border px-3 text-sm transition-colors ${
+                gunSayisi === gun
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "bg-background hover:bg-muted"
+              }`}
+            >
+              {gun} gün
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 pt-1">
+          <Button
+            size="sm"
+            className="h-8"
+            disabled={pending}
+            onClick={() =>
+              calistir(() =>
+                setVenueFeatured({ venueId: venue.id, featured: true, days: gunSayisi }),
+              )
+            }
+          >
+            {pending ? "Uygulanıyor…" : `${gunSayisi} gün öne çıkar`}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8"
+            disabled={pending}
+            onClick={() => setSureSecici(false)}
           >
             Vazgeç
           </Button>
@@ -209,21 +266,29 @@ export function VenueModerationActions({ venue }: { venue: AdminVenue }) {
             variant="outline"
             className="h-8 gap-1.5"
             disabled={pending}
-            onClick={() =>
-              calistir(() =>
-                setVenueFeatured({
-                  venueId: venue.id,
-                  featured: !venue.is_featured,
-                  days: 30,
-                }),
-              )
-            }
+            onClick={() => {
+              // Etkin (süresi dolmamış) öne çıkarmayı KALDIRMAK süre
+              // sormaya gerek bırakmıyor — tek adımda kapatılıyor. Açmak ya
+              // da süresi dolmuşu yenilemek süre seçtiriyor (0043 öncesi
+              // sabit 30 gündü, artık süre bitince gerçekten etkisiz
+              // oluyor, o yüzden yenileme bilinçli bir seçim olmalı).
+              if (venue.is_featured && !suresiDoldu) {
+                calistir(() => setVenueFeatured({ venueId: venue.id, featured: false }));
+              } else {
+                setGunSayisi(30);
+                setSureSecici(true);
+              }
+            }}
           >
             <Star
-              className={`size-3.5 ${venue.is_featured ? "fill-current" : ""}`}
+              className={`size-3.5 ${venue.is_featured && !suresiDoldu ? "fill-current" : ""}`}
               aria-hidden
             />
-            {venue.is_featured ? "Öne çıkarmayı kaldır" : "Öne çıkar"}
+            {venue.is_featured && !suresiDoldu
+              ? "Öne çıkarmayı kaldır"
+              : suresiDoldu
+                ? "Yenile"
+                : "Öne çıkar"}
           </Button>
           <Button
             size="sm"

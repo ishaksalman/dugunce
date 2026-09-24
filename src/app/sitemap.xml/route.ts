@@ -17,6 +17,7 @@ export function GET() {
       { path: "/sitemap-statik.xml", lastModified: bugun },
       { path: "/sitemap-landing.xml", lastModified: bugun },
       { path: "/sitemap-mekanlar.xml", lastModified: bugun },
+      { path: "/sitemap-rehber.xml", lastModified: bugun },
     ]),
     { headers: XML_BASLIK },
   );

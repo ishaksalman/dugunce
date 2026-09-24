@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { TaxField, taxInput } from "./taxonomy-row";
 import { createCatalogVenue } from "@/lib/actions/admin";
-import type { BusinessCategory, City, SimilarVenue, VenueType } from "@/types/db";
+import type { BusinessCategory, City, EventType, SimilarVenue, VenueType } from "@/types/db";
 
 interface Ilce { id: string; slug: string; name: string }
 
@@ -30,10 +31,12 @@ export function CatalogVenueForm({
   cities,
   categories,
   venueTypes,
+  eventTypes,
 }: {
   cities: City[];
   categories: BusinessCategory[];
   venueTypes: VenueType[];
+  eventTypes: EventType[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -49,6 +52,7 @@ export function CatalogVenueForm({
   const [tel, setTel] = useState("");
   const [benzer, setBenzer] = useState<SimilarVenue[]>([]);
   const [zorla, setZorla] = useState(false);
+  const [etkinlikler, setEtkinlikler] = useState<string[]>([]);
 
   const districts = cache && cache.city === cityId ? cache.items : [];
   const loading = cityId !== "" && cache?.city !== cityId;
@@ -106,7 +110,7 @@ export function CatalogVenueForm({
         setErrors({});
         setFormError(null);
         startTransition(async () => {
-          const r = await createCatalogVenue({ ...data, force: zorla });
+          const r = await createCatalogVenue({ ...data, force: zorla, eventTypeSlugs: etkinlikler });
           if (!r.ok) {
             setErrors(r.fieldErrors ?? {});
             setFormError(r.message);
@@ -240,6 +244,37 @@ export function CatalogVenueForm({
           ))}
         </select>
       </TaxField>
+
+      <fieldset>
+        <legend className="mb-1.5 text-sm font-medium">Etkinlik türü</legend>
+        <p className="mb-2 text-xs text-muted-foreground">
+          İsteğe bağlı, birden fazla seçilebilir. Mekan birden fazla türde
+          hizmet veriyorsa hepsini işaretleyin.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {eventTypes.map((e) => {
+            const secili = etkinlikler.includes(e.slug);
+            return (
+              <label
+                key={e.id}
+                className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors ${
+                  secili ? "border-primary bg-secondary" : "hover:bg-muted"
+                }`}
+              >
+                <Checkbox
+                  checked={secili}
+                  onCheckedChange={(v) =>
+                    setEtkinlikler(
+                      v ? [...etkinlikler, e.slug] : etkinlikler.filter((s) => s !== e.slug),
+                    )
+                  }
+                />
+                {e.name}
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
 
       <TaxField label="Adres" error={errors.address} hint="İsteğe bağlı">
         <input name="address" maxLength={300} className={taxInput} />

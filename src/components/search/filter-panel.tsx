@@ -71,7 +71,7 @@ export function FilterPanel({
     return () => controller.abort();
   }, [filters.sehir]);
 
-  const debouncedNumber = useDebounced(onChange, 500);
+  const debouncedChange = useDebounced(onChange, 500);
 
   const toggleFeature = (slug: string, checked: boolean) => {
     const current = filters.ozellikler ?? [];
@@ -134,7 +134,7 @@ export function FilterPanel({
           label="Kaç kişi?"
           value={filters.kisi}
           placeholder="Örn. 250"
-          onChange={(v) => debouncedNumber({ kisi: v })}
+          onChange={(v) => debouncedChange({ kisi: v })}
         />
       </Group>
 
@@ -144,13 +144,13 @@ export function FilterPanel({
             label="En az"
             value={filters.minKapasite}
             placeholder="0"
-            onChange={(v) => debouncedNumber({ minKapasite: v })}
+            onChange={(v) => debouncedChange({ minKapasite: v })}
           />
           <NumberInput
             label="En fazla"
             value={filters.maxKapasite}
             placeholder="Sınırsız"
-            onChange={(v) => debouncedNumber({ maxKapasite: v })}
+            onChange={(v) => debouncedChange({ maxKapasite: v })}
           />
         </div>
       </Group>
@@ -187,13 +187,13 @@ export function FilterPanel({
             label="En az ₺"
             value={filters.minFiyat}
             placeholder="0"
-            onChange={(v) => debouncedNumber({ minFiyat: v })}
+            onChange={(v) => debouncedChange({ minFiyat: v })}
           />
           <NumberInput
             label="En fazla ₺"
             value={filters.maxFiyat}
             placeholder="Sınırsız"
-            onChange={(v) => debouncedNumber({ maxFiyat: v })}
+            onChange={(v) => debouncedChange({ maxFiyat: v })}
           />
         </div>
       </Group>

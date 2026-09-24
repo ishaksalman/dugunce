@@ -167,15 +167,21 @@ export interface VenueDetail {
   min_capacity: number | null;
   max_capacity: number | null;
   starting_price: string | number | null;
+  /** Kaynak çoğu zaman ARALIK veriyor (0040) — starting_price asgari/tekil değer. */
+  price_max: string | number | null;
   price_type: PriceType;
   price_note: string | null;
   has_indoor: boolean;
   has_outdoor: boolean;
   contact_phone: string | null;
+  /** 10 haneye normalize edilmiş numara (0029) — tel:/wa.me bağlantıları için. */
+  contact_phone_norm: string | null;
   contact_email: string | null;
   website_url: string | null;
   instagram_url: string | null;
   google_maps_url: string | null;
+  /** Yorum bağlantısı için (0046) — google_maps_url çoğunlukla yol tarifi. */
+  google_place_id: string | null;
   /** false = sahiplenilmemiş katalog kaydı; vitrinde sahiplenme çağrısı çıkar. */
   is_claimed: boolean;
   /**
@@ -324,6 +330,41 @@ export function normalizeInquiry(row: OwnerInquiry): OwnerInquiry {
   };
 }
 
+/**
+ * `admin_list_inquiries()` satırı — `OwnerInquiry`'den farkı `venue_slug` ve
+ * `is_claimed`: admin sahiplik sınırı olmadan TÜM talepleri görüyor, sahipsiz
+ * mekana gelen bir talebin sahipsiz olduğu ekranda belli olmalı (bkz. 0051).
+ */
+export interface AdminInquiry {
+  id: string;
+  venue_id: string;
+  venue_name: string;
+  venue_slug: string;
+  is_claimed: boolean;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  event_type_name: string | null;
+  event_date: string | null;
+  guest_count: number | null;
+  message: string | null;
+  status: InquiryStatus;
+  owner_note: string | null;
+  contacted_at: string | null;
+  created_at: string;
+  total_count: string | number;
+  new_count: string | number;
+}
+
+export function normalizeAdminInquiry(row: AdminInquiry): AdminInquiry {
+  return {
+    ...row,
+    created_at: toIso(row.created_at),
+    contacted_at: toIsoOrNull(row.contacted_at),
+    event_date: row.event_date === null ? null : String(row.event_date).slice(0, 10),
+  };
+}
+
 // --- Mekan düzenleme (wizard) ------------------------------------------------
 
 export interface VenueEditImage {
@@ -429,6 +470,8 @@ export interface AdminVenue {
   inquiry_count: number;
   is_featured: boolean;
   featured_until: string | null;
+  /** is_featured VE featured_until geçmemiş — SQL'de hesaplanır (0043), Date.now() ile değil. */
+  featured_active: boolean;
   rejection_reason: string | null;
   published_at: string | null;
   created_at: string;
@@ -680,4 +723,68 @@ export interface ImportItem {
   error: string | null;
   created_at: string;
   total_count: string | number;
+}
+
+// --- Rehber (blog) -----------------------------------------------------------
+
+export type BlogPostStatus = "DRAFT" | "PUBLISHED";
+
+export interface BlogPostSummary {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  cover_image_url: string | null;
+  published_at: string | null;
+  total_count: string | number;
+}
+
+export interface BlogPostDetail {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content_md: string;
+  cover_image_url: string | null;
+  published_at: string | null;
+}
+
+export interface AdminBlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  status: BlogPostStatus;
+  cover_image_url: string | null;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  total_count: string | number;
+}
+
+export interface AdminBlogPostDetail {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content_md: string;
+  cover_image_url: string | null;
+  status: BlogPostStatus;
+  published_at: string | null;
+}
+
+export function normalizeBlogPostSummary(row: BlogPostSummary): BlogPostSummary {
+  return { ...row, published_at: toIsoOrNull(row.published_at) };
+}
+
+export function normalizeBlogPostDetail(row: BlogPostDetail): BlogPostDetail {
+  return { ...row, published_at: toIsoOrNull(row.published_at) };
+}
+
+export function normalizeAdminBlogPost(row: AdminBlogPost): AdminBlogPost {
+  return {
+    ...row,
+    published_at: toIsoOrNull(row.published_at),
+    created_at: toIso(row.created_at),
+    updated_at: toIso(row.updated_at),
+  };
 }

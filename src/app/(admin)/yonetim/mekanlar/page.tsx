@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ListPlus, Plus } from "lucide-react";
 import { ButtonLink } from "@/components/shared/button-link";
-import { AdminVenueRow } from "@/components/admin/venue-row";
+import { VenueBulkList } from "@/components/admin/venue-bulk-list";
 import { PaginationNav } from "@/components/shared/pagination-nav";
 import { EmptyState } from "@/components/shared/states";
 import { ADMIN_PAGE_SIZE, listAdminVenues } from "@/lib/services/admin";
@@ -153,13 +153,7 @@ export default async function AdminVenuesPage({
         />
       ) : (
         <>
-          <ul className="space-y-3">
-            {items.map((v) => (
-              <li key={v.id}>
-                <AdminVenueRow venue={v} />
-              </li>
-            ))}
-          </ul>
+          <VenueBulkList items={items} />
           <div className="pt-8">
             <PaginationNav
               page={sayfa}

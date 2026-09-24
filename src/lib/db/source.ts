@@ -1,5 +1,5 @@
 import type {
-  AdminClaim, AdminDistrict, AdminReview, AdminSeoPage, AdminStats, AdminTaxonomy, AdminUser, AdminVenue, BusinessCategory, City, ClaimStatus, DavetProStatus, District, EventType, Feature, ImportItem, ImportStatus, InquiryStatus, OwnerInquiry, OwnerStats, OwnerVenue, ReviewStatus, SeoPage, SeoSitemapEntry, SimilarVenue, UserRole, VenueCardData, VenueDetail, VenueForEdit, VenueReview, VenueStatus, VenueType,
+  AdminBlogPost, AdminBlogPostDetail, AdminClaim, AdminDistrict, AdminInquiry, AdminReview, AdminSeoPage, AdminStats, AdminTaxonomy, AdminUser, AdminVenue, BlogPostDetail, BlogPostStatus, BlogPostSummary, BusinessCategory, City, ClaimStatus, DavetProStatus, District, EventType, Feature, ImportItem, ImportStatus, InquiryStatus, OwnerInquiry, OwnerStats, OwnerVenue, ReviewStatus, SeoPage, SeoSitemapEntry, SimilarVenue, UserRole, VenueCardData, VenueDetail, VenueForEdit, VenueReview, VenueStatus, VenueType,
 } from "@/types/db";
 
 export interface SearchInput {
@@ -35,7 +35,7 @@ export interface SearchResult {
  */
 export interface DataSource {
   searchVenues(input: SearchInput): Promise<SearchResult>;
-  listCities(opts?: { popularOnly?: boolean }): Promise<City[]>;
+  listCities(opts?: { popularOnly?: boolean; hasVenues?: boolean }): Promise<City[]>;
   listDistricts(citySlug: string): Promise<District[]>;
   listEventTypes(): Promise<EventType[]>;
   listVenueTypes(): Promise<VenueType[]>;
@@ -57,6 +57,7 @@ export interface DataSource {
   /** Sahibi olmadığı mekan için null döner. */
   getOwnerStats(venueId: string): Promise<OwnerStats | null>;
   getOwnerInquiries(input: OwnerInquiryQuery): Promise<OwnerInquiryResult>;
+  adminListInquiries(input: AdminInquiryQuery): Promise<AdminInquiryResult>;
   updateInquiry(
     id: string,
     patch: { status?: InquiryStatus; ownerNote?: string | null },
@@ -85,6 +86,8 @@ export interface DataSource {
   adminStats(): Promise<AdminStats>;
   adminListVenues(input: AdminVenueQuery): Promise<AdminVenueResult>;
   adminSetVenueStatus(venueId: string, status: VenueStatus, reason?: string): Promise<void>;
+  /** Yalnızca PUBLISHED hedefler — reddetme/askıya alma gerekçe istediği için toplu değil. */
+  adminBulkSetVenueStatus(venueIds: string[]): Promise<{ basarili: number; atlanan: number }>;
   adminSetVenueFeatured(venueId: string, featured: boolean, until?: string): Promise<void>;
   adminListUsers(input: AdminUserQuery): Promise<AdminUserResult>;
   adminSetUserRole(userId: string, role: UserRole): Promise<void>;
@@ -104,7 +107,14 @@ export interface DataSource {
   adminUpsertDistrict(input: AdminDistrictInput): Promise<void>;
 
   listBusinessCategories(): Promise<BusinessCategory[]>;
-  adminCreateVenue(input: AdminVenueCreateInput): Promise<{ id: string; slug: string }>;
+  /**
+   * `merged: true` (0048) — mükerrer bir kayıt bulundu ve yeni bir etkinlik
+   * türü içeriyordu; YENİ satır AÇILMADI, mevcut kayda o tür eklendi.
+   * `id`/`slug` mevcut kaydınkidir, çağıran görsel indirme adımını atlamalı.
+   */
+  adminCreateVenue(
+    input: AdminVenueCreateInput,
+  ): Promise<{ id: string; slug: string; merged?: boolean }>;
   adminFindSimilarVenues(
     name: string,
     cityId: string | null,
@@ -127,6 +137,18 @@ export interface DataSource {
   adminListClaims(status: ClaimStatus | null, offset: number): Promise<AdminClaimResult>;
   adminReviewClaim(claimId: string, approve: boolean, note?: string): Promise<void>;
   claimVenue(venueId: string, note?: string, phone?: string): Promise<void>;
+
+  // --- Rehber (blog) ---------------------------------------------------------
+  getBlogPost(slug: string): Promise<BlogPostDetail | null>;
+  listBlogPosts(limit?: number, offset?: number): Promise<{ items: BlogPostSummary[]; total: number }>;
+  listBlogPostSlugs(): Promise<string[]>;
+  adminListBlogPosts(
+    status: BlogPostStatus | null,
+    offset: number,
+  ): Promise<{ items: AdminBlogPost[]; total: number }>;
+  adminGetBlogPost(id: string): Promise<AdminBlogPostDetail | null>;
+  adminUpsertBlogPost(input: AdminBlogPostInput): Promise<{ id: string; slug: string }>;
+  adminDeleteBlogPost(id: string): Promise<void>;
 }
 
 export interface AdminVenueCreateInput {
@@ -140,6 +162,7 @@ export interface AdminVenueCreateInput {
   address: string | null;
   contactPhone: string | null;
   websiteUrl: string | null;
+  instagramUrl?: string | null;
   googlePlaceId?: string | null;
   googleMapsUrl?: string | null;
   latitude?: number | null;
@@ -148,7 +171,33 @@ export interface AdminVenueCreateInput {
   googleRatingCount?: number | null;
   source?: string | null;
   sourceUrl?: string | null;
+  /** Kaynağın verdiği yapılandırılmış olgular — description'a YAZILMAZ (bkz. 0040). */
+  minCapacity?: number | null;
+  maxCapacity?: number | null;
+  startingPrice?: number | null;
+  /** Kaynak çoğu zaman ARALIK veriyor; starting_price asgari/tekil değer (0040). */
+  priceMax?: number | null;
+  /** 'kisi_basi' | 'paket' | 'gunluk' | 'belirtilmemis' — geçersizse SQL tarafında düşer. */
+  priceType?: string | null;
+  priceNote?: string | null;
+  hasIndoor?: boolean | null;
+  hasOutdoor?: boolean | null;
+  /** `features.slug` ile eşleşenler yazılır; bilinmeyen slug sessizce atlanır. */
+  featureSlugs?: string[] | null;
+  /** `event_types.slug` ile eşleşenler yazılır; bilinmeyen slug sessizce atlanır (0047). */
+  eventTypeSlugs?: string[] | null;
 }
+export interface AdminBlogPostInput {
+  /** Yoksa yeni yazı açılır. */
+  id?: string | null;
+  slug: string;
+  title: string;
+  excerpt?: string | null;
+  contentMd: string;
+  coverImageUrl?: string | null;
+  status: BlogPostStatus;
+}
+
 export interface ImportItemInput {
   runId: string;
   status: ImportStatus;
@@ -252,6 +301,21 @@ export interface OwnerInquiryResult {
   newCount: number;
 }
 
+export interface AdminInquiryQuery {
+  status?: InquiryStatus;
+  venueId?: string;
+  unclaimedOnly?: boolean;
+  query?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AdminInquiryResult {
+  items: AdminInquiry[];
+  total: number;
+  newCount: number;
+}
+
 export interface CreateInquiryInput {
   venueId: string;
   fullName: string;
@@ -265,9 +329,21 @@ export interface CreateInquiryInput {
   uaHash: string | null;
 }
 
-/** `create_inquiry()` fonksiyonunun döndürdüğü sonuç. */
+/**
+ * `create_inquiry()` fonksiyonunun döndürdüğü sonuç.
+ *
+ * `is_claimed` (0045): sahiplenilmemiş mekana gelen talebi kimse görmüyordu
+ * (owner_id NULL, /panel/talepler kimseye ait değil) — admin'e Telegram
+ * bildirimi göndermek için bu bilgi gerekiyor (bkz. lib/actions/inquiry.ts).
+ */
 export type CreateInquiryResult =
-  | { ok: true; id: string }
+  | {
+      ok: true; id: string;
+      // RPC'nin ham (snake_case) jsonb'si — supabase.ts burada eşleme
+      // yapmıyor, doğrudan geçiriyor.
+      venue_name: string; city_name: string; district_name: string;
+      is_claimed: boolean;
+    }
   | { ok: false; reason: "venue_not_found" | "rate_limited_hour" | "rate_limited_venue" };
 
 export interface InquiryRpcArgs {

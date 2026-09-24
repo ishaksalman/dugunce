@@ -18,12 +18,20 @@ export function InquiryForm({
   venueName,
   eventTypes,
   compact = false,
+  isClaimed = true,
 }: {
   venueId: string;
   venueName: string;
   eventTypes: EventType[];
   /** Drawer içinde başlığı gizler. */
   compact?: boolean;
+  /**
+   * false ise mekan henüz sahiplenilmedi — "mekan doğrudan sizinle
+   * iletişime geçer" demek YANLIŞ olur, kimse o kutuyu izlemiyor. Metin
+   * ona göre değişiyor; talep yine de kaydediliyor (admin'e Telegram
+   * bildirimi gidiyor, bkz. lib/actions/inquiry.ts).
+   */
+  isClaimed?: boolean;
 }) {
   const uid = useId();
   const [pending, startTransition] = useTransition();
@@ -35,10 +43,13 @@ export function InquiryForm({
     return (
       <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-center">
         <CheckCircle2 className="mx-auto mb-3 size-8 text-success" aria-hidden />
-        <h3 className="font-heading text-lg">Talebiniz iletildi</h3>
+        <h3 className="font-heading text-lg">
+          {isClaimed ? "Talebiniz iletildi" : "Talebiniz kaydedildi"}
+        </h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          {venueName} en kısa sürede sizinle iletişime geçecek. Talebinizin bir
-          kopyası mekana gönderildi.
+          {isClaimed
+            ? `${venueName} en kısa sürede sizinle iletişime geçecek. Talebinizin bir kopyası mekana gönderildi.`
+            : `${venueName} henüz Düğünce'de bir işletme tarafından yönetilmiyor. Talebiniz, mekan sahiplenildiğinde kendisine iletilecek — biz de işletmeye ulaşmaya çalışacağız.`}
         </p>
       </div>
     );
@@ -78,7 +89,9 @@ export function InquiryForm({
         <div className="pb-1">
           <h3 className="font-heading text-lg">Bu Mekandan Teklif Al</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Ücretsiz ve bağlayıcı değil. Mekan doğrudan sizinle iletişime geçer.
+            {isClaimed
+              ? "Ücretsiz ve bağlayıcı değil. Mekan doğrudan sizinle iletişime geçer."
+              : "Ücretsiz ve bağlayıcı değil. Bu profil henüz bir işletme tarafından yönetilmiyor; talebiniz mekan sahiplenildiğinde iletilecek."}
           </p>
         </div>
       ) : null}
@@ -202,7 +215,9 @@ export function InquiryForm({
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
-        Bilgileriniz yalnızca bu mekanla paylaşılır.
+        {isClaimed
+          ? "Bilgileriniz yalnızca bu mekanla paylaşılır."
+          : "Bilgileriniz, mekan sahiplenildiğinde kendisiyle paylaşılır."}
       </p>
     </form>
   );

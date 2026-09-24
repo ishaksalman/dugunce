@@ -82,6 +82,31 @@ export async function setVenueStatus(input: unknown): Promise<ActionResult> {
   }
 }
 
+const bulkStatusSchema = z.array(z.string().uuid()).min(1).max(200);
+
+/**
+ * Seçilen mekanları TEK seferde yayınlar. Yalnızca PUBLISHED — reddetme ve
+ * askıya alma gerekçe istiyor (veritabanı zorluyor) ve gerekçe mekana özel
+ * olmalı, toplu "hepsi aynı gerekçeyle" akışı yanlış bilgi üretir.
+ */
+export async function bulkPublishVenues(
+  venueIds: unknown,
+): Promise<ActionResult<{ basarili: number; atlanan: number }>> {
+  const parsed = bulkStatusSchema.safeParse(venueIds);
+  if (!parsed.success) return actionError("Geçersiz seçim.");
+  try {
+    await requireRole(["admin"]);
+    const db = await getDataSource();
+    const sonuc = await db.adminBulkSetVenueStatus(parsed.data);
+    tazele();
+    await Promise.all(parsed.data.map((id) => revalidateVenuePage(id)));
+    return actionOk(sonuc);
+  } catch (error) {
+    if (error instanceof Error) return actionError(turkishError(error.message));
+    return unexpectedError("bulkPublishVenues", error);
+  }
+}
+
 const featuredSchema = z.object({
   venueId: z.string().uuid(),
   featured: z.coerce.boolean(),
@@ -365,6 +390,7 @@ const katalogSchema = z.object({
     .optional().transform((v) => (v ? v : null)),
   // Mükerrer uyarısını bilerek geçmek için; veritabanı da aynı kuralı uyguluyor.
   force: z.coerce.boolean().default(false),
+  eventTypeSlugs: z.array(z.string().trim().max(60)).max(10).default([]),
 });
 
 /**

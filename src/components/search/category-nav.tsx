@@ -1,8 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Camera, Music, PartyPopper, Scissors, Shirt, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BusinessCategory } from "@/types/db";
-import type { ComponentType } from "react";
 
 /**
  * "Ne arıyorsun?" — işletme kategorisi seçimi.
@@ -10,43 +9,48 @@ import type { ComponentType } from "react";
  * Etkinlik türünden (düğün, nişan, kına) BİR ÜST katman: kategori işletmenin
  * ne olduğu, etkinlik türü ise mekanın hangi organizasyona uygun olduğu.
  *
+ * Görsel kart — "Popüler şehirler" ile AYNI desen (görsel + degrade + alt
+ * yazı), ikon değil: kategori sayısı azken bir fotoğraf ikondan daha
+ * davetkâr. Gerçek kategori fotoğrafımız yok; şehir kartlarındaki gibi
+ * seed'li placeholder kullanılıyor (bkz. picsum, ana sayfanın geri kalanıyla
+ * tutarlı — canlıya alırken gerçek görsellerle değiştirilmeli).
+ *
  * Liste veritabanından geliyor (`business_categories`). Planlanan kategoriler
- * pasif satır olarak duruyor ve burada "yakında" etiketiyle, TIKLANAMAZ
- * şekilde görünüyor — ölü bağlantı üretmiyoruz. Kategori yayına girdiğinde
- * yapılacak tek şey `is_active = true`.
+ * pasif satır olarak duruyor ve burada "yakında" etiketiyle, TIKLANAMAZ,
+ * soluk/gri tonlu görünüyor — ölü bağlantı üretmiyoruz. Kategori yayına
+ * girdiğinde yapılacak tek şey `is_active = true`.
  */
-
-// İkon kategoriye ait görsel bir tercih; veritabanında ikon kolonu yok ve
-// olması da gerekmiyor — kategori sayısı bir elin parmakları kadar.
-const IKON: Record<string, ComponentType<{ className?: string }>> = {
-  mekan: Sparkles,
-  fotografci: Camera,
-  gelinlik: Shirt,
-  organizasyon: PartyPopper,
-  "sac-makyaj": Scissors,
-  muzik: Music,
-};
-
 export function CategoryNav({ categories }: { categories: BusinessCategory[] }) {
   if (categories.length < 2) return null;
 
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       {categories.map((k) => {
-        const Ikon = IKON[k.slug] ?? Sparkles;
-        const govde = (
-          <>
-            <Ikon
+        const gorsel = (
+          <div className="relative aspect-[4/5]">
+            <Image
+              src={`https://picsum.photos/seed/dugunce-kategori-${k.slug}/500/625`}
+              alt=""
+              fill
+              sizes="(min-width: 1024px) 160px, 45vw"
               className={cn(
-                "size-6",
-                k.is_active ? "text-primary" : "text-muted-foreground/60",
+                "object-cover transition-transform duration-500",
+                k.is_active ? "group-hover:scale-105" : "grayscale",
               )}
             />
-            <span className="mt-2.5 text-sm font-medium">{k.name}</span>
-            {!k.is_active ? (
-              <span className="mt-0.5 text-xs text-muted-foreground">Yakında</span>
-            ) : null}
-          </>
+            <div
+              className={cn(
+                "absolute inset-0 bg-gradient-to-t from-brand-950/85 via-brand-950/25 to-transparent",
+                !k.is_active && "bg-brand-950/40",
+              )}
+            />
+            <div className="absolute inset-x-0 bottom-0 p-3">
+              <p className="font-heading text-base text-white">{k.name}</p>
+              {!k.is_active ? (
+                <p className="text-xs text-white/70">Yakında</p>
+              ) : null}
+            </div>
+          </div>
         );
 
         return (
@@ -54,18 +58,18 @@ export function CategoryNav({ categories }: { categories: BusinessCategory[] }) 
             {k.is_active ? (
               <Link
                 href={`/${k.path_prefix}`}
-                className="flex h-full flex-col items-center rounded-xl border bg-card px-3 py-5 text-center transition-colors hover:border-primary hover:bg-secondary"
+                className="group relative block overflow-hidden rounded-xl"
               >
-                {govde}
+                {gorsel}
               </Link>
             ) : (
               // Bağlantı DEĞİL: gidecek bir sayfa yok. `aria-disabled` ile
               // ekran okuyucuya da aynı şey söyleniyor.
               <div
                 aria-disabled="true"
-                className="flex h-full cursor-default flex-col items-center rounded-xl border border-dashed bg-muted/30 px-3 py-5 text-center text-muted-foreground"
+                className="relative block cursor-default overflow-hidden rounded-xl"
               >
-                {govde}
+                {gorsel}
               </div>
             )}
           </li>

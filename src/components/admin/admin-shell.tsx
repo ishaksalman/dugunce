@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BadgeCheck, Building2, DownloadCloud, Globe, LayoutDashboard, LogOut, Menu, MessageSquare, Tags, Users, X } from "lucide-react";
+import { BadgeCheck, BookOpen, Building2, DownloadCloud, Globe, Inbox, LayoutDashboard, LogOut, Menu, MessageSquare, Tags, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,8 @@ const ICONS = {
   taksonomi: Tags,
   basvuru: BadgeCheck,
   iceaktarma: DownloadCloud,
+  rehber: BookOpen,
+  talep: Inbox,
 } as const;
 
 export interface AdminNavItem {

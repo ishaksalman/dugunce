@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getDataSource } from "@/lib/db";
 import { requireRole } from "@/lib/auth/session";
 import { ingestVenueImages } from "@/lib/import/images";
+import { revalidateVenuePage } from "@/lib/revalidate";
 import { actionError, actionOk, unexpectedError, type ActionResult } from "@/lib/errors";
 import type { ImportStatus } from "@/types/db";
 
@@ -26,6 +27,14 @@ import type { ImportStatus } from "@/types/db";
  *    denetim izi orada. Boru hattı o kapıyı atlamıyor.
  * 3. `source_url` tekil: iş yarıda kalırsa aynı sayfa ikinci kez
  *    işlenemiyor. Devam etmek için `checkImportProcessed` var.
+ * 4. Kayıt açılıp TÜM görseller sorunsuz indiyse admin onayı beklemeden
+ *    otomatik `PUBLISHED` olur — tek tek "yayınla" tıklamak onlarca satırlık
+ *    bir toplu içe aktarmada darboğaz. Görselsiz (`imageUrls` boş), kısmi
+ *    ya da hiç inmemiş kayıtlar `DRAFT`'ta kalır; bunlar admin'in elle
+ *    bakması gereken satırlar, otomatik yayına girmez (bkz. `importOneVenue`
+ *    sonundaki yayınlama bloğu). Yayınlama best-effort: başarısız olursa
+ *    içe aktarmanın kendisini düşürmez, kayıt `DRAFT` kalır ve admin panelden
+ *    elle yayınlanabilir.
  */
 
 const baslatSchema = z.object({
@@ -91,12 +100,24 @@ const aktarSchema = z.object({
   address: z.string().trim().max(300).nullable().optional(),
   phone: z.string().trim().max(20).nullable().optional(),
   website: z.string().trim().max(300).nullable().optional(),
+  instagram: z.string().trim().max(300).nullable().optional(),
   placeId: z.string().trim().max(120).nullable().optional(),
   mapsUrl: z.string().trim().max(600).nullable().optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
   imageUrls: z.array(z.string().url().max(1000)).max(40).default([]),
   force: z.boolean().optional(),
+  // Yapılandırılmış olgular — description'a YAZILMAZ (bkz. migration 0040).
+  minCapacity: z.number().int().min(0).max(100000).nullable().optional(),
+  maxCapacity: z.number().int().min(0).max(100000).nullable().optional(),
+  startingPrice: z.number().min(0).max(100000000).nullable().optional(),
+  priceMax: z.number().min(0).max(100000000).nullable().optional(),
+  priceType: z.enum(["kisi_basi", "paket", "gunluk", "belirtilmemis"]).nullable().optional(),
+  priceNote: z.string().trim().max(500).nullable().optional(),
+  hasIndoor: z.boolean().nullable().optional(),
+  hasOutdoor: z.boolean().nullable().optional(),
+  featureSlugs: z.array(z.string().trim().max(60)).max(40).default([]),
+  eventTypeSlugs: z.array(z.string().trim().max(60)).max(10).default([]),
 });
 
 export interface ImportOneResult {
@@ -135,6 +156,7 @@ export async function importOneVenue(
         address: d.address ?? null,
         contactPhone: d.phone ?? null,
         websiteUrl: d.website ?? null,
+        instagramUrl: d.instagram ?? null,
         force: d.force ?? false,
         googlePlaceId: d.placeId ?? null,
         googleMapsUrl: d.mapsUrl ?? null,
@@ -142,8 +164,34 @@ export async function importOneVenue(
         longitude: d.longitude ?? null,
         source: d.source,
         sourceUrl: d.sourceUrl,
+        minCapacity: d.minCapacity ?? null,
+        maxCapacity: d.maxCapacity ?? null,
+        startingPrice: d.startingPrice ?? null,
+        priceMax: d.priceMax ?? null,
+        priceType: d.priceType ?? null,
+        priceNote: d.priceNote ?? null,
+        hasIndoor: d.hasIndoor ?? null,
+        hasOutdoor: d.hasOutdoor ?? null,
+        featureSlugs: d.featureSlugs,
+        eventTypeSlugs: d.eventTypeSlugs,
       });
       venueId = sonuc.id;
+
+      // Yeni satır açılmadı — mükerrer bir kayıt vardı ve yeni bir etkinlik
+      // türü taşıyordu, mevcut kayda eklendi (0048). Görselleri TEKRAR
+      // indirmiyoruz: o mekan zaten galerisiyle birlikte içeride.
+      if (sonuc.merged) {
+        const not = "Zaten katalogda — eksik olan etkinlik türü mevcut kayda eklendi.";
+        await db.adminLogImportItem({
+          runId: d.runId, status: "duplicate", sourceUrl: d.sourceUrl,
+          name: d.name, venueId, error: not,
+        });
+        return actionOk({
+          status: "duplicate", venueId,
+          imageTotal: 0, imageOk: 0, imageFailed: 0,
+          imageErrors: [], error: not,
+        });
+      }
     } catch (e) {
       const mesaj = e instanceof Error ? e.message : "Bilinmeyen hata";
       // Mükerrer bir başarısızlık değil, bilgi: kayıt zaten var.
@@ -187,6 +235,19 @@ export async function importOneVenue(
         ? ozet.sonuclar.filter((s) => !s.ok).map((s) => s.hata).join(" · ").slice(0, 900)
         : null,
     });
+
+    // Kaydın kendisi ve TÜM görselleri sorunsuz indiyse elle onay beklemeye
+    // gerek yok — direkt yayına al. Kısmi/incelemesi-gereken/görselsiz
+    // kayıtlar DRAFT'ta kalıp admin'in önüne düşmeye devam ediyor (bkz.
+    // CLAUDE.md: toplu girişte yanlış kayıt riski gerçek).
+    if (durum === "imported" && ozet.toplam > 0) {
+      try {
+        await db.adminSetVenueStatus(venueId, "PUBLISHED");
+        await revalidateVenuePage(venueId);
+      } catch (e) {
+        console.error("[importOneVenue] otomatik yayına alma başarısız", e);
+      }
+    }
 
     revalidatePath("/yonetim/mekanlar");
     revalidatePath("/yonetim/ice-aktarma");

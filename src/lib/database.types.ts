@@ -9,7 +9,7 @@
  * çıktıyla değiştirilebilir; isimler o çıktıyla uyumlu seçildi.
  */
 import type {
-  AdminReview, AdminUser, AdminVenue, BusinessCategory, City, District, EventType, Feature, InquiryStatus, OwnerInquiry, ReviewStatus, UserRole, VenueDetail, VenueReview, VenueSearchRow, VenueStatus, VenueType,
+  AdminBlogPost, AdminBlogPostDetail, AdminInquiry, AdminReview, AdminUser, AdminVenue, BlogPostDetail, BlogPostStatus, BlogPostSummary, BusinessCategory, City, District, EventType, Feature, InquiryStatus, OwnerInquiry, ReviewStatus, UserRole, VenueDetail, VenueReview, VenueSearchRow, VenueStatus, VenueType,
 } from "@/types/db";
 import type { CreateInquiryResult } from "@/lib/db/source";
 
@@ -147,6 +147,7 @@ export interface Database {
       };
       admin_stats: { Args: Record<string, never>; Returns: Record<string, number> };
       admin_list_venues: {
+        // Returns AdminVenue[] (types/db.ts) — featured_active dahil (0043).
         Args: {
           p_status?: VenueStatus | null;
           p_query?: string | null;
@@ -159,6 +160,10 @@ export interface Database {
       admin_set_venue_status: {
         Args: { p_venue_id: string; p_status: VenueStatus; p_reason?: string | null };
         Returns: { ok: boolean };
+      };
+      admin_bulk_set_venue_status: {
+        Args: { p_venue_ids: string[]; p_status: VenueStatus };
+        Returns: { basarili: number; atlanan: number };
       };
       admin_set_venue_featured: {
         Args: { p_venue_id: string; p_featured: boolean; p_until?: string | null };
@@ -278,10 +283,26 @@ export interface Database {
           p_address?: string | null;
           p_contact_phone?: string | null;
           p_website_url?: string | null;
+          p_instagram_url?: string | null;
           p_force?: boolean;
-                  p_source?: string | null;
+          p_google_place_id?: string | null;
+          p_google_maps_url?: string | null;
+          p_latitude?: number | null;
+          p_longitude?: number | null;
+          p_google_rating?: number | null;
+          p_google_rating_count?: number | null;
+          p_source?: string | null;
           p_source_url?: string | null;
-};
+          p_min_capacity?: number | null;
+          p_max_capacity?: number | null;
+          p_starting_price?: number | null;
+          p_price_max?: number | null;
+          p_price_type?: string | null;
+          p_price_note?: string | null;
+          p_has_indoor?: boolean | null;
+          p_has_outdoor?: boolean | null;
+          p_feature_slugs?: string[] | null;
+        };
         Returns: Record<string, unknown>;
       };
       admin_find_similar_venues: {
@@ -423,6 +444,17 @@ export interface Database {
         };
         Returns: OwnerInquiry[];
       };
+      admin_list_inquiries: {
+        Args: {
+          p_status?: InquiryStatus | null;
+          p_venue_id?: string | null;
+          p_unclaimed_only?: boolean | null;
+          p_query?: string | null;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: AdminInquiry[];
+      };
       create_inquiry: {
         Args: {
           p_venue_id: string;
@@ -439,6 +471,42 @@ export interface Database {
           p_max_per_venue_per_day?: number;
         };
         Returns: CreateInquiryResult;
+      };
+      get_blog_post: {
+        Args: { p_slug: string };
+        Returns: BlogPostDetail | null;
+      };
+      list_blog_posts: {
+        Args: { p_limit?: number; p_offset?: number };
+        Returns: BlogPostSummary[];
+      };
+      list_blog_post_slugs: {
+        Args: Record<string, never>;
+        Returns: { slug: string }[];
+      };
+      admin_list_blog_posts: {
+        Args: { p_status?: BlogPostStatus | null; p_limit?: number; p_offset?: number };
+        Returns: AdminBlogPost[];
+      };
+      admin_get_blog_post: {
+        Args: { p_id: string };
+        Returns: AdminBlogPostDetail | null;
+      };
+      admin_upsert_blog_post: {
+        Args: {
+          p_id: string | null;
+          p_slug: string;
+          p_title: string;
+          p_excerpt?: string | null;
+          p_content_md: string;
+          p_cover_image_url?: string | null;
+          p_status: BlogPostStatus;
+        };
+        Returns: { id: string; slug: string };
+      };
+      admin_delete_blog_post: {
+        Args: { p_id: string };
+        Returns: undefined;
       };
     };
     Enums: Record<string, never>;

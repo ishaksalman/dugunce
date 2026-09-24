@@ -19,12 +19,14 @@ export function StickyInquiryBar({
   startingPrice,
   priceType,
   eventTypes,
+  isClaimed = true,
 }: {
   venueId: string;
   venueName: string;
   startingPrice: number | null;
   priceType: PriceType;
   eventTypes: EventType[];
+  isClaimed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const price = formatStartingPrice(startingPrice, priceType);
@@ -55,6 +57,7 @@ export function StickyInquiryBar({
                 venueId={venueId}
                 venueName={venueName}
                 eventTypes={eventTypes}
+                isClaimed={isClaimed}
                 compact
               />
             </div>

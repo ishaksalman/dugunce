@@ -1,3 +1,5 @@
+import { unstable_rethrow } from "next/navigation";
+
 /** Sunucu eylemlerinin tek dönüş tipi. İstemci her zaman bu şekli bekler. */
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
@@ -19,8 +21,18 @@ export function actionError(
 /**
  * Ham veritabanı/altyapı hatası kullanıcıya gösterilmez; loglanır ve
  * yerine genel bir mesaj döner. Hassas veri log'a da girmemeli.
+ *
+ * `unstable_rethrow` ÖNCE çağrılıyor: `redirect()`/`notFound()` Next.js
+ * içinde özel bir "hata" fırlatarak çalışıyor (digest'i "NEXT_REDIRECT"
+ * ile başlıyor). Bu eylemlerin neredeyse hepsi `requireUser()`/`requireRole()`
+ * çağrısını try/catch İÇİNDE yapıyor — oturum yoksa fırlatılan yönlendirme
+ * buraya düşüyor ve yeniden fırlatılmazsa kullanıcı giriş sayfasına gitmek
+ * yerine "beklenmeyen hata" görüyordu (bkz. submitVenueClaim — canlıda
+ * yakalandı, test sırasında). Tek düzeltme yeri burası: her eylem sonunda
+ * buraya düşüyor.
  */
 export function unexpectedError(context: string, error: unknown): ActionResult<never> {
+  unstable_rethrow(error);
   console.error(`[${context}]`, error instanceof Error ? error.message : error);
   return {
     ok: false,

@@ -33,7 +33,7 @@ export default async function VenueListPage({ searchParams }: PageProps<"/mekanl
   const filters = parseFilters(await searchParams);
 
   const [cities, eventTypes, venueTypes, featureGroups] = await Promise.all([
-    getCities(),
+    getCities(false, true),
     getEventTypes(),
     getVenueTypes(),
     getFilterFeatureGroups(),
@@ -60,7 +60,9 @@ export default async function VenueListPage({ searchParams }: PageProps<"/mekanl
 
       <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
         <aside className="hidden lg:block">
-          <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pb-8 pr-2">
+          {/* Site navigasyonu artık sticky değil (bkz. layout/header.tsx),
+              o yüzden üstten büyük bir boşluk bırakmaya gerek yok. */}
+          <div className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto pb-8 pr-2">
             <FilterSidebar filters={filters} options={options} />
           </div>
         </aside>

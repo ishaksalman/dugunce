@@ -7,9 +7,9 @@ import type { Feature } from "@/types/db";
  * Taksonomi nadiren değişiyor ve neredeyse her sayfada gerekiyor.
  * `cache()` istek başına tekilleştiriyor; ISR de sayfa düzeyinde tutuyor.
  */
-export const getCities = cache(async (popularOnly = false) => {
+export const getCities = cache(async (popularOnly = false, hasVenues = false) => {
   const db = await getDataSource();
-  return db.listCities({ popularOnly });
+  return db.listCities({ popularOnly, hasVenues });
 });
 
 export const getDistricts = cache(async (citySlug: string) => {

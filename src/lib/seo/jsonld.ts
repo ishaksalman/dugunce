@@ -1,5 +1,5 @@
 import { SITE } from "@/lib/constants";
-import type { VenueDetail, VenueReview } from "@/types/db";
+import type { BlogPostDetail, VenueDetail, VenueReview } from "@/types/db";
 
 const abs = (path: string) => new URL(path, SITE.url).toString();
 
@@ -88,4 +88,26 @@ export function venueJsonLd(
   }
 
   return data;
+}
+
+export function blogPostingJsonLd(
+  post: BlogPostDetail,
+  path: string,
+): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": abs(path),
+    mainEntityOfPage: abs(path),
+    headline: post.title,
+    description: post.excerpt ?? undefined,
+    image: post.cover_image_url ?? undefined,
+    datePublished: post.published_at ?? undefined,
+    dateModified: post.published_at ?? undefined,
+    publisher: {
+      "@type": "Organization",
+      name: SITE.name,
+      url: SITE.url,
+    },
+  };
 }

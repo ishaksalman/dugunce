@@ -11,8 +11,9 @@ import {
 } from "@/lib/actions/import-run";
 import { ORNEK_YUK, parseImportPayload, type PayloadRow } from "@/lib/import/payload";
 import { formatNumber } from "@/lib/format";
+import { slugifyTr } from "@/lib/slug";
 import { cn } from "@/lib/utils";
-import type { City, ImportStatus } from "@/types/db";
+import type { City, ImportStatus, VenueType } from "@/types/db";
 
 interface Ilce { id: string; slug: string; name: string }
 
@@ -42,12 +43,26 @@ interface SatirSonuc {
  * işletmenin galerisi dakikalar sürebiliyor ve kullanıcının nerede
  * olduğunu görmesi gerekiyor. Ayrıca bir satırın hatası diğerlerini
  * düşürmüyor.
+ *
+ * İlçe SATIR BAŞINA çözülüyor — eskiden tek bir global ilçe seçimi tüm
+ * partiye uygulanıyordu; bir şehir çapında kazınan veri onlarca farklı
+ * ilçeye yayılınca bu yanlıştı (hepsi tek ilçeye açılırdı). Şimdi her satır
+ * kaynağın verdiği serbest metin ilçe adından (`row.district`) otomatik
+ * eşleniyor (bkz. `otomatikIlce`); eşleşmeyen ya da yanlış eşlenen elle
+ * düzeltiliyor. Otomatik eşleme yalnızca bizim taksonomimizdeki `slug` ile
+ * TAM eşleşince kabul ediliyor — tahmini/bulanık eşleme YOK, yanlış ilçeye
+ * kayıt açmaktansa admin'e sormak daha güvenli.
  */
-export function ImportRunner({ cities }: { cities: City[] }) {
+export function ImportRunner({
+  cities,
+  venueTypes,
+}: {
+  cities: City[];
+  venueTypes: VenueType[];
+}) {
   const [pending, startTransition] = useTransition();
 
   const [cityId, setCityId] = useState("");
-  const [districtId, setDistrictId] = useState("");
   const [cache, setCache] = useState<{ city: string; items: Ilce[] } | null>(null);
   const [kaynak, setKaynak] = useState("");
   const [metin, setMetin] = useState("");
@@ -55,6 +70,12 @@ export function ImportRunner({ cities }: { cities: City[] }) {
   const [rows, setRows] = useState<PayloadRow[] | null>(null);
   const [fazlalik, setFazlalik] = useState(0);
   const [secili, setSecili] = useState<Set<number>>(new Set());
+  // Satır başına ilçe: kaynağın verdiği serbest metin ilçe adından OTOMATİK
+  // eşleniyor (bkz. resolveDistrictId). Bir şehirde onlarca farklı ilçeye
+  // yayılan bir kazıma sonucunda tek bir global ilçe seçimi yanlış olurdu —
+  // eskiden öyleydi, hepsi tek ilçeye açılıyordu. Kullanıcı burada yalnızca
+  // eşleşmeyeni ya da yanlış eşleneni DÜZELTİYOR.
+  const [ilceSecimi, setIlceSecimi] = useState<Map<number, string>>(new Map());
   const [sonuclar, setSonuclar] = useState<Map<number, SatirSonuc>>(new Map());
   const [calisan, setCalisan] = useState<number | null>(null);
   const [hata, setHata] = useState<string | null>(null);
@@ -62,6 +83,36 @@ export function ImportRunner({ cities }: { cities: City[] }) {
 
   const districts = cache && cache.city === cityId ? cache.items : [];
   const ilceYukleniyor = cityId !== "" && cache?.city !== cityId;
+
+  /**
+   * Resmî adı değişen ama kaynakların hâlâ eskisini verdiği ilçeler. Bulanık
+   * eşleme değil — tek, bilinen bir karşılık; belirsizlik yok.
+   */
+  const ILCE_ALIAS: Record<string, string> = {
+    eyup: "eyupsultan", // Eyüp, 2019'da Eyüpsultan oldu
+  };
+
+  /** Kaynağın verdiği serbest metin ilçe adını taksonomideki slug'a göre eşler. */
+  const otomatikIlce = (district: string | null): Ilce | null => {
+    if (!district) return null;
+    const s = slugifyTr(district);
+    const slug = ILCE_ALIAS[s] ?? s;
+    return districts.find((d) => d.slug === slug) ?? null;
+  };
+
+  const ilceIcin = (row: PayloadRow): string =>
+    ilceSecimi.get(row.satirNo) ?? otomatikIlce(row.district)?.id ?? "";
+
+  /**
+   * Mekan türü şehir/ilçeye bağlı değil, sabit bir taksonomi — ilçe gibi API
+   * fetch'i gerekmiyor. dugun-com.ts kaynak taraftan zaten ÇÖZÜLMÜŞ bir slug
+   * veriyor (`venueTypeSlug`); burada yalnızca id'ye çeviriyoruz. Eşleşmezse
+   * boş kalır, admin sahiplendikten sonra kendi wizard'ından seçebilir.
+   */
+  const otomatikMekanTuru = (slug: string | null): VenueType | null => {
+    if (!slug) return null;
+    return venueTypes.find((t) => t.slug === slug) ?? null;
+  };
 
   useEffect(() => {
     const city = cities.find((c) => c.id === cityId);
@@ -103,6 +154,7 @@ export function ImportRunner({ cities }: { cities: City[] }) {
 
       setRows(isaretli);
       setFazlalik(f);
+      setIlceSecimi(new Map());
       // İşlenmişler ve hatalılar baştan seçili DEĞİL.
       setSecili(
         new Set(isaretli.filter((x) => x.name && !x.islenmis).map((x) => x.satirNo)),
@@ -131,15 +183,27 @@ export function ImportRunner({ cities }: { cities: City[] }) {
           sourceUrl: satir.sourceUrl ?? undefined,
           name: satir.name as string,
           cityId,
-          districtId,
+          districtId: ilceIcin(satir),
+          venueTypeId: otomatikMekanTuru(satir.venueTypeSlug)?.id ?? undefined,
           address: satir.address,
           phone: satir.phone,
           website: satir.website,
+          instagram: satir.instagram,
           placeId: satir.placeId,
           mapsUrl: satir.mapsUrl,
           latitude: satir.latitude,
           longitude: satir.longitude,
           imageUrls: satir.imageUrls,
+          minCapacity: satir.minCapacity,
+          maxCapacity: satir.maxCapacity,
+          startingPrice: satir.startingPrice,
+          priceMax: satir.priceMax,
+          priceType: satir.priceType,
+          priceNote: satir.priceNote,
+          hasIndoor: satir.hasIndoor,
+          hasOutdoor: satir.hasOutdoor,
+          featureSlugs: satir.featureSlugs,
+          eventTypeSlugs: satir.eventTypeSlugs,
         });
 
         yeni.set(
@@ -181,8 +245,13 @@ export function ImportRunner({ cities }: { cities: City[] }) {
     setSecili(yeni);
   };
 
+  // Seçili her satırın ilçesi çözülmüş olmalı — aşağıda satır satır
+  // gösteriliyor ve gerekirse elle düzeltiliyor.
+  const seciliIlcesizVar =
+    (rows ?? []).some((r) => secili.has(r.satirNo) && ilceIcin(r) === "");
+
   const hazir =
-    cityId !== "" && districtId !== "" && kaynak.trim().length >= 2 && secili.size > 0;
+    cityId !== "" && kaynak.trim().length >= 2 && secili.size > 0 && !seciliIlcesizVar;
 
   return (
     <div className="max-w-4xl space-y-5">
@@ -195,35 +264,19 @@ export function ImportRunner({ cities }: { cities: City[] }) {
         </p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <TaxField label="Şehir">
           <select
             value={cityId}
             onChange={(e) => {
               setCityId(e.target.value);
-              setDistrictId("");
+              setIlceSecimi(new Map());
             }}
             className={taxInput}
           >
             <option value="">Şehir seçin</option>
             {cities.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </TaxField>
-
-        <TaxField label="İlçe" hint="Bu partideki tüm kayıtlar bu ilçeye açılır.">
-          <select
-            value={districtId}
-            onChange={(e) => setDistrictId(e.target.value)}
-            disabled={cityId === "" || ilceYukleniyor}
-            className={taxInput}
-          >
-            <option value="">
-              {cityId === "" ? "Önce şehir" : ilceYukleniyor ? "Yükleniyor…" : "İlçe seçin"}
-            </option>
-            {districts.map((d) => (
-              <option key={d.id} value={d.id}>{d.name}</option>
             ))}
           </select>
         </TaxField>
@@ -238,6 +291,13 @@ export function ImportRunner({ cities }: { cities: City[] }) {
           />
         </TaxField>
       </div>
+
+      {cityId !== "" ? (
+        <p className="text-xs text-muted-foreground">
+          İlçe her satır için kaynağın verdiği ilçe adından otomatik eşleniyor
+          — eşleşmeyeni aşağıdan elle seçmen gerekiyor.
+        </p>
+      ) : null}
 
       <div className="rounded-xl border border-dashed p-3.5">
         <label className="flex flex-wrap items-center gap-3 text-sm">
@@ -330,7 +390,9 @@ export function ImportRunner({ cities }: { cities: City[] }) {
 
           {!hazir && secili.size > 0 ? (
             <p className="text-sm text-warning-foreground">
-              Başlatmadan önce şehir, ilçe ve kaynak adını doldurun.
+              {cityId === "" || kaynak.trim().length < 2
+                ? "Başlatmadan önce şehir ve kaynak adını doldurun."
+                : "Seçili satırlardan bazılarının ilçesi eşleşmedi — aşağıdan elle seç."}
             </p>
           ) : null}
 
@@ -391,6 +453,40 @@ export function ImportRunner({ cities }: { cities: City[] }) {
                         <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
                           {r.sourceUrl}
                         </p>
+                      ) : null}
+
+                      {cityId !== "" && secili.has(r.satirNo) ? (
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <select
+                            value={ilceIcin(r)}
+                            disabled={ilceYukleniyor || pending || !!sonuc}
+                            onChange={(e) => {
+                              const yeni = new Map(ilceSecimi);
+                              yeni.set(r.satirNo, e.target.value);
+                              setIlceSecimi(yeni);
+                            }}
+                            className={cn(
+                              "h-7 rounded-md border bg-background px-1.5 text-xs outline-none",
+                              ilceIcin(r) === "" && "border-warning-foreground text-warning-foreground",
+                            )}
+                          >
+                            <option value="">
+                              {ilceYukleniyor ? "İlçeler yükleniyor…" : "İlçe seçin"}
+                            </option>
+                            {districts.map((d) => (
+                              <option key={d.id} value={d.id}>{d.name}</option>
+                            ))}
+                          </select>
+                          {ilceIcin(r) !== "" && !ilceSecimi.has(r.satirNo) ? (
+                            <span className="text-[11px] text-muted-foreground">
+                              “{r.district}”den otomatik
+                            </span>
+                          ) : ilceIcin(r) === "" && r.district ? (
+                            <span className="text-[11px] text-warning-foreground">
+                              “{r.district}” eşleşmedi
+                            </span>
+                          ) : null}
+                        </div>
                       ) : null}
 
                       {r.hata ? (

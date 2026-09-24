@@ -40,6 +40,7 @@ export async function updateInquiry(input: unknown): Promise<ActionResult> {
     });
     revalidatePath("/panel/talepler");
     revalidatePath("/panel");
+    revalidatePath("/yonetim/talepler");
     return actionOk();
   } catch (error) {
     return unexpectedError("updateInquiry", error);

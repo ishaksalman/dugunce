@@ -3,10 +3,11 @@ import Link from "next/link";
 import { ArrowRight, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { ButtonLink } from "@/components/shared/button-link";
 import { HeroSearch } from "@/components/search/hero-search";
-import { CategoryNav } from "@/components/search/category-nav";
+// "Ne arıyorsun?" bölümü şimdilik pasif — bkz. aşağıdaki yorum satırı.
+// Geri açarken: `import { CategoryNav } from "@/components/search/category-nav";`
 import { VenueCard, VenueGrid } from "@/components/venue/venue-card";
 import { Icon } from "@/components/shared/icon";
-import { getBusinessCategories, getCities, getEventTypes } from "@/lib/services/taxonomy";
+import { getCities, getEventTypes } from "@/lib/services/taxonomy";
 import { getFeaturedVenues } from "@/lib/services/venues";
 import { formatNumber } from "@/lib/format";
 import { SITE } from "@/lib/constants";
@@ -22,14 +23,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-const HERO_IMAGE =
-  "https://picsum.photos/seed/dugunce-hero/2400/1400";
+const HERO_IMAGE = "/hero.webp";
 
 export default async function HomePage() {
-  const [cities, eventTypes, categories, featured] = await Promise.all([
-    getCities(),
+  const [cities, eventTypes, featured] = await Promise.all([
+    getCities(false, true),
     getEventTypes(),
-    getBusinessCategories(),
     getFeaturedVenues(6),
   ]);
 
@@ -85,7 +84,11 @@ export default async function HomePage() {
 
       {/* --- Kategoriler --------------------------------------------------- */}
       {/* Kategori işletmenin NE OLDUĞU; aşağıdaki etkinlik türü ise mekanın
-          hangi organizasyona uygun olduğu. İkisi farklı katman. */}
+          hangi organizasyona uygun olduğu. İkisi farklı katman.
+          ŞİMDİLİK PASİF (kullanıcı isteği) — kategorilerin çoğu "yakında"
+          etiketiyle tıklanamaz durumda olduğu için bölüm boş/erken görünüyordu.
+          Geri açmak için bu bloğu ve altındaki yorumu kaldırmak yeterli. */}
+      {/*
       <section className="container-page pt-14">
         <SectionHead
           title="Ne arıyorsun?"
@@ -95,6 +98,7 @@ export default async function HomePage() {
           <CategoryNav categories={categories} />
         </div>
       </section>
+      */}
 
       {/* --- Etkinlik türleri --------------------------------------------- */}
       <section className="container-page pt-16">
@@ -175,7 +179,7 @@ export default async function HomePage() {
           <div className="flex flex-col gap-6 p-8 sm:p-12 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-xl">
               <h2 className="font-heading text-2xl sm:text-3xl">
-                Mekanının sahibi misin?
+                Davet mekanınız mı var?
               </h2>
               <p className="mt-3 text-primary-foreground/75">
                 Mekanını ücretsiz listele, teklif taleplerini doğrudan al.

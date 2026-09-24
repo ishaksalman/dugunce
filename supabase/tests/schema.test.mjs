@@ -468,6 +468,22 @@ await step("olmayan slug null döndürüyor", async () => {
   if (r.rows[0].d !== null) throw new Error("null bekleniyordu");
 });
 
+await step("google_place_id vitrine çıkıyor (0046) — yorum bağlantısı bundan kurulur", async () => {
+  await asServer();
+  await db.query(
+    "update public.venues set google_place_id = $1 where slug = 'bahce-davet'",
+    ["ChIJ_test_place_id"],
+  );
+  await asAnon();
+  const r = await db.query("select public.get_venue_detail('bahce-davet') as d");
+  if (r.rows[0].d.google_place_id !== "ChIJ_test_place_id") {
+    throw new Error(`place_id: ${r.rows[0].d.google_place_id}`);
+  }
+  await asServer();
+  await db.query("update public.venues set google_place_id = null where slug = 'bahce-davet'");
+  await asAnon();
+});
+
 await step("yorumlarda soyadı maskeleniyor", async () => {
   const r = await db.query(
     "select author_name, rating from public.get_venue_reviews($1)", [venueA]);
@@ -510,7 +526,36 @@ const createInquiry = (ip, venueId = venueA) =>
 
 await step("talep oluşturuluyor", async () => {
   const r = await createInquiry("ip-a");
-  if (!r.rows[0].r.ok) throw new Error(JSON.stringify(r.rows[0].r));
+  const d = r.rows[0].r;
+  if (!d.ok) throw new Error(JSON.stringify(d));
+  if (d.is_claimed !== true) throw new Error("sahipli mekan is_claimed=false döndü");
+  if (!d.venue_name || !d.city_name || !d.district_name) {
+    throw new Error(`mekan bilgisi eksik: ${JSON.stringify(d)}`);
+  }
+});
+
+await step("0045: sahipsiz mekana gelen talep is_claimed=false dönüyor", async () => {
+  // Telegram bildirimi bu bayrağa bakıyor (bkz. lib/actions/inquiry.ts) —
+  // sahiplenilmemiş mekana gelen talep admin'e haber vermeli.
+  await asServer();
+  const sahipsiz = await db.query(
+    `insert into public.venues (owner_id, slug, name, city_id, district_id,
+                                status, published_at)
+     values (null,'sahipsiz-talep-testi','Sahipsiz Talep Testi',$1,$2,'PUBLISHED', now())
+     returning id`, [ids.city, ids.district]);
+  await asAnon();
+  const r = await db.query(
+    `select public.create_inquiry(
+       p_venue_id => $1, p_full_name => 'Test Kullanıcı', p_phone => '05001112244',
+       p_ip_hash => 'ip-sahipsiz') as r`,
+    [sahipsiz.rows[0].id]);
+  const d = r.rows[0].r;
+  if (!d.ok) throw new Error(JSON.stringify(d));
+  if (d.is_claimed !== false) throw new Error("sahipsiz mekan is_claimed=true döndü");
+  if (d.venue_name !== "Sahipsiz Talep Testi") throw new Error(`venue_name: ${d.venue_name}`);
+  await asServer();
+  await db.query("delete from public.venues where id = $1", [sahipsiz.rows[0].id]);
+  await asAnon();
 });
 
 await step("aynı IP aynı mekana ikinci kez gönderemiyor", async () => {
@@ -1584,6 +1629,85 @@ await step("aynı KAYNAK ADRESİ force ile bile ikinci kez işlenemiyor", async 
   await db.query("delete from public.venues where name = $1", ["Kaynak ve Puan"]);
 });
 
+await step("kaynağın yapılandırılmış olguları (kapasite/fiyat/iç-dış/özellik) yazılıyor", async () => {
+  // 0040: dugun.com gibi bir kaynak yalnızca ad/telefon değil, kapasite,
+  // fiyat aralığı, iç/dış mekan ve özellik de veriyor. Hepsi tek işlemde
+  // yazılmalı — description'a ise HİÇBİR ZAMAN dokunulmamalı.
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const r = await db.query(
+    `select public.admin_create_venue(
+       p_name => $1, p_city_id => $2, p_district_id => $3,
+       p_min_capacity => 100, p_max_capacity => 625,
+       p_starting_price => 75000, p_price_max => 95000,
+       p_price_type => 'kisi_basi', p_price_note => '75.000 - 95.000 TL',
+       p_has_indoor => true, p_has_outdoor => true,
+       p_feature_slugs => array['otopark', 'olmayan-slug'],
+       p_instagram_url => 'https://instagram.com/yapisal-veri-testi',
+       p_event_type_slugs => array['dugun', 'olmayan-etkinlik']) as d`,
+    ["Yapısal Veri Testi", yer.city_id, yer.district_id]);
+  const id = r.rows[0].d.id;
+
+  const v = await db.query(
+    `select min_capacity, max_capacity, starting_price, price_max, price_type,
+            price_note, has_indoor, has_outdoor, description, instagram_url,
+            event_type_slugs
+       from public.venues where id = $1`, [id]);
+  const x = v.rows[0];
+  if (x.instagram_url !== "https://instagram.com/yapisal-veri-testi") {
+    throw new Error(`instagram_url: ${x.instagram_url}`);
+  }
+  if (x.min_capacity !== 100) throw new Error(`min_capacity: ${x.min_capacity}`);
+  if (x.max_capacity !== 625) throw new Error(`max_capacity: ${x.max_capacity}`);
+  if (Number(x.starting_price) !== 75000) throw new Error(`starting_price: ${x.starting_price}`);
+  if (Number(x.price_max) !== 95000) throw new Error(`price_max: ${x.price_max}`);
+  if (x.price_type !== "kisi_basi") throw new Error(`price_type: ${x.price_type}`);
+  if (x.price_note !== "75.000 - 95.000 TL") throw new Error(`price_note: ${x.price_note}`);
+  if (x.has_indoor !== true) throw new Error("has_indoor yazılmadı");
+  if (x.has_outdoor !== true) throw new Error("has_outdoor yazılmadı");
+  if (x.description !== null) throw new Error("description'a YAZILDI — bu asla olmamalı");
+
+  // Bilinen slug yazılmalı, uydurma slug SESSİZCE atlanmalı (hata değil).
+  const f = await db.query(
+    `select f.slug from public.venue_features vf
+       join public.features f on f.id = vf.feature_id
+      where vf.venue_id = $1`, [id]);
+  if (f.rows.length !== 1 || f.rows[0].slug !== "otopark") {
+    throw new Error(`özellikler: ${JSON.stringify(f.rows)}`);
+  }
+
+  // Bilinen etkinlik türü yazılmalı, uydurma slug sessizce atlanmalı — aynı
+  // desen (0047). event_type_slugs trigger'la senkron olan okuma kopyası.
+  const e = await db.query(
+    `select e.slug from public.venue_event_types vet
+       join public.event_types e on e.id = vet.event_type_id
+      where vet.venue_id = $1`, [id]);
+  if (e.rows.length !== 1 || e.rows[0].slug !== "dugun") {
+    throw new Error(`etkinlik türleri: ${JSON.stringify(e.rows)}`);
+  }
+  if (JSON.stringify(v.rows[0].event_type_slugs) !== JSON.stringify(["dugun"])) {
+    throw new Error(`event_type_slugs kopyası: ${JSON.stringify(v.rows[0].event_type_slugs)}`);
+  }
+
+  await db.query("delete from public.venues where id = $1", [id]);
+});
+
+await step("geçersiz price_type sessizce 'belirtilmemis'e düşüyor", async () => {
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const r = await db.query(
+    `select public.admin_create_venue(
+       p_name => $1, p_city_id => $2, p_district_id => $3,
+       p_price_type => 'gecersiz-deger') as d`,
+    ["Fiyat Tipi Testi", yer.city_id, yer.district_id]);
+  const id = r.rows[0].d.id;
+  const v = await db.query("select price_type from public.venues where id = $1", [id]);
+  if (v.rows[0].price_type !== "belirtilmemis") {
+    throw new Error(`price_type: ${v.rows[0].price_type}`);
+  }
+  await db.query("delete from public.venues where id = $1", [id]);
+});
+
 await step("aynı Google Place ID ikinci kez eklenemiyor", async () => {
   // Ad ve telefon dolaylı sinyal; place_id işletmenin Google'daki kanonik
   // kimliği. Aynı kaydı iki kez almanın en kesin işareti bu.
@@ -1613,6 +1737,57 @@ await step("aynı Google Place ID ikinci kez eklenemiyor", async () => {
   if (r.rows[0].eslesme !== "place_id") throw new Error(`eşleşme: ${r.rows[0].eslesme}`);
 
   await db.query("delete from public.venues where google_place_id = $1", [pid]);
+});
+
+await step("mükerrerde YENİ etkinlik türü mevcut kayda birleşiyor (0048)", async () => {
+  // dugun.com düğün ve nişan listelerini ayrı tarıyor; aynı fiziksel mekan
+  // ikinci taramada aynı place_id ile tekrar gelirse yeni satır açmak
+  // yerine mevcut kayda eksik etkinlik türünü ekliyoruz.
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const pid = "ChIJbirlestirTest00000000";
+
+  const ilk = await db.query(
+    `select public.admin_create_venue(
+       p_name => $1, p_city_id => $2, p_district_id => $3,
+       p_google_place_id => $4, p_event_type_slugs => array['dugun']) as d`,
+    ["Birleştirme Testi", yer.city_id, yer.district_id, pid]);
+  const id = ilk.rows[0].d.id;
+
+  // İkinci "kazıma": aynı place_id, bu kez nişan listesinden — yeni satır
+  // AÇILMAMALI, mevcut kayda "nisan" eklenmeli.
+  const ikinci = await db.query(
+    `select public.admin_create_venue(
+       p_name => $1, p_city_id => $2, p_district_id => $3,
+       p_google_place_id => $4, p_event_type_slugs => array['nisan']) as d`,
+    ["Birleştirme Testi Nişan Sayfası", yer.city_id, yer.district_id, pid]);
+  if (ikinci.rows[0].d.id !== id) throw new Error("yeni bir satır açılmış — birleşmesi gerekiyordu");
+  if (ikinci.rows[0].d.merged !== true) throw new Error("merged bayrağı true olmalı");
+
+  const e = await db.query(
+    `select e.slug from public.venue_event_types vet
+       join public.event_types e on e.id = vet.event_type_id
+      where vet.venue_id = $1 order by e.slug`, [id]);
+  const slugs = e.rows.map((r) => r.slug);
+  if (JSON.stringify(slugs) !== JSON.stringify(["dugun", "nisan"])) {
+    throw new Error(`etkinlik türleri: ${JSON.stringify(slugs)}`);
+  }
+
+  // Yeni bir etkinlik türü YOKSA eski davranış (hata) korunmalı.
+  let gecti = false;
+  try {
+    await db.query(
+      `select public.admin_create_venue(
+         p_name => $1, p_city_id => $2, p_district_id => $3,
+         p_google_place_id => $4, p_event_type_slugs => array['dugun']) as d`,
+      ["Üçüncü Deneme", yer.city_id, yer.district_id, pid]);
+    gecti = true;
+  } catch (err) {
+    if (!err.message.includes("Google kaydı zaten katalogda")) throw err;
+  }
+  if (gecti) throw new Error("yeni etkinlik türü yokken sessizce kabul edildi");
+
+  await db.query("delete from public.venues where id = $1", [id]);
 });
 
 await step("AYNI TELEFON farklı adla girilse de yakalanıyor", async () => {
@@ -1991,6 +2166,286 @@ await expectFail(
   "mekan sahibi silme fonksiyonunu çağıramıyor",
   () => db.query("select public.admin_delete_venue($1)", [venueA]),
   "yönetici yetkisi");
+
+// =============================================================================
+console.log("\n\x1b[1m22) Öne çıkma süresi (0043)\x1b[0m");
+// =============================================================================
+// `featured_until` eskiden hiçbir yerde okunmuyordu — süre bitince mekan
+// sonsuza kadar öne çıkmış kalıyordu. Bu, "30 günlük öne çıkarma" satmadan
+// önce düzeltilmesi gereken bir hataydı.
+
+await step("venue_featured_active(): null süre = süresiz, geçmiş tarih = etkisiz", async () => {
+  const r = await db.query(
+    `select
+       public.venue_featured_active(true, null) as suresiz,
+       public.venue_featured_active(true, now() - interval '1 day') as gecmis,
+       public.venue_featured_active(true, now() + interval '1 day') as gelecek,
+       public.venue_featured_active(false, now() + interval '1 day') as kapali`);
+  const x = r.rows[0];
+  if (x.suresiz !== true) throw new Error("null süre süresiz sayılmadı");
+  if (x.gecmis !== false) throw new Error("geçmiş tarih hâlâ etkin sayıldı");
+  if (x.gelecek !== true) throw new Error("gelecekteki tarih etkisiz sayıldı");
+  if (x.kapali !== false) throw new Error("is_featured=false yine de etkin sayıldı");
+});
+
+await step("süresi dolmuş öne çıkarma aramada ve rozette artık görünmüyor", async () => {
+  await asServer();
+  await db.query(
+    "update public.venues set is_featured = true, featured_until = now() - interval '1 day' where id = $1",
+    [venueA]);
+  await asAnon();
+
+  const r = await db.query("select * from public.search_venues()");
+  const satir = r.rows.find((x) => x.id === venueA);
+  if (satir.is_featured !== false) throw new Error("süresi dolmuş kayıt is_featured=true dönüyor");
+
+  const d = await db.query("select public.get_venue_detail($1) as d", ["bahce-davet"]);
+  if (d.rows[0].d.is_featured !== false) {
+    throw new Error("get_venue_detail süresi dolmuşu hâlâ öne çıkan gösteriyor");
+  }
+
+  await asServer();
+  await db.query(
+    "update public.venues set is_featured = false, featured_until = null where id = $1",
+    [venueA]);
+  await asUser(U.admin);
+});
+
+await step("süresi dolmamış öne çıkarma sıralamada üste çıkıyor", async () => {
+  await asServer();
+  await db.query(
+    "update public.venues set is_featured = true, featured_until = now() + interval '30 days' where id = $1",
+    [venueA]);
+  await asAnon();
+
+  const r = await db.query("select * from public.search_venues(p_sort => 'onerilen')");
+  if (r.rows[0]?.id !== venueA) throw new Error("etkin öne çıkan sıralamada üstte değil");
+  if (r.rows[0]?.is_featured !== true) throw new Error("etkin öne çıkan is_featured=false dönüyor");
+
+  await asServer();
+  await db.query(
+    "update public.venues set is_featured = false, featured_until = null where id = $1",
+    [venueA]);
+  await asUser(U.admin);
+});
+
+// =============================================================================
+// 23) Rehber (blog) — 0049
+// =============================================================================
+let blogId;
+
+await step("yetkisiz çağıran yazı oluşturamıyor", async () => {
+  await asAnon();
+  let gecti = false;
+  try {
+    await db.query(
+      `select public.admin_upsert_blog_post(
+         null, 'test-yazi', 'Test Yazı', null, 'İçerik.', null, 'DRAFT') as d`);
+    gecti = true;
+  } catch { /* beklenen */ }
+  if (gecti) throw new Error("anonim admin RPC'sini çağırabildi");
+  await asUser(U.admin);
+});
+
+await step("admin taslak yazı oluşturuyor", async () => {
+  const r = await db.query(
+    `select public.admin_upsert_blog_post(
+       null, 'dugun-butcesi-nasil-planlanir', 'Düğün Bütçesi Nasıl Planlanır?',
+       'Kısa özet.', '## Giriş\n\nİçerik burada.', null, 'DRAFT') as d`);
+  blogId = r.rows[0].d.id;
+  if (r.rows[0].d.slug !== "dugun-butcesi-nasil-planlanir") {
+    throw new Error(`slug: ${r.rows[0].d.slug}`);
+  }
+});
+
+await step("taslak yazı herkese açık okumada GÖRÜNMÜYOR", async () => {
+  await asAnon();
+  const r = await db.query("select public.get_blog_post($1) as d",
+    ["dugun-butcesi-nasil-planlanir"]);
+  if (r.rows[0].d !== null) throw new Error("taslak sızdı");
+  const l = await db.query("select * from public.list_blog_posts()");
+  if (l.rows.some((x) => x.id === blogId)) throw new Error("taslak listede göründü");
+  await asUser(U.admin);
+});
+
+await step("yayına alınca herkese açık okumada GÖRÜNÜYOR", async () => {
+  await db.query(
+    `select public.admin_upsert_blog_post(
+       $1, 'dugun-butcesi-nasil-planlanir', 'Düğün Bütçesi Nasıl Planlanır?',
+       'Kısa özet.', '## Giriş\n\nİçerik burada.', null, 'PUBLISHED') as d`,
+    [blogId]);
+
+  await asAnon();
+  const r = await db.query("select public.get_blog_post($1) as d",
+    ["dugun-butcesi-nasil-planlanir"]);
+  if (r.rows[0].d === null) throw new Error("yayınlanan yazı görünmüyor");
+  if (r.rows[0].d.title !== "Düğün Bütçesi Nasıl Planlanır?") {
+    throw new Error(`başlık: ${r.rows[0].d.title}`);
+  }
+
+  const l = await db.query("select * from public.list_blog_posts()");
+  if (!l.rows.some((x) => x.id === blogId)) throw new Error("yayınlanan yazı listede yok");
+  await asUser(U.admin);
+});
+
+await step("yayındayken slug DEĞİŞMİYOR (SEO korunuyor)", async () => {
+  const r = await db.query(
+    `select public.admin_upsert_blog_post(
+       $1, 'baska-bir-slug', 'Düğün Bütçesi Nasıl Planlanır? (2)',
+       'Kısa özet.', '## Güncellendi', null, 'PUBLISHED') as d`,
+    [blogId]);
+  if (r.rows[0].d.slug !== "dugun-butcesi-nasil-planlanir") {
+    throw new Error(`slug değişti: ${r.rows[0].d.slug}`);
+  }
+});
+
+await step("geçersiz slug/başlık reddediliyor", async () => {
+  await expectFail("boş slug reddediliyor", () =>
+    db.query(
+      `select public.admin_upsert_blog_post(
+         null, '', 'Yeterince Uzun Başlık', null, 'İçerik.', null, 'DRAFT')`),
+    "Slug boş olamaz");
+  await expectFail("kısa başlık reddediliyor", () =>
+    db.query(
+      `select public.admin_upsert_blog_post(
+         null, 'kisa', 'Ab', null, 'İçerik.', null, 'DRAFT')`),
+    "Başlık en az 3 karakter");
+});
+
+await step("her işlem denetim izine yazılıyor", async () => {
+  const r = await db.query(
+    `select action from public.admin_actions
+      where entity_type = 'blog_post' and entity_id = $1
+      order by created_at`, [blogId]);
+  const actions = r.rows.map((x) => x.action);
+  if (!actions.includes("created") || !actions.includes("updated")) {
+    throw new Error(`denetim izi eksik: ${JSON.stringify(actions)}`);
+  }
+});
+
+await step("admin_list_blog_posts durum filtresiyle çalışıyor", async () => {
+  const r = await db.query(
+    "select * from public.admin_list_blog_posts(p_status => 'PUBLISHED')");
+  if (!r.rows.some((x) => x.id === blogId)) throw new Error("yayınlanan listede yok");
+});
+
+await step("admin_delete_blog_post siliyor ve denetim izine yazıyor", async () => {
+  await db.query("select public.admin_delete_blog_post($1)", [blogId]);
+  const r = await db.query("select id from public.blog_posts where id = $1", [blogId]);
+  if (r.rows.length !== 0) throw new Error("kayıt hâlâ duruyor");
+
+  const log = await db.query(
+    `select 1 from public.admin_actions
+      where entity_type = 'blog_post' and entity_id = $1 and action = 'deleted'`,
+    [blogId]);
+  if (log.rows.length !== 1) throw new Error("silme denetim izine yazılmadı");
+});
+
+// =============================================================================
+// 24) Toplu yayınlama — 0050
+// =============================================================================
+await step("admin_bulk_set_venue_status seçilenleri yayınlıyor, denetim izine tek tek yazıyor", async () => {
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const ids = [];
+  for (const ad of ["Toplu Test A", "Toplu Test B", "Toplu Test C"]) {
+    const r = await db.query(
+      "select public.admin_create_venue($1, $2, $3) as d",
+      [ad, yer.city_id, yer.district_id]);
+    ids.push(r.rows[0].d.id);
+  }
+
+  const r = await db.query(
+    "select public.admin_bulk_set_venue_status($1, 'PUBLISHED') as d", [ids]);
+  if (r.rows[0].d.basarili !== 3) throw new Error(`başarılı: ${JSON.stringify(r.rows[0].d)}`);
+
+  const statuses = await db.query(
+    "select status from public.venues where id = any($1)", [ids]);
+  if (!statuses.rows.every((x) => x.status === "PUBLISHED")) {
+    throw new Error(`durumlar: ${JSON.stringify(statuses.rows)}`);
+  }
+
+  const logs = await db.query(
+    `select count(*)::int c from public.admin_actions
+      where entity_type = 'venue' and entity_id = any($1) and action = 'status:PUBLISHED'`,
+    [ids]);
+  if (logs.rows[0].c !== 3) throw new Error(`denetim izi: ${logs.rows[0].c} satır (3 bekleniyordu)`);
+
+  await db.query("delete from public.venues where id = any($1)", [ids]);
+});
+
+await step("toplu reddetme/askıya alma REDDEDİLİYOR — gerekçe mekana özel olmalı", async () => {
+  await expectFail("toplu REJECTED reddediliyor", () =>
+    db.query("select public.admin_bulk_set_venue_status(array[$1]::uuid[], 'REJECTED')", [venueA]),
+    "Toplu reddetme/askıya alma desteklenmiyor");
+});
+
+await step("yetkisiz çağıran toplu yayınlayamıyor", async () => {
+  await asAnon();
+  let gecti = false;
+  try {
+    await db.query("select public.admin_bulk_set_venue_status(array[$1]::uuid[], 'PUBLISHED')", [venueA]);
+    gecti = true;
+  } catch { /* beklenen */ }
+  if (gecti) throw new Error("anonim toplu yayınlayabildi");
+  await asUser(U.admin);
+});
+
+// =============================================================================
+// 25) Yönetim: tüm taleplerin listesi — 0051
+// =============================================================================
+let sahipsizMekan, sahipsizTalep, sahipliTalep;
+
+await step("admin_list_inquiries sahipsiz mekana gelen talebi de gösteriyor", async () => {
+  const yer = (await db.query(
+    "select city_id, district_id from public.venues where id = $1", [venueA])).rows[0];
+  const r = await db.query(
+    "select public.admin_create_venue($1, $2, $3) as d",
+    ["Talep Testi Sahipsiz", yer.city_id, yer.district_id]);
+  sahipsizMekan = r.rows[0].d.id;
+
+  await asServer();
+  const t1 = await db.query(
+    `insert into public.inquiries (venue_id, full_name, phone)
+     values ($1, 'Sahipsize Gelen', '05001234567') returning id`, [sahipsizMekan]);
+  sahipsizTalep = t1.rows[0].id;
+  const t2 = await db.query(
+    `insert into public.inquiries (venue_id, full_name, phone)
+     values ($1, 'Sahiplisine Gelen', '05007654321') returning id`, [venueA]);
+  sahipliTalep = t2.rows[0].id;
+  await asUser(U.admin);
+
+  const r2 = await db.query("select * from public.admin_list_inquiries() as d");
+  const ids = r2.rows.map((x) => x.id);
+  if (!ids.includes(sahipsizTalep)) throw new Error("sahipsiz mekana gelen talep listede yok");
+  if (!ids.includes(sahipliTalep)) throw new Error("sahipli mekana gelen talep listede yok");
+
+  const satir = r2.rows.find((x) => x.id === sahipsizTalep);
+  if (satir.is_claimed !== false) throw new Error(`is_claimed: ${satir.is_claimed}`);
+});
+
+await step("p_unclaimed_only yalnızca sahipsiz mekanların taleplerini döndürüyor", async () => {
+  const r = await db.query(
+    "select * from public.admin_list_inquiries(p_unclaimed_only => true) as d");
+  const ids = r.rows.map((x) => x.id);
+  if (!ids.includes(sahipsizTalep)) throw new Error("sahipsiz talep filtrede eksik");
+  if (ids.includes(sahipliTalep)) throw new Error("sahipli talep filtreye sızdı");
+});
+
+await step("yetkisiz çağıran admin_list_inquiries çağıramıyor", async () => {
+  await asAnon();
+  let gecti = false;
+  try {
+    await db.query("select * from public.admin_list_inquiries()");
+    gecti = true;
+  } catch { /* beklenen */ }
+  if (gecti) throw new Error("anonim talepleri listeleyebildi");
+  await asUser(U.admin);
+});
+
+await step("temizlik: test mekanı ve talepleri", async () => {
+  await db.query("delete from public.venues where id = $1", [sahipsizMekan]);
+});
 
 // =============================================================================
 console.log(

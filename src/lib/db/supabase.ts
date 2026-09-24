@@ -2,12 +2,18 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import {
-  normalizeAdminReview, normalizeAdminSeoPage, normalizeAdminUser, normalizeAdminVenue,
+  normalizeAdminBlogPost, normalizeAdminInquiry, normalizeAdminReview, normalizeAdminSeoPage,
+  normalizeAdminUser,
+  normalizeAdminVenue,
+  normalizeBlogPostDetail, normalizeBlogPostSummary,
   normalizeInquiry,
   normalizeOwnerVenue, normalizeReview, normalizeVenueDetail, normalizeVenueForEdit,
-  toVenueCard, type AdminReview, type AdminSeoPage, type AdminStats, type AdminUser,
+  toVenueCard, type AdminBlogPost, type AdminBlogPostDetail,
+  type AdminInquiry,
+  type AdminReview, type AdminSeoPage, type AdminStats, type AdminUser,
   toIso,
-  type AdminClaim, type AdminDistrict, type AdminTaxonomy, type BusinessCategory,
+  type AdminClaim, type AdminDistrict, type AdminTaxonomy, type BlogPostDetail,
+  type BlogPostStatus, type BlogPostSummary, type BusinessCategory,
   type ImportItem,
   type SimilarVenue,
   type AdminVenue, type DavetProStatus,
@@ -17,6 +23,8 @@ import {
   type VenueReview, type VenueSearchRow, type VenueStatus,
 } from "@/types/db";
 import type {
+  AdminBlogPostInput,
+  AdminInquiryQuery, AdminInquiryResult,
   AdminReviewQuery, AdminReviewResult, AdminSeoPatch, AdminSeoQuery, AdminSeoResult,
   AdminUserQuery, AdminUserResult,
   AdminVenueQuery, AdminVenueResult, CreateInquiryInput, CreateInquiryResult,
@@ -43,12 +51,16 @@ export const supabaseSource: DataSource = {
     };
   },
 
-  async listCities({ popularOnly = false } = {}) {
+  async listCities({ popularOnly = false, hasVenues = false } = {}) {
     const supabase = createPublicClient();
     let q = supabase
       .from("cities")
       .select("id, name, slug, plate_code, is_popular, venue_count");
     if (popularOnly) q = q.eq("is_popular", true);
+    // Filtre/arama ekranlarında hiç yayınlanmış mekanı olmayan şehir seçilip
+    // boş sonuca düşülmesin diye — `venue_count` yalnızca PUBLISHED mekanları
+    // sayan trigger'lı bir sütun (bkz. refresh_location_venue_counts, 0002).
+    if (hasVenues) q = q.gt("venue_count", 0);
     return unwrap(await q.order("sort_order").order("name"), "cities");
   },
 
@@ -156,6 +168,25 @@ export const supabaseSource: DataSource = {
     };
   },
 
+  async adminListInquiries(input: AdminInquiryQuery): Promise<AdminInquiryResult> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_list_inquiries", {
+      p_status: input.status ?? null,
+      p_venue_id: input.venueId ?? null,
+      p_unclaimed_only: input.unclaimedOnly ?? false,
+      p_query: input.query ?? null,
+      p_limit: input.limit ?? 25,
+      p_offset: input.offset ?? 0,
+    });
+    if (error) throw new Error(`admin_list_inquiries: ${error.message}`);
+    const items = ((data ?? []) as unknown as AdminInquiry[]).map(normalizeAdminInquiry);
+    return {
+      items,
+      total: items.length ? Number(items[0].total_count) : 0,
+      newCount: items.length ? Number(items[0].new_count) : 0,
+    };
+  },
+
   async updateInquiry(
     id: string,
     patch: { status?: InquiryStatus; ownerNote?: string | null },
@@ -230,6 +261,15 @@ export const supabaseSource: DataSource = {
       p_venue_id: venueId, p_status: status, p_reason: reason ?? null,
     });
     if (error) throw new Error(error.message);
+  },
+
+  async adminBulkSetVenueStatus(venueIds: string[]) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_bulk_set_venue_status", {
+      p_venue_ids: venueIds, p_status: "PUBLISHED",
+    });
+    if (error) throw new Error(error.message);
+    return data as unknown as { basarili: number; atlanan: number };
   },
 
   async adminSetVenueFeatured(venueId: string, featured: boolean, until?: string) {
@@ -428,6 +468,7 @@ export const supabaseSource: DataSource = {
       p_address: input.address,
       p_contact_phone: input.contactPhone,
       p_website_url: input.websiteUrl,
+      p_instagram_url: input.instagramUrl ?? null,
       p_force: input.force ?? false,
       p_google_place_id: input.googlePlaceId ?? null,
       p_google_maps_url: input.googleMapsUrl ?? null,
@@ -437,9 +478,19 @@ export const supabaseSource: DataSource = {
       p_source_url: input.sourceUrl ?? null,
       p_google_rating: input.googleRating ?? null,
       p_google_rating_count: input.googleRatingCount ?? null,
+      p_min_capacity: input.minCapacity ?? null,
+      p_max_capacity: input.maxCapacity ?? null,
+      p_starting_price: input.startingPrice ?? null,
+      p_price_max: input.priceMax ?? null,
+      p_price_type: input.priceType ?? null,
+      p_price_note: input.priceNote ?? null,
+      p_has_indoor: input.hasIndoor ?? null,
+      p_has_outdoor: input.hasOutdoor ?? null,
+      p_feature_slugs: input.featureSlugs ?? null,
+      p_event_type_slugs: input.eventTypeSlugs ?? null,
     });
     if (error) throw new Error(error.message);
-    return data as unknown as { id: string; slug: string };
+    return data as unknown as { id: string; slug: string; merged?: boolean };
   },
 
   async adminFindSimilarVenues(
@@ -576,6 +627,68 @@ export const supabaseSource: DataSource = {
       p_note: note ?? null,
       p_phone: phone ?? null,
     });
+    if (error) throw new Error(error.message);
+  },
+
+  async getBlogPost(slug: string): Promise<BlogPostDetail | null> {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase.rpc("get_blog_post", { p_slug: slug });
+    if (error) throw new Error(`get_blog_post: ${error.message}`);
+    return data ? normalizeBlogPostDetail(data as unknown as BlogPostDetail) : null;
+  },
+
+  async listBlogPosts(limit = 20, offset = 0) {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase.rpc("list_blog_posts", {
+      p_limit: limit, p_offset: offset,
+    });
+    if (error) throw new Error(`list_blog_posts: ${error.message}`);
+    const items = ((data ?? []) as BlogPostSummary[]).map(normalizeBlogPostSummary);
+    return { items, total: items.length ? Number(items[0].total_count) : 0 };
+  },
+
+  async listBlogPostSlugs(): Promise<string[]> {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase.rpc("list_blog_post_slugs");
+    if (error) throw new Error(`list_blog_post_slugs: ${error.message}`);
+    return ((data ?? []) as { slug: string }[]).map((r) => r.slug);
+  },
+
+  async adminListBlogPosts(status: BlogPostStatus | null, offset: number) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_list_blog_posts", {
+      p_status: status, p_limit: 50, p_offset: offset,
+    });
+    if (error) throw new Error(`admin_list_blog_posts: ${error.message}`);
+    const items = ((data ?? []) as AdminBlogPost[]).map(normalizeAdminBlogPost);
+    return { items, total: items.length ? Number(items[0].total_count) : 0 };
+  },
+
+  async adminGetBlogPost(id: string): Promise<AdminBlogPostDetail | null> {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_get_blog_post", { p_id: id });
+    if (error) throw new Error(`admin_get_blog_post: ${error.message}`);
+    return (data as unknown as AdminBlogPostDetail) ?? null;
+  },
+
+  async adminUpsertBlogPost(input: AdminBlogPostInput) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_upsert_blog_post", {
+      p_id: input.id ?? null,
+      p_slug: input.slug,
+      p_title: input.title,
+      p_excerpt: input.excerpt ?? null,
+      p_content_md: input.contentMd,
+      p_cover_image_url: input.coverImageUrl ?? null,
+      p_status: input.status,
+    });
+    if (error) throw new Error(error.message);
+    return data as unknown as { id: string; slug: string };
+  },
+
+  async adminDeleteBlogPost(id: string) {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("admin_delete_blog_post", { p_id: id });
     if (error) throw new Error(error.message);
   },
 

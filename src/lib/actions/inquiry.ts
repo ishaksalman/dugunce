@@ -5,6 +5,12 @@ import { getDataSource } from "@/lib/db";
 import { getRequestFingerprint } from "@/lib/rate-limit";
 import { inquirySchema } from "@/lib/schemas/inquiry";
 import { actionError, actionOk, unexpectedError, type ActionResult } from "@/lib/errors";
+import { notifyTelegram } from "@/lib/telegram";
+
+/** Telegram HTML parse_mode'unda özel anlamı olan karakterleri kaçırır. */
+function kacir(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
 const RATE_LIMIT_MESSAGES: Record<string, string> = {
   rate_limited_venue:
@@ -51,6 +57,27 @@ export async function submitInquiry(
 
     if (!result.ok) {
       return actionError(RATE_LIMIT_MESSAGES[result.reason] ?? RATE_LIMIT_MESSAGES.venue_not_found);
+    }
+
+    // Sahiplenilmemiş mekana gelen talebi kimse görmüyordu — owner_id NULL,
+    // /panel/talepler kimseye ait değil. İşletmeye otomatik mesaj ATMIYORUZ
+    // (izinsiz ticari ileti KVKK/İYS'ye aykırı); onun yerine admin'e haber
+    // veriyoruz, ilk teması admin kişisel olarak kuruyor (bkz. lib/telegram.ts).
+    // Bildirim başarısız olsa bile talep zaten kaydedildi — kullanıcıyı ASLA
+    // bekletmiyor/bloklamıyoruz.
+    if (!result.is_claimed) {
+      // await ediliyor: Vercel gibi serverless ortamlarda yanıt gönderildikten
+      // sonra fonksiyon donduruluyor, await'siz bir "fire and forget" isteği
+      // yarıda kalabilir. notifyTelegram kendi içinde 5 sn zaman aşımlı ve
+      // asla fırlatmıyor — bu satır talebi engellemiyor, yalnızca biraz erteliyor.
+      await notifyTelegram(
+        `🔔 <b>Yeni talep — sahipsiz mekan</b>\n` +
+        `Mekan: <b>${kacir(result.venue_name)}</b> (${kacir(result.district_name)}, ${kacir(result.city_name)})\n` +
+        `Talep eden: ${kacir(parsed.data.fullName)}\n` +
+        `Telefon: ${kacir(parsed.data.phone)}\n` +
+        (parsed.data.message ? `Mesaj: ${kacir(parsed.data.message)}\n` : "") +
+        `\nBu mekan henüz sahiplenilmedi — işletmeyi arayıp bilgilendirmeyi düşün.`,
+      );
     }
 
     // Mekan sahibinin panelindeki talep sayısı tazelensin (P4).

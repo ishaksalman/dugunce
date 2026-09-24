@@ -7,6 +7,11 @@ import type { AdminVenue } from "@/types/db";
 
 /** Onay kuyruğu ve mekan listesindeki satır. */
 export function AdminVenueRow({ venue }: { venue: AdminVenue }) {
+  // `featured_active` SQL'de hesaplanıyor (0043) — Date.now() bileşende
+  // saf olmayan bir çağrı olurdu (lint yakaladı, google_rating_fresh'teki
+  // gibi). Ham `is_featured` admin için ayrıca saklı: "ben açmıştım" bilgisi.
+  const suresiDoldu = venue.is_featured && !venue.featured_active;
+
   return (
     <article className="rounded-xl border bg-card p-4">
       <div className="flex gap-4">
@@ -46,10 +51,17 @@ export function AdminVenueRow({ venue }: { venue: AdminVenue }) {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {venue.is_featured ? (
+              {venue.is_featured && !suresiDoldu ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-secondary-foreground">
                   <Star className="size-3 fill-current" aria-hidden />
                   Öne çıkan
+                  {venue.featured_until ? ` · ${formatDate(venue.featured_until)}'e kadar` : ""}
+                </span>
+              ) : null}
+              {suresiDoldu ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2.5 py-1 text-[11px] font-medium text-warning-foreground">
+                  <Star className="size-3" aria-hidden />
+                  Öne çıkarma süresi doldu
                 </span>
               ) : null}
               <VenueStatusBadge status={venue.status} needsReview={venue.needs_review} />

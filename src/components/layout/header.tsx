@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { Heart, Menu, Search } from "lucide-react";
+import { Heart, Menu } from "lucide-react";
 import { ButtonLink } from "@/components/shared/button-link";
+import { HeaderSearch } from "./header-search";
 import { Wordmark } from "@/components/shared/wordmark";
 import { SITE } from "@/lib/constants";
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+    <header className="relative border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="container-page flex h-16 items-center gap-4">
         <Link href="/" className="flex items-center" aria-label={`${SITE.name} ana sayfa`}>
           <Wordmark className="h-6 w-auto text-foreground" />
@@ -17,18 +18,11 @@ export function Header() {
           <HeaderLink href="/dugun-mekanlari">Düğün</HeaderLink>
           <HeaderLink href="/nisan-mekanlari">Nişan</HeaderLink>
           <HeaderLink href="/kina-mekanlari">Kına</HeaderLink>
+          <HeaderLink href="/rehber">Rehber</HeaderLink>
         </nav>
 
         <div className="ml-auto flex items-center gap-1">
-          <ButtonLink
-            href="/mekanlar"
-            variant="ghost"
-            size="icon-lg"
-            className="md:hidden"
-            aria-label="Mekan ara"
-          >
-            <Search />
-          </ButtonLink>
+          <HeaderSearch />
           <ButtonLink href="/favorilerim" variant="ghost" size="icon-lg" aria-label="Favorilerim">
             <Heart />
           </ButtonLink>

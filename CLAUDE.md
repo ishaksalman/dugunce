@@ -409,6 +409,33 @@ METİNLERİ alınmıyor — sayı olgudur, yorum metni onu yazan kişinin eserid
   yakaladı). Sorgu bayat puanı null döndürüyor.
 - `google_rating_at` olmadan `google_rating` yazılamaz (kısıt).
 
+## Kaynağın yapılandırılmış olguları (0040/0041)
+
+Bir kaynak (dugun.com dökümü gibi) yalnızca ad/telefon/adres değil; kapasite,
+fiyat aralığı, iç/dış mekan ve özellik (şimdilik yalnızca otopark) gibi
+ÖLÇÜLEBİLİR olgular da veriyor. `admin_create_venue` bunları katalog kaydı
+açılırken tek işlemde yazıyor.
+
+- **`description`'a ASLA yazılmaz.** Kaynağın pazarlama metni mekan
+  sahibinin KENDİ anlatımı değil; `description` hâlâ yalnızca wizard'dan
+  gelir ve `venue_completion_of()` onu ölçüyor. Kapasite/fiyat/iç-dış mekan
+  yazılınca `venue_auto_summary()` zaten `description` boşken devreye
+  giriyor — ayrıca metin taşımaya gerek yok. Test bunu doğruluyor.
+- **`price_max` ayrı kolon.** `starting_price` tekil bir sayı ("…'den
+  başlayan"); kaynak çoğu zaman ARALIK veriyor. `formatStartingPrice()`
+  ikinci parametre verilince "₺75.000 – ₺95.000" biçiminde gösteriyor.
+- **Özellik eşlemesi (`lib/import/dugun-com.ts`) BİLEREK dar.** Yalnızca
+  `parking → otopark` yazılıyor; kaynağın verdiği diğer bayraklar (vale,
+  klima, sahne...) şimdilik eşlenmiyor. Bilinmeyen/pasif slug `admin_create_venue`
+  içinde sessizce atlanır, hata vermez — taksonomide karşılığı olmayan bir
+  slug uydurmuyoruz.
+- **`p_price_type` geçersizse sessizce `belirtilmemis`e düşer.** Enum dışı
+  bir değer hataya değil, güvenli varsayılana gider.
+- **Dönüştürücü saf fonksiyon** (`lib/import/dugun-com.ts`), kendi testi var
+  (`npm run test:parse`). CLI sarmalayıcısı: `npm run donustur:dugun-com --
+  girdi.json cikti.json` — Apify dataset export'unu sürücü ekranının
+  (`/yonetim/ice-aktarma/yeni`) beklediği yüke çevirir, ağ/veritabanı yok.
+
 ## Teklif talepleri
 
 - Talep doğrudan INSERT ile açılmaz; `create_inquiry()` RPC'si üzerinden.
@@ -417,6 +444,13 @@ METİNLERİ alınmıyor — sayı olgudur, yorum metni onu yazan kişinin eserid
 - Sınırlar: saatte 3 talep / IP, günde 1 talep / mekan / IP.
 - Formda bal küpü alanı (`website`) var; doluysa istek başarılı gibi
   cevaplanır ama kaydedilmez.
+- **Sahiplenilmemiş mekana gelen talep admin'e Telegram'dan haber verir**
+  (0045, `lib/telegram.ts`, `lib/actions/inquiry.ts`). İşletmeye otomatik
+  mesaj ATILMAZ — izinsiz ticari ileti (SMS/WhatsApp/e-posta) KVKK/İYS
+  mevzuatına aykırı. İlk temas admin tarafından KİŞİSEL olarak (arayarak)
+  kurulur; bir kez onay alındıktan sonra otomatik bildirim serbest kalır.
+  `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` boşsa bildirim sessizce atlanır,
+  talep akışını hiç etkilemez — best-effort yan etki, ana akışı bloklamaz.
 
 ## SEO
 

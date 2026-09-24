@@ -24,6 +24,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
     },
     { href: "/yonetim/kullanicilar", label: "Kullanıcılar", icon: "kullanici" },
     { href: "/yonetim/ice-aktarma", label: "İçe Aktarma", icon: "iceaktarma" },
+    { href: "/yonetim/talepler", label: "Talepler", icon: "talep" },
+    { href: "/yonetim/rehber", label: "Rehber", icon: "rehber" },
     { href: "/yonetim/seo", label: "SEO Sayfaları", icon: "seo" },
     { href: "/yonetim/taksonomi", label: "Taksonomi", icon: "taksonomi" },
     {

@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { getDataSource } from "@/lib/db";
-import type { ClaimStatus, ImportStatus } from "@/types/db";
+import type { BlogPostStatus, ClaimStatus, ImportStatus, InquiryStatus } from "@/types/db";
 import type {
   AdminReviewQuery, AdminSeoQuery, AdminUserQuery, AdminVenueQuery,
 } from "@/lib/db/source";
@@ -59,5 +59,38 @@ export const listImportItems = cache(
   async (runId: string | null, status: ImportStatus | null, offset = 0) => {
     const db = await getDataSource();
     return db.adminListImportItems(runId, status, offset);
+  },
+);
+
+export const listAdminBlogPosts = cache(async (status: BlogPostStatus | null, offset = 0) => {
+  const db = await getDataSource();
+  return db.adminListBlogPosts(status, offset);
+});
+
+export const getAdminBlogPost = cache(async (id: string) => {
+  const db = await getDataSource();
+  return db.adminGetBlogPost(id);
+});
+
+export const INQUIRY_PAGE_SIZE = 20;
+
+export const listAdminInquiries = cache(
+  async (input: {
+    status?: InquiryStatus;
+    venueId?: string;
+    unclaimedOnly?: boolean;
+    query?: string;
+    page?: number;
+  }) => {
+    const db = await getDataSource();
+    const page = Math.max(1, input.page ?? 1);
+    return db.adminListInquiries({
+      status: input.status,
+      venueId: input.venueId,
+      unclaimedOnly: input.unclaimedOnly,
+      query: input.query,
+      limit: INQUIRY_PAGE_SIZE,
+      offset: (page - 1) * INQUIRY_PAGE_SIZE,
+    });
   },
 );

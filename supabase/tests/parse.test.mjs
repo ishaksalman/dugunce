@@ -8,6 +8,7 @@
 import { parseBulkInput, parseMapsUrl, isMapsUrl, cleanMapsUrl,
   parsePlacesJson, jsonMu, trimPlacesJson } from "../../src/lib/import/parse.ts";
 import { parseImportPayload } from "../../src/lib/import/payload.ts";
+import { dugunComToPayload } from "../../src/lib/import/dugun-com.ts";
 
 let pass = 0, fail = 0;
 const ok = (n) => { pass++; console.log(`  \x1b[32m✓\x1b[0m ${n}`); };
@@ -345,6 +346,163 @@ step("limit uygulanıyor", () => {
   const cok = JSON.stringify(Array.from({ length: 60 }, (_, i) => ({ name: `S${i}` })));
   const { rows, fazlalik } = parseImportPayload(cok, 50);
   esit([rows.length, fazlalik], [50, 10]);
+});
+
+step("dugun.com dönüştürücü: ad yoksa ya da scrape_status=failed ise atlıyor", () => {
+  const { rows, atlanan } = dugunComToPayload([
+    { name: "Gerçek Salon", scrape_status: "success", source_url: "https://dugun.com/x/y/gercek-salon" },
+    { name: null, scrape_status: "success" },
+    { name: "Başarısız", scrape_status: "failed" },
+  ]);
+  esit(rows.length, 1, "yalnızca 1 geçerli kayıt");
+  esit(atlanan, 2, "2 kayıt atlandı");
+  esit(rows[0].name, "Gerçek Salon");
+});
+
+step("dugun.com dönüştürücü: taksonomideki HER özellik eşleniyor, description alınmıyor", () => {
+  const { rows } = dugunComToPayload([{
+    name: "Özellik Testi", scrape_status: "success",
+    parking: true, valet: true, air_conditioning: true, stage: true,
+    sound_system: true, lighting: true, bridal_room: true, catering: true,
+    accommodation: true, food_service: true, alcohol: true,
+    // Taksonomide karşılığı olmayanlar — BİLEREK atlanmalı, uydurulmamalı.
+    dance_floor: true, outdoor_ceremony: true,
+    indoor: true, outdoor: false,
+    capacity_min: 50, capacity_max: 200, price_min: 10000, price_max: 20000,
+    price_label: "10.000 - 20.000 TL",
+    website: "https://ornek-salon.test", instagram: "https://instagram.com/ornek",
+    description: "Bu asla payload'a girmemeli",
+    images: [{ url: "https://i.dugun.com/a.jpg" }, { url: "https://i.dugun.com/a.jpg" }],
+  }]);
+  const r = rows[0];
+  esit(
+    [...r.featureSlugs].sort(),
+    ["alkol-servisi", "catering", "gelin-odasi", "isiklandirma", "klima",
+     "konaklama", "otopark", "sahne", "ses-sistemi", "vale", "yemekli"].sort(),
+    "taksonomideki her eşleşen slug yazılmalı, dance_floor/outdoor_ceremony HARİÇ",
+  );
+  esit(r.website, "https://ornek-salon.test");
+  esit(r.instagram, "https://instagram.com/ornek");
+  esit(r.description, undefined, "description asla payload'a girmemeli");
+  esit(r.hasIndoor, true);
+  esit(r.hasOutdoor, false);
+  esit(r.minCapacity, 50);
+  esit(r.maxCapacity, 200);
+  esit(r.startingPrice, 10000);
+  esit(r.priceMax, 20000);
+  esit(r.imageUrls.length, 1, "tekrarlayan görsel adresi bir kez alınmalı");
+});
+
+step("dugun.com dönüştürücü: alcohol=false için alkol-servisi YAZILMIYOR", () => {
+  const { rows } = dugunComToPayload([{
+    name: "Alkolsüz Salon", scrape_status: "success", alcohol: false, parking: true,
+  }]);
+  esit(rows[0].featureSlugs, ["otopark"], "alcohol=false bir slug uydurmamalı");
+});
+
+step("dugun.com dönüştürücü: telefon ve price_label ALINMIYOR", () => {
+  const { rows } = dugunComToPayload([{
+    name: "Test Salonu", scrape_status: "success",
+    phone: "+902129630213", price_label: "…%30 İndirimle Sadece 980₺!",
+  }]);
+  const r = rows[0];
+  esit(r.phone, undefined, "telefon payload'a hiç girmemeli");
+  esit(r.priceNote, undefined, "price_label (kampanya metni) payload'a hiç girmemeli");
+});
+
+step("dugun.com dönüştürücü: düşük tutar kişi başı sayılıyor (aralık etiketine rağmen)", () => {
+  const { rows } = dugunComToPayload([{
+    name: "Ucuz Menü Salonu", scrape_status: "success",
+    price_min: 900, price_max: 1050, price_type: "range",
+  }]);
+  esit(rows[0].priceType, "kisi_basi", "900-1050 TL bir düğün salonu için toplam kira olamaz");
+});
+
+step("dugun.com dönüştürücü: yüksek tutarda kaynağın etiketi korunuyor", () => {
+  const { rows } = dugunComToPayload([{
+    name: "Pahalı Salon", scrape_status: "success",
+    price_min: 75000, price_max: 95000, price_type: "range",
+  }]);
+  esit(rows[0].priceType, "belirtilmemis", "75.000+ TL aralığı kişi başı sayılmamalı");
+});
+
+step("dugun.com dönüştürücü: metinden sızan YIL (2026 gibi) fiyat sanılmıyor", () => {
+  // Gerçek örnek: "2026 Kış Düğünlerine Özel Hafta Içi 350 Kişilik 190.000₺"
+  // metninden price_min=2026 çıkmıştı — 190.000 TL'lik mekan "2.026 TL'den
+  // başlayan" gibi görünürdü. min/max arasında 10 kattan fazla fark varsa
+  // aralık güvenilmez sayılıp kaynağın tekil `price` alanı kullanılmalı.
+  const { rows } = dugunComToPayload([{
+    name: "Wed İstanbul", scrape_status: "success",
+    price: 190000, price_min: 2026, price_max: 190000, price_type: "range",
+  }]);
+  const r = rows[0];
+  esit(r.startingPrice, 190000, "2026 değil, gerçek fiyat (190000) kullanılmalı");
+  esit(r.priceMax, null, "güvenilmez aralığın üst sınırı da yazılmamalı");
+  esit(r.priceType, "belirtilmemis", "190.000 TL kişi başı sayılmamalı");
+});
+
+step("dugun.com dönüştürücü: gerçek kişi başı aralığı (900-1050) BOZULMUYOR", () => {
+  const { rows } = dugunComToPayload([{
+    name: "Armonia", scrape_status: "success",
+    price: 900, price_min: 900, price_max: 1050, price_type: "range",
+  }]);
+  const r = rows[0];
+  esit(r.startingPrice, 900);
+  esit(r.priceMax, 1050, "makul oranlı gerçek aralık korunmalı");
+  esit(r.priceType, "kisi_basi");
+});
+
+step("dugun.com dönüştürücü: etkinlik türü kategori metninden çıkarılıyor (0047)", () => {
+  const { rows } = dugunComToPayload([
+    { name: "Düğün Salonu", scrape_status: "success",
+      category: "Düğün Salonları İstanbul", subcategory: "Düğün Salonları İstanbul" },
+    { name: "Nişan Salonu", scrape_status: "success",
+      category: "Nişan Organizasyonu", subcategory: null },
+    { name: "Kategorisiz Salon", scrape_status: "success" },
+  ]);
+  esit(rows[0].eventTypeSlugs, ["dugun"]);
+  esit(rows[1].eventTypeSlugs, ["nisan"]);
+  esit(rows[2].eventTypeSlugs, [], "kategori yoksa tahmin yürütülmemeli");
+});
+
+step("dugun.com dönüştürücü: 'düğün' geçmeyen düğün-ağacı kategorileri de dugun sayılıyor (0051)", () => {
+  const { rows } = dugunComToPayload([
+    { name: "A", scrape_status: "success", category: "Tarihi Mekanlar İstanbul", subcategory: null },
+    { name: "B", scrape_status: "success", category: "Sosyal Tesisler İstanbul", subcategory: null },
+    { name: "C", scrape_status: "success", category: "Balo ve Davet Salonları İstanbul", subcategory: null },
+    { name: "D", scrape_status: "success", category: "Nikah Salonları İstanbul", subcategory: null },
+  ]);
+  esit(rows[0].eventTypeSlugs, ["dugun"], "Tarihi Mekanlar 'düğün' kelimesi geçmese de dugun.com'un düğün ağacında");
+  esit(rows[1].eventTypeSlugs, ["dugun"]);
+  esit(rows[2].eventTypeSlugs, ["dugun"]);
+  esit(rows[3].eventTypeSlugs, ["dugun"]);
+});
+
+step("dugun.com dönüştürücü: mekan türü kategori metninden çıkarılıyor", () => {
+  const { rows } = dugunComToPayload([
+    { name: "A", scrape_status: "success",
+      category: "Düğün Salonları İstanbul", subcategory: "Düğün Salonları İstanbul" },
+    { name: "B", scrape_status: "success",
+      category: "Kır Düğünü Mekanları İstanbul", subcategory: null },
+    { name: "C", scrape_status: "success",
+      category: "Otel Düğünleri İstanbul", subcategory: null },
+    { name: "D", scrape_status: "success",
+      category: "Balo ve Davet Salonları İstanbul", subcategory: null },
+    // Karşılığı olmayan/riskli kategoriler — TAHMİN YÜRÜTÜLMEMELİ.
+    { name: "E", scrape_status: "success",
+      category: "Nikah Salonları İstanbul", subcategory: null },
+    { name: "F", scrape_status: "success",
+      category: "Söz, Nişan Mekanları İstanbul", subcategory: null },
+    { name: "G", scrape_status: "success",
+      category: "Sosyal Tesisler İstanbul", subcategory: null },
+  ]);
+  esit(rows[0].venueTypeSlug, "dugun-salonu");
+  esit(rows[1].venueTypeSlug, "kir-bahcesi");
+  esit(rows[2].venueTypeSlug, "otel");
+  esit(rows[3].venueTypeSlug, "balo-salonu");
+  esit(rows[4].venueTypeSlug, null, "Nikah Salonu karşılığı yok, uydurulmamalı");
+  esit(rows[5].venueTypeSlug, null, "etkinlik kategorisi mekan türü değil");
+  esit(rows[6].venueTypeSlug, null, "Sosyal Tesis karşılığı yok");
 });
 
 console.log(fail

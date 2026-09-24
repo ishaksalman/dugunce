@@ -1,5 +1,4 @@
 import { ExternalLink, Star } from "lucide-react";
-import { isGoogleMapsUrl } from "@/lib/schemas/venue";
 import { formatDate, formatNumber } from "@/lib/format";
 
 /**
@@ -26,19 +25,25 @@ export function GoogleRating({
   rating,
   count,
   readAt,
-  mapsUrl,
+  placeId,
 }: {
   rating: string | number | null;
   count: number | null;
   readAt: string | null;
-  mapsUrl: string | null;
+  /**
+   * Yorum bağlantısı bundan kurulur — `google_maps_url` çoğunlukla kaynağın
+   * verdiği yol tarifi adresi, yorum sayfası değil (bkz. VenueMap).
+   */
+  placeId: string | null;
 }) {
   if (rating === null || readAt === null) return null;
 
   const puan = Number(rating);
   if (!Number.isFinite(puan) || puan <= 0) return null;
 
-  const baglanti = mapsUrl && isGoogleMapsUrl(mapsUrl) ? mapsUrl : null;
+  const baglanti = placeId
+    ? `https://www.google.com/maps/search/?api=1&query=Google&query_place_id=${encodeURIComponent(placeId)}`
+    : null;
 
   return (
     <div className="rounded-xl border bg-card p-4">

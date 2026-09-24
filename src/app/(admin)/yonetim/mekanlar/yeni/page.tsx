@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { CatalogVenueForm } from "@/components/admin/catalog-venue-form";
-import { getBusinessCategories, getCities, getVenueTypes } from "@/lib/services/taxonomy";
+import {
+  getBusinessCategories, getCities, getEventTypes, getVenueTypes,
+} from "@/lib/services/taxonomy";
 
 export const metadata: Metadata = {
   title: "Katalog kaydı aç",
@@ -10,10 +12,11 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminNewVenuePage() {
-  const [cities, categories, venueTypes] = await Promise.all([
+  const [cities, categories, venueTypes, eventTypes] = await Promise.all([
     getCities(),
     getBusinessCategories(),
     getVenueTypes(),
+    getEventTypes(),
   ]);
 
   return (
@@ -49,6 +52,7 @@ export default async function AdminNewVenuePage() {
         cities={cities}
         categories={categories.filter((k) => k.is_active)}
         venueTypes={venueTypes}
+        eventTypes={eventTypes}
       />
     </div>
   );

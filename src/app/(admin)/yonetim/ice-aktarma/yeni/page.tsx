@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ImportRunner } from "@/components/admin/import-runner";
-import { getCities } from "@/lib/services/taxonomy";
+import { getCities, getVenueTypes } from "@/lib/services/taxonomy";
 
 export const metadata: Metadata = {
   title: "İçe aktarım çalıştır",
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ImportRunPage() {
-  const cities = await getCities();
+  const [cities, venueTypes] = await Promise.all([getCities(), getVenueTypes()]);
 
   return (
     <div className="px-4 py-8 sm:px-8 lg:py-10">
@@ -64,7 +64,7 @@ export default async function ImportRunPage() {
         </ul>
       </div>
 
-      <ImportRunner cities={cities} />
+      <ImportRunner cities={cities} venueTypes={venueTypes} />
     </div>
   );
 }

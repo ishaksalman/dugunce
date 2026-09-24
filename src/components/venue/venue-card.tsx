@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Star } from "lucide-react";
+import { MapPin, Star, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCapacity, formatRating, formatStartingPrice } from "@/lib/format";
 import { FavoriteButton } from "./favorite-button";
@@ -66,7 +66,7 @@ export function VenueCard({
 
       <div className="space-y-1 pt-3">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-heading text-lg leading-snug">
+          <h3 className="font-heading text-lg leading-snug transition-colors group-hover:text-primary">
             {/* Tüm kartı tıklanabilir yapan görünmez katman. */}
             <Link href={venueHref(venue)} className="after:absolute after:inset-0">
               {venue.name}
@@ -81,12 +81,20 @@ export function VenueCard({
           ) : null}
         </div>
 
-        <p className="text-sm text-muted-foreground">
-          {venue.districtName}, {venue.cityName}
-          {venue.venueTypeName ? ` · ${venue.venueTypeName}` : ""}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <MapPin className="size-3.5 shrink-0" aria-hidden />
+            {venue.districtName}, {venue.cityName}
+            {venue.venueTypeName ? ` · ${venue.venueTypeName}` : ""}
+          </span>
 
-        {capacity ? <p className="tabular text-sm text-muted-foreground">{capacity}</p> : null}
+          {capacity ? (
+            <span className="tabular flex items-center gap-1">
+              <Users className="size-3.5 shrink-0" aria-hidden />
+              {capacity}
+            </span>
+          ) : null}
+        </div>
 
         <p className="pt-1 text-sm">
           <span className="tabular font-medium">{price.primary}</span>

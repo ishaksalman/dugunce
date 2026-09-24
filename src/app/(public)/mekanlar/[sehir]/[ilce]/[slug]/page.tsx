@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
-  Building2, ChevronRight, DoorOpen, Sun, Users, Wallet,
+  Building2, ChevronRight, DoorOpen, Globe, MessageCircle, Phone, Sun, Users, Wallet,
 } from "lucide-react";
 import { VenueGallery } from "@/components/venue/venue-gallery";
 import { VenueMap } from "@/components/venue/venue-map";
@@ -16,13 +16,18 @@ import { ViewTracker } from "@/components/venue/view-tracker";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { StickyInquiryBar } from "@/components/inquiry/sticky-inquiry-bar";
 import { Icon } from "@/components/shared/icon";
+import { ButtonLink } from "@/components/shared/button-link";
+import { InstagramIcon } from "@/components/shared/instagram-icon";
 import { JsonLd } from "@/components/seo/json-ld";
 import {
   getSimilarVenues, getVenueDetail, getVenueReviews,
 } from "@/lib/services/venues";
 import { getEventTypes } from "@/lib/services/taxonomy";
 import { breadcrumbJsonLd, venueJsonLd } from "@/lib/seo/jsonld";
-import { formatCapacity, formatRating, formatStartingPrice } from "@/lib/format";
+import {
+  formatCapacity, formatPhoneDisplay, formatRating, formatStartingPrice,
+  phoneForTel, phoneForWhatsapp,
+} from "@/lib/format";
 import { listVenueSitemap } from "@/lib/services/seo";
 import { SITE } from "@/lib/constants";
 import { landingHref, landingPath } from "@/lib/seo/paths";
@@ -115,10 +120,14 @@ export default async function VenueDetailPage(
   const price = formatStartingPrice(
     venue.starting_price === null ? null : Number(venue.starting_price),
     venue.price_type,
+    venue.price_max === null ? null : Number(venue.price_max),
   );
   const ratingAvg = Number(venue.rating_avg ?? 0);
   const ozellikler = venue.features.filter((f) => f.kind === "ozellik");
   const hizmetler = venue.features.filter((f) => f.kind === "hizmet");
+  const telHref = phoneForTel(venue.contact_phone_norm);
+  const waHref = phoneForWhatsapp(venue.contact_phone_norm);
+  const telGosterim = formatPhoneDisplay(venue.contact_phone_norm) ?? venue.contact_phone;
 
   const breadcrumbs = [
     { name: "Ana sayfa", path: "/" },
@@ -139,58 +148,83 @@ export default async function VenueDetailPage(
       <div className="container-page pb-28 pt-6 lg:pb-20">
         <Breadcrumbs items={breadcrumbs} />
 
+        {/* --- Başlık ---
+            Minimal ve KISA tutuluyor — sayfa kayınca sticky olarak üstte
+            kalıyor. Site navigasyonu (Header, components/layout/header.tsx)
+            BİLEREK sticky DEĞİL: ikisi aynı anda sabitse ekranın üst kısmı
+            kayan içerikten fazla yer kaplıyordu. Etkinlik türü etiketleri
+            bilerek başlığın dışına, galerinin üstüne taşındı — sticky
+            hâldeyken yükseklik artırmasınlar diye. */}
+        <header className="sticky top-0 z-30 mt-4 border-b bg-background/95 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="truncate font-heading text-lg leading-tight sm:text-xl">
+                {venue.name}
+              </h1>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm">
+                {venue.district.name}, {venue.city.name}
+                {venue.venue_type ? ` · ${venue.venue_type.name}` : ""}
+                {venue.rating_count > 0
+                  ? ` · ${formatRating(ratingAvg)} (${venue.rating_count})`
+                  : ""}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {telHref ? (
+                <ButtonLink
+                  href={`tel:${telHref}`}
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  aria-label={telGosterim ? `Ara: ${telGosterim}` : "Ara"}
+                >
+                  <Phone className="size-3.5" aria-hidden />
+                  <span className="hidden sm:inline">{telGosterim ?? "Ara"}</span>
+                </ButtonLink>
+              ) : null}
+              {waHref ? (
+                <ButtonLink
+                  href={`https://wa.me/${waHref}`}
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 border-success/40 text-success hover:bg-success/10"
+                  aria-label="WhatsApp'tan yaz"
+                >
+                  <MessageCircle className="size-3.5" aria-hidden />
+                  <span className="hidden sm:inline">WhatsApp</span>
+                </ButtonLink>
+              ) : null}
+              <ShareButton title={venue.name} />
+              <FavoriteButton
+                venueId={venue.id}
+                venueName={venue.name}
+                variant="plain"
+              />
+            </div>
+          </div>
+        </header>
+
+        {venue.event_types.length > 0 ? (
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {venue.event_types.map((e) => (
+              <li key={e.slug}>
+                <Link
+                  href={landingHref(landingPath({ citySlug: venue.city.slug, eventSlug: e.slug }))}
+                  className="inline-block rounded-full bg-secondary px-3 py-1.5 text-xs text-secondary-foreground transition-colors hover:bg-sage-200"
+                >
+                  {e.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
         <div className="mt-4">
           <VenueGallery images={venue.images} venueName={venue.name} />
         </div>
 
         <div className="mt-8 lg:grid lg:grid-cols-[1fr_380px] lg:gap-12">
           <div className="min-w-0 space-y-10">
-            {/* --- Başlık --- */}
-            <header>
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <h1 className="font-heading text-3xl leading-tight sm:text-4xl">
-                    {venue.name}
-                  </h1>
-                  <p className="mt-2 text-muted-foreground">
-                    {venue.district.name}, {venue.city.name}
-                    {venue.venue_type ? ` · ${venue.venue_type.name}` : ""}
-                  </p>
-                  {venue.rating_count > 0 ? (
-                    <p className="mt-2 flex items-center gap-1.5 text-sm">
-                      <span className="tabular font-medium">{formatRating(ratingAvg)}</span>
-                      <span className="text-muted-foreground">
-                        ({venue.rating_count} değerlendirme)
-                      </span>
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <ShareButton title={venue.name} />
-                  <FavoriteButton
-                    venueId={venue.id}
-                    venueName={venue.name}
-                    variant="plain"
-                  />
-                </div>
-              </div>
-
-              {venue.event_types.length > 0 ? (
-                <ul className="mt-5 flex flex-wrap gap-2">
-                  {venue.event_types.map((e) => (
-                    <li key={e.slug}>
-                      <Link
-                        href={landingHref(landingPath({ citySlug: venue.city.slug, eventSlug: e.slug }))}
-                        className="inline-block rounded-full bg-secondary px-3 py-1.5 text-xs text-secondary-foreground transition-colors hover:bg-sage-200"
-                      >
-                        {e.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </header>
-
             {/* --- Genel bilgiler --- */}
             <Section title="Genel bilgiler">
               <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
@@ -265,8 +299,35 @@ export default async function VenueDetailPage(
                 cityName={venue.city.name}
                 latitude={venue.latitude === null ? null : Number(venue.latitude)}
                 longitude={venue.longitude === null ? null : Number(venue.longitude)}
-                googleMapsUrl={venue.google_maps_url}
+                googlePlaceId={venue.google_place_id}
               />
+
+              {venue.website_url || venue.instagram_url ? (
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {venue.website_url ? (
+                    <a
+                      href={venue.website_url}
+                      target="_blank"
+                      rel="nofollow noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary"
+                    >
+                      <Globe className="size-4 text-muted-foreground" aria-hidden />
+                      Web sitesi
+                    </a>
+                  ) : null}
+                  {venue.instagram_url ? (
+                    <a
+                      href={venue.instagram_url}
+                      target="_blank"
+                      rel="nofollow noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary"
+                    >
+                      <InstagramIcon className="size-4" />
+                      Instagram
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
             </Section>
 
             {/* --- Sahiplenme çağrısı --- */}
@@ -289,7 +350,7 @@ export default async function VenueDetailPage(
                   rating={venue.google_rating}
                   count={venue.google_rating_count}
                   readAt={venue.google_rating_at}
-                  mapsUrl={venue.google_maps_url}
+                  placeId={venue.google_place_id}
                 />
               </div>
               <VenueReviews
@@ -303,11 +364,13 @@ export default async function VenueDetailPage(
 
           {/* --- Masaüstü teklif kartı --- */}
           <aside className="hidden lg:block">
-            <div className="sticky top-24 rounded-xl border bg-card p-6 shadow-sm">
+            {/* top-20: sticky başlığın (header, ~72px) altında dursun diye. */}
+            <div className="sticky top-20 rounded-xl border bg-card p-6 shadow-sm">
               <InquiryForm
                 venueId={venue.id}
                 venueName={venue.name}
                 eventTypes={eventTypes}
+                isClaimed={venue.is_claimed}
               />
             </div>
           </aside>
@@ -336,6 +399,7 @@ export default async function VenueDetailPage(
         startingPrice={venue.starting_price === null ? null : Number(venue.starting_price)}
         priceType={venue.price_type}
         eventTypes={eventTypes}
+        isClaimed={venue.is_claimed}
       />
     </>
   );
