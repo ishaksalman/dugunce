@@ -15,6 +15,17 @@ import {
 } from "@/lib/services/taxonomy";
 import { formatNumber } from "@/lib/format";
 
+// `searchParams` okunduğu için sayfa zaten dinamik render ediliyor ama bu,
+// içindeki `fetch()` çağrılarını (createPublicClient → supabase-js) otomatik
+// önbellek dışı bırakmıyor — Next'in Data Cache'i sayfanın kendi
+// dinamikliğinden BAĞIMSIZ, ayrı bir katman. `revalidate = 0` olmadan
+// search_venues sonucu süresiz önbellekte kalabiliyordu: bir mekan askıya
+// alınınca `revalidatePath("/mekanlar")` sayfa önbelleğini boşaltıyordu ama
+// altındaki RPC yanıtı hâlâ eskiyi döndürüyordu — mekan detayında (ISR,
+// kendi revalidate'i olan ayrı bir segment) doğru 404 verirken listede
+// askıdaki mekan görünmeye devam ediyordu.
+export const revalidate = 0;
+
 export async function generateMetadata({ searchParams }: PageProps<"/mekanlar">): Promise<Metadata> {
   const filters = parseFilters(await searchParams);
   const indexable = shouldIndex(filters);
