@@ -40,7 +40,7 @@ export function HeroSearch({
   return (
     <form
       onSubmit={submit}
-      className="rounded-2xl bg-background p-2 shadow-lg ring-1 ring-foreground/10"
+      className="rounded-lg bg-background p-2 shadow-lg ring-1 ring-foreground/10"
       role="search"
       aria-label="Mekan ara"
     >
@@ -89,7 +89,7 @@ export function HeroSearch({
           />
         </Field>
 
-        <Button type="submit" size="lg" className="h-12 gap-2 px-6 md:self-end">
+        <Button type="submit" size="lg" className="h-12 gap-2 px-6 md:h-full md:self-end">
           <Search className="size-4" aria-hidden />
           Mekan Ara
         </Button>
