@@ -30,7 +30,7 @@ const HERO_IMAGE = "/hero.webp";
 // bkz. next.config.ts'deki not.
 const SEHIR_GORSEL: Record<string, string> = {
   istanbul: "https://images.unsplash.com/photo-1763965367072-54870fc7f1b6?q=80&w=800&auto=format&fit=crop",
-  ankara: "https://images.unsplash.com/photo-1728113278031-30d24597673d?q=80&w=800&auto=format&fit=crop",
+  ankara: "https://images.unsplash.com/photo-1711859736356-aaf2138f8edd?q=80&w=800&auto=format&fit=crop",
   izmir: "https://images.unsplash.com/photo-1658317887134-f81324a7c3cd?q=80&w=800&auto=format&fit=crop",
 };
 
