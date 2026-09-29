@@ -25,6 +25,15 @@ export const metadata: Metadata = {
 
 const HERO_IMAGE = "/hero.webp";
 
+// Popüler şehir kartları için gerçek, tanınabilir fotoğraflar (Unsplash).
+// Kalan şehirlerde (henüz eklenmedi) picsum placeholder'a düşülüyor —
+// bkz. next.config.ts'deki not.
+const SEHIR_GORSEL: Record<string, string> = {
+  istanbul: "https://images.unsplash.com/photo-1763965367072-54870fc7f1b6?q=80&w=800&auto=format&fit=crop",
+  ankara: "https://images.unsplash.com/photo-1728113278031-30d24597673d?q=80&w=800&auto=format&fit=crop",
+  izmir: "https://images.unsplash.com/photo-1658317887134-f81324a7c3cd?q=80&w=800&auto=format&fit=crop",
+};
+
 export default async function HomePage() {
   const [cities, eventTypes, featured] = await Promise.all([
     getCities(false, true),
@@ -137,7 +146,7 @@ export default async function HomePage() {
               >
                 <div className="relative aspect-[4/5]">
                   <Image
-                    src={`https://picsum.photos/seed/dugunce-sehir-${c.slug}/600/750`}
+                    src={SEHIR_GORSEL[c.slug] ?? `https://picsum.photos/seed/dugunce-sehir-${c.slug}/600/750`}
                     alt=""
                     fill
                     sizes="(min-width: 1024px) 200px, 45vw"
